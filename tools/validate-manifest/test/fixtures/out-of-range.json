@@ -1,0 +1,13 @@
+{
+  "schema_version": "0.1.0",
+  "pilot_metadata": {
+    "pm_reviewer_id": "pm-test",
+    "pilot_date": "2026-05-06",
+    "figma_file_ids": ["test-fixture"],
+    "total_token_cost": 0
+  },
+  "frames": [
+    {"screen_id":"AUTH-01","display_id":"AUTH-01","title":"high","intent":"i0","user_value":"v0","success_criteria":"c0","states":["default"],"edge_cases":["none"],"component_refs":["btn"],"data_io":["sample-input"],"design_tokens":["color/primary"],"variants":["default"],"navigation":["root"],"confidence":1.5,"intent_mismatch":false,"source_hash":"a000000000000000","write_target":"none","persona_tags":["pm"],"token_usage":{"input_tokens":0,"output_tokens":0},"stale":false},
+    {"screen_id":"AUTH-02","display_id":"AUTH-02","title":"low","intent":"i1","user_value":"v1","success_criteria":"c1","states":["default"],"edge_cases":["none"],"component_refs":["btn"],"data_io":["sample-input"],"design_tokens":["color/primary"],"variants":["default"],"navigation":["root"],"confidence":-0.3,"intent_mismatch":false,"source_hash":"a000000000000001","write_target":"none","persona_tags":["pm"],"token_usage":{"input_tokens":0,"output_tokens":0},"stale":false}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "text": "{\"intent\":\"프레임 BILLING-04 의도\",\"user_value\":\"사용자가 화면에서 핵심 가치를 얻는다\",\"success_criteria\":\"PM 검수 통과\",\"states\":[\"default\"],\"edge_cases\":[\"empty data\"],\"data_io\":[\"GET /resource\"],\"intent_mismatch\":false}",
+  "input_tokens": 1500,
+  "output_tokens": 400,
+  "confidence": 0.5,
+  "intent_mismatch": false
+}

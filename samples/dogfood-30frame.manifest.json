@@ -1,0 +1,1394 @@
+{
+  "schema_version": "0.1.0",
+  "pilot_metadata": {
+    "pm_reviewer_id": "pm-dogfood",
+    "pilot_date": "2026-05-10",
+    "figma_file_ids": [
+      "dogfood-001"
+    ],
+    "total_token_cost": 55380
+  },
+  "frames": [
+    {
+      "screen_id": "AUTH-01",
+      "display_id": "AUTH-01",
+      "title": "로그인 진입",
+      "intent": "사용자가 이메일과 비밀번호를 입력하여 로그인할 수 있다",
+      "user_value": "로그인 후 즉시 대시보드 진입을 보장하여 첫 인상 시간을 단축한다",
+      "success_criteria": "이메일·비밀번호 검증 후 정상 사용자만 5초 이내 대시보드로 진입",
+      "states": [
+        "default",
+        "validating",
+        "error"
+      ],
+      "edge_cases": [
+        "네트워크 끊김",
+        "비밀번호 5회 오류로 잠금"
+      ],
+      "component_refs": [
+        "LoginForm",
+        "PrimaryButton"
+      ],
+      "data_io": [
+        "POST /api/auth/login"
+      ],
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [
+        "DASH-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "000000009e3779b1",
+      "write_target": "descriptions_page",
+      "persona_tags": [
+        "pm",
+        "designer",
+        "dev",
+        "qa"
+      ],
+      "token_usage": {
+        "input_tokens": 800,
+        "output_tokens": 350
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "AUTH-02",
+      "display_id": "AUTH-02",
+      "title": "회원가입 시작",
+      "intent": "신규 사용자가 이메일로 가입을 시작한다",
+      "user_value": "최소 입력으로 가입 진입 장벽을 낮춰 전환율을 높인다",
+      "success_criteria": "이메일 형식 검증 통과 시 인증 메일 전송 화면으로 전환",
+      "states": [
+        "default",
+        "submitting"
+      ],
+      "edge_cases": [
+        "이미 가입된 이메일",
+        "메일 발송 실패"
+      ],
+      "component_refs": [
+        "SignUpForm",
+        "EmailInput"
+      ],
+      "data_io": [
+        "POST /api/auth/signup"
+      ],
+      "design_tokens": [
+        "color/primary/500"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "AUTH-03"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "000000013c6ef362",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "designer"
+      ],
+      "token_usage": {
+        "input_tokens": 830,
+        "output_tokens": 368
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "AUTH-03",
+      "display_id": "AUTH-03",
+      "title": "이메일 인증 안내",
+      "intent": "사용자에게 인증 메일 확인을 안내한다",
+      "user_value": "이메일 확인 단계의 이탈을 줄이기 위한 명확한 안내 제공",
+      "success_criteria": "인증 링크 클릭 후 인증 완료 화면으로 자동 전환",
+      "states": [
+        "default",
+        "resend-cooldown"
+      ],
+      "edge_cases": [
+        "메일 미수신",
+        "스팸함 분류"
+      ],
+      "component_refs": [
+        "InfoCard",
+        "ResendButton"
+      ],
+      "data_io": [
+        "POST /api/auth/resend"
+      ],
+      "design_tokens": [
+        "color/info/100"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "AUTH-04"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "00000001daa66d13",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "dev"
+      ],
+      "token_usage": {
+        "input_tokens": 860,
+        "output_tokens": 386
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "AUTH-04",
+      "display_id": "AUTH-04",
+      "title": "이메일 인증 완료",
+      "intent": "사용자의 이메일이 인증되었음을 확인한다",
+      "user_value": "온보딩 진입 직전 신뢰 신호를 강화한다",
+      "success_criteria": "인증 토큰 유효 시 3초 이내 온보딩으로 라우팅",
+      "states": [
+        "default",
+        "expired"
+      ],
+      "edge_cases": [
+        "만료된 토큰",
+        "이미 인증된 토큰"
+      ],
+      "component_refs": [
+        "SuccessBanner",
+        "ContinueButton"
+      ],
+      "data_io": [
+        "GET /api/auth/verify"
+      ],
+      "design_tokens": [
+        "color/success/500"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "DASH-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "0000000278dde6c4",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "designer",
+        "dev",
+        "qa"
+      ],
+      "token_usage": {
+        "input_tokens": 890,
+        "output_tokens": 404
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "AUTH-05",
+      "display_id": "AUTH-05",
+      "title": "비밀번호 찾기",
+      "intent": "사용자가 비밀번호 재설정 링크를 요청한다",
+      "user_value": "비밀번호 분실로 인한 이탈을 회수한다",
+      "success_criteria": "이메일 입력 후 발송 안내가 5초 이내 노출",
+      "states": [
+        "default",
+        "submitting"
+      ],
+      "edge_cases": [
+        "존재하지 않는 이메일",
+        "발송 실패"
+      ],
+      "component_refs": [
+        "EmailInput",
+        "SubmitButton"
+      ],
+      "data_io": [
+        "POST /api/auth/forgot"
+      ],
+      "design_tokens": [
+        "color/primary/500"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "AUTH-06"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "0000000317156075",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "designer"
+      ],
+      "token_usage": {
+        "input_tokens": 920,
+        "output_tokens": 422
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "AUTH-06",
+      "display_id": "AUTH-06",
+      "title": "비밀번호 재설정",
+      "intent": "사용자가 새 비밀번호를 설정한다",
+      "user_value": "보안 정책을 만족하는 비밀번호 입력을 유도한다",
+      "success_criteria": "비밀번호 강도 통과 시 재로그인 화면으로 이동",
+      "states": [
+        "default",
+        "weak",
+        "ok"
+      ],
+      "edge_cases": [
+        "만료 토큰",
+        "동일 비밀번호 재사용"
+      ],
+      "component_refs": [
+        "PasswordInput",
+        "StrengthMeter"
+      ],
+      "data_io": [
+        "POST /api/auth/reset"
+      ],
+      "design_tokens": [
+        "color/warn/500"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "AUTH-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "00000003b54cda26",
+      "write_target": "descriptions_page",
+      "persona_tags": [
+        "pm",
+        "dev"
+      ],
+      "token_usage": {
+        "input_tokens": 950,
+        "output_tokens": 440
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "AUTH-07",
+      "display_id": "AUTH-07",
+      "title": "소셜 로그인 선택",
+      "intent": "사용자가 OAuth 공급자를 선택한다",
+      "user_value": "기존 계정 활용으로 가입 마찰을 제거한다",
+      "success_criteria": "선택한 공급자로 OAuth 리다이렉트 성공",
+      "states": [
+        "default",
+        "redirecting"
+      ],
+      "edge_cases": [
+        "공급자 응답 지연",
+        "권한 거부"
+      ],
+      "component_refs": [
+        "OAuthButton"
+      ],
+      "data_io": [
+        "GET /api/auth/oauth/start"
+      ],
+      "design_tokens": [
+        "color/google/500",
+        "color/github/500"
+      ],
+      "variants": [
+        "row",
+        "stacked"
+      ],
+      "navigation": [
+        "DASH-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "00000004538453d7",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "designer",
+        "dev",
+        "qa"
+      ],
+      "token_usage": {
+        "input_tokens": 980,
+        "output_tokens": 458
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "AUTH-08",
+      "display_id": "AUTH-08",
+      "title": "2FA OTP 입력",
+      "intent": "사용자가 2단계 인증 코드를 입력한다",
+      "user_value": "계정 탈취 위험을 줄여 보안 신뢰를 확보한다",
+      "success_criteria": "6자리 OTP 검증 통과 시 즉시 로그인 완료",
+      "states": [
+        "default",
+        "validating",
+        "locked"
+      ],
+      "edge_cases": [
+        "코드 만료",
+        "10회 입력 실패"
+      ],
+      "component_refs": [
+        "OTPInput",
+        "ResendCodeButton"
+      ],
+      "data_io": [
+        "POST /api/auth/2fa/verify"
+      ],
+      "design_tokens": [
+        "color/primary/500"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "DASH-01"
+      ],
+      "confidence": 0.62,
+      "intent_mismatch": true,
+      "source_hash": "00000004f1bbcd88",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "designer"
+      ],
+      "token_usage": {
+        "input_tokens": 1010,
+        "output_tokens": 476
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "DASH-01",
+      "display_id": "DASH-01",
+      "title": "메인 대시보드",
+      "intent": "사용자가 핵심 지표를 확인한다",
+      "user_value": "PM이 일일 KPI를 5분 이내에 점검할 수 있도록 한다",
+      "success_criteria": "주요 KPI 카드 4종이 1초 이내 렌더링",
+      "states": [
+        "default",
+        "loading",
+        "empty"
+      ],
+      "edge_cases": [
+        "데이터 미수집 기간",
+        "API 응답 지연"
+      ],
+      "component_refs": [
+        "KPICard",
+        "TrendChart"
+      ],
+      "data_io": [
+        "GET /api/metrics/summary"
+      ],
+      "design_tokens": [
+        "color/bg/canvas",
+        "elevation/1"
+      ],
+      "variants": [
+        "compact",
+        "expanded"
+      ],
+      "navigation": [
+        "DASH-02",
+        "DASH-03"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "000000058ff34739",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "dev"
+      ],
+      "token_usage": {
+        "input_tokens": 1040,
+        "output_tokens": 494
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "DASH-02",
+      "display_id": "DASH-02",
+      "title": "지표 상세",
+      "intent": "사용자가 단일 지표의 시계열을 본다",
+      "user_value": "이상 지표의 원인 분석 진입 시간을 줄인다",
+      "success_criteria": "지표 시계열 30일치를 2초 이내 표시",
+      "states": [
+        "default",
+        "loading"
+      ],
+      "edge_cases": [
+        "기간 선택 오류",
+        "데이터 누락 구간"
+      ],
+      "component_refs": [
+        "LineChart",
+        "DateRangePicker"
+      ],
+      "data_io": [
+        "GET /api/metrics/series"
+      ],
+      "design_tokens": [
+        "color/chart/primary"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "DASH-03"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "000000062e2ac0ea",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "designer",
+        "dev",
+        "qa"
+      ],
+      "token_usage": {
+        "input_tokens": 1070,
+        "output_tokens": 512
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "DASH-03",
+      "display_id": "DASH-03",
+      "title": "필터 패널",
+      "intent": "사용자가 대시보드 필터를 조정한다",
+      "user_value": "PM이 코호트별 지표를 빠르게 비교한다",
+      "success_criteria": "필터 적용 후 0.5초 이내 차트 갱신",
+      "states": [
+        "default",
+        "applying"
+      ],
+      "edge_cases": [
+        "필터 조합 무결과",
+        "필터 충돌"
+      ],
+      "component_refs": [
+        "FilterChip",
+        "MultiSelect"
+      ],
+      "data_io": [
+        "GET /api/metrics/filters"
+      ],
+      "design_tokens": [
+        "color/neutral/300"
+      ],
+      "variants": [
+        "sidebar",
+        "modal"
+      ],
+      "navigation": [
+        "DASH-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "00000006cc623a9b",
+      "write_target": "descriptions_page",
+      "persona_tags": [
+        "pm",
+        "designer"
+      ],
+      "token_usage": {
+        "input_tokens": 1100,
+        "output_tokens": 530
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "DASH-04",
+      "display_id": "DASH-04",
+      "title": "알림 센터",
+      "intent": "사용자가 시스템 알림을 확인한다",
+      "user_value": "중요 이벤트 인지 시간을 단축한다",
+      "success_criteria": "미확인 알림 카운트가 헤더에 1초 이내 노출",
+      "states": [
+        "default",
+        "empty"
+      ],
+      "edge_cases": [
+        "알림 다중 폭주",
+        "권한 변경"
+      ],
+      "component_refs": [
+        "NotificationItem",
+        "MarkReadButton"
+      ],
+      "data_io": [
+        "GET /api/notifications"
+      ],
+      "design_tokens": [
+        "color/error/500"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "DASH-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "000000076a99b44c",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "dev"
+      ],
+      "token_usage": {
+        "input_tokens": 1130,
+        "output_tokens": 548
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "DASH-05",
+      "display_id": "DASH-05",
+      "title": "히트맵 뷰",
+      "intent": "사용자가 지표 히트맵을 본다",
+      "user_value": "활동 패턴의 직관적 파악을 돕는다",
+      "success_criteria": "주간 히트맵이 3초 이내 그려진다",
+      "states": [
+        "default",
+        "loading"
+      ],
+      "edge_cases": [
+        "저밀도 데이터",
+        "타임존 변환"
+      ],
+      "component_refs": [
+        "Heatmap"
+      ],
+      "data_io": [
+        "GET /api/metrics/heatmap"
+      ],
+      "design_tokens": [
+        "color/chart/heat"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "DASH-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "0000000808d12dfd",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "designer",
+        "dev",
+        "qa"
+      ],
+      "token_usage": {
+        "input_tokens": 1160,
+        "output_tokens": 566
+      },
+      "stale": true
+    },
+    {
+      "screen_id": "DASH-06",
+      "display_id": "DASH-06",
+      "title": "비교 뷰",
+      "intent": "사용자가 두 기간 지표를 비교한다",
+      "user_value": "리텐션·전환 변화 진단을 가속한다",
+      "success_criteria": "비교 기준 변경 시 차트 1.5초 이내 갱신",
+      "states": [
+        "default",
+        "loading"
+      ],
+      "edge_cases": [
+        "기간 길이 불일치",
+        "기준값 0"
+      ],
+      "component_refs": [
+        "ComparisonChart"
+      ],
+      "data_io": [
+        "GET /api/metrics/compare"
+      ],
+      "design_tokens": [
+        "color/chart/secondary"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "DASH-02"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "00000008a708a7ae",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "designer"
+      ],
+      "token_usage": {
+        "input_tokens": 1190,
+        "output_tokens": 584
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "DASH-07",
+      "display_id": "DASH-07",
+      "title": "내보내기",
+      "intent": "사용자가 지표를 CSV로 내보낸다",
+      "user_value": "외부 보고서 작성 시간을 단축한다",
+      "success_criteria": "내보내기 트리거 후 10초 이내 다운로드",
+      "states": [
+        "default",
+        "exporting",
+        "ready"
+      ],
+      "edge_cases": [
+        "대용량 타임아웃",
+        "권한 부족"
+      ],
+      "component_refs": [
+        "ExportButton",
+        "FormatPicker"
+      ],
+      "data_io": [
+        "POST /api/metrics/export"
+      ],
+      "design_tokens": [
+        "color/primary/500"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "DASH-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "000000094540215f",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "dev"
+      ],
+      "token_usage": {
+        "input_tokens": 1220,
+        "output_tokens": 602
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "DASH-08",
+      "display_id": "DASH-08",
+      "title": "코호트 빌더",
+      "intent": "사용자가 사용자 코호트를 정의한다",
+      "user_value": "타겟 분석을 셀프서비스로 가능하게 한다",
+      "success_criteria": "정의된 코호트 사이즈가 2초 이내 추정",
+      "states": [
+        "default",
+        "validating"
+      ],
+      "edge_cases": [
+        "조건 충돌",
+        "사이즈 0"
+      ],
+      "component_refs": [
+        "RuleBuilder",
+        "PreviewPanel"
+      ],
+      "data_io": [
+        "POST /api/cohorts/preview"
+      ],
+      "design_tokens": [
+        "color/neutral/100"
+      ],
+      "variants": [
+        "wide",
+        "compact"
+      ],
+      "navigation": [
+        "DASH-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "00000009e3779b10",
+      "write_target": "descriptions_page",
+      "persona_tags": [
+        "pm",
+        "designer",
+        "dev",
+        "qa"
+      ],
+      "token_usage": {
+        "input_tokens": 1250,
+        "output_tokens": 620
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "PROF-01",
+      "display_id": "PROF-01",
+      "title": "내 프로필",
+      "intent": "사용자가 프로필 정보를 조회한다",
+      "user_value": "PM이 본인 정보 정확성을 빠르게 확인한다",
+      "success_criteria": "프로필 페이지 로딩이 1초 이내 완료",
+      "states": [
+        "default",
+        "loading"
+      ],
+      "edge_cases": [
+        "네트워크 실패"
+      ],
+      "component_refs": [
+        "ProfileCard",
+        "AvatarUpload"
+      ],
+      "data_io": [
+        "GET /api/me"
+      ],
+      "design_tokens": [
+        "color/bg/elevated"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "PROF-02"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "0000000a81af14c1",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "designer"
+      ],
+      "token_usage": {
+        "input_tokens": 1280,
+        "output_tokens": 638
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "PROF-02",
+      "display_id": "PROF-02",
+      "title": "프로필 편집",
+      "intent": "사용자가 프로필 정보를 수정한다",
+      "user_value": "정보 최신화 작업을 마찰 없이 진행한다",
+      "success_criteria": "저장 버튼 클릭 후 1.5초 이내 성공 토스트",
+      "states": [
+        "default",
+        "submitting",
+        "error"
+      ],
+      "edge_cases": [
+        "중복 닉네임",
+        "이미지 용량 초과"
+      ],
+      "component_refs": [
+        "TextInput",
+        "AvatarPicker"
+      ],
+      "data_io": [
+        "PATCH /api/me"
+      ],
+      "design_tokens": [
+        "color/primary/500"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "PROF-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "0000000b1fe68e72",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "dev"
+      ],
+      "token_usage": {
+        "input_tokens": 1310,
+        "output_tokens": 656
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "PROF-03",
+      "display_id": "PROF-03",
+      "title": "비밀번호 변경",
+      "intent": "사용자가 비밀번호를 변경한다",
+      "user_value": "보안 위생을 자가 관리하도록 돕는다",
+      "success_criteria": "변경 완료 시 자동 로그아웃 및 재로그인 안내",
+      "states": [
+        "default",
+        "submitting"
+      ],
+      "edge_cases": [
+        "기존 비밀번호 오류",
+        "동일 비밀번호 재사용"
+      ],
+      "component_refs": [
+        "PasswordInput",
+        "ConfirmInput"
+      ],
+      "data_io": [
+        "POST /api/me/password"
+      ],
+      "design_tokens": [
+        "color/warn/500"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "AUTH-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "0000000bbe1e0823",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "designer",
+        "dev",
+        "qa"
+      ],
+      "token_usage": {
+        "input_tokens": 1340,
+        "output_tokens": 674
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "PROF-04",
+      "display_id": "PROF-04",
+      "title": "연동 계정",
+      "intent": "사용자가 OAuth 연동을 관리한다",
+      "user_value": "다계정 통합 관리로 운영 부담을 줄인다",
+      "success_criteria": "연동 토글 변경 시 1초 이내 상태 반영",
+      "states": [
+        "default",
+        "linking",
+        "linked"
+      ],
+      "edge_cases": [
+        "공급자 응답 지연",
+        "이미 연동된 계정"
+      ],
+      "component_refs": [
+        "LinkedAccountRow",
+        "ToggleSwitch"
+      ],
+      "data_io": [
+        "GET /api/me/linked",
+        "POST /api/me/link"
+      ],
+      "design_tokens": [
+        "color/google/500",
+        "color/github/500"
+      ],
+      "variants": [
+        "row"
+      ],
+      "navigation": [
+        "PROF-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "0000000c5c5581d4",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "designer"
+      ],
+      "token_usage": {
+        "input_tokens": 1370,
+        "output_tokens": 692
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "PROF-05",
+      "display_id": "PROF-05",
+      "title": "활동 로그",
+      "intent": "사용자가 본인 활동 이력을 본다",
+      "user_value": "보안 사고 자가 점검을 가능하게 한다",
+      "success_criteria": "최근 30건 활동이 2초 이내 표시",
+      "states": [
+        "default",
+        "loading",
+        "empty"
+      ],
+      "edge_cases": [
+        "로그 보존 기간 초과"
+      ],
+      "component_refs": [
+        "ActivityRow",
+        "Timeline"
+      ],
+      "data_io": [
+        "GET /api/me/activity"
+      ],
+      "design_tokens": [
+        "color/neutral/200"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "PROF-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "0000000cfa8cfb85",
+      "write_target": "descriptions_page",
+      "persona_tags": [
+        "pm",
+        "dev"
+      ],
+      "token_usage": {
+        "input_tokens": 1400,
+        "output_tokens": 710
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "PROF-06",
+      "display_id": "PROF-06",
+      "title": "탈퇴",
+      "intent": "사용자가 계정 탈퇴를 신청한다",
+      "user_value": "탈퇴 의사를 명확히 확인하여 오작동을 방지한다",
+      "success_criteria": "재확인 모달 통과 후 로그아웃 및 안내",
+      "states": [
+        "default",
+        "confirming"
+      ],
+      "edge_cases": [
+        "미해결 결제",
+        "팀 소유권 이양 미완"
+      ],
+      "component_refs": [
+        "DangerButton",
+        "ConfirmModal"
+      ],
+      "data_io": [
+        "DELETE /api/me"
+      ],
+      "design_tokens": [
+        "color/error/500"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "AUTH-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "0000000d98c47536",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "designer",
+        "dev",
+        "qa"
+      ],
+      "token_usage": {
+        "input_tokens": 1430,
+        "output_tokens": 728
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "SETTINGS-01",
+      "display_id": "SETTINGS-01",
+      "title": "일반 설정",
+      "intent": "사용자가 일반 환경설정을 본다",
+      "user_value": "PM 운영 환경 일관성을 보장한다",
+      "success_criteria": "설정 진입 후 1초 이내 렌더링",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "권한 부족"
+      ],
+      "component_refs": [
+        "SettingSection"
+      ],
+      "data_io": [
+        "GET /api/settings/general"
+      ],
+      "design_tokens": [
+        "color/bg/canvas"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "SETTINGS-02"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "0000000e36fbeee7",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "designer"
+      ],
+      "token_usage": {
+        "input_tokens": 1460,
+        "output_tokens": 746
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "SETTINGS-02",
+      "display_id": "SETTINGS-02",
+      "title": "알림 설정",
+      "intent": "사용자가 알림 채널을 설정한다",
+      "user_value": "필요한 정보만 받도록 노이즈를 줄인다",
+      "success_criteria": "토글 변경 시 1초 이내 반영",
+      "states": [
+        "default",
+        "saving"
+      ],
+      "edge_cases": [
+        "채널 인증 실패"
+      ],
+      "component_refs": [
+        "ToggleSwitch",
+        "ChannelPicker"
+      ],
+      "data_io": [
+        "GET /api/settings/notifications",
+        "PATCH /api/settings/notifications"
+      ],
+      "design_tokens": [
+        "color/primary/500"
+      ],
+      "variants": [
+        "row"
+      ],
+      "navigation": [
+        "SETTINGS-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "0000000ed5336898",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "dev"
+      ],
+      "token_usage": {
+        "input_tokens": 1490,
+        "output_tokens": 764
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "SETTINGS-03",
+      "display_id": "SETTINGS-03",
+      "title": "테마",
+      "intent": "사용자가 라이트·다크 테마를 선택한다",
+      "user_value": "장시간 작업 피로를 줄인다",
+      "success_criteria": "테마 변경 즉시 전체 UI에 반영",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "시스템 자동 모드 충돌"
+      ],
+      "component_refs": [
+        "ThemeToggle"
+      ],
+      "data_io": [
+        "PATCH /api/settings/theme"
+      ],
+      "design_tokens": [
+        "color/bg/canvas",
+        "color/bg/canvas-dark"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "SETTINGS-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "0000000f736ae249",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "designer",
+        "dev",
+        "qa"
+      ],
+      "token_usage": {
+        "input_tokens": 1520,
+        "output_tokens": 782
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "SETTINGS-04",
+      "display_id": "SETTINGS-04",
+      "title": "언어",
+      "intent": "사용자가 인터페이스 언어를 변경한다",
+      "user_value": "글로벌 사용자 접근성을 확보한다",
+      "success_criteria": "언어 변경 즉시 라우트 리렌더",
+      "states": [
+        "default",
+        "loading-locale"
+      ],
+      "edge_cases": [
+        "미지원 언어 선택"
+      ],
+      "component_refs": [
+        "LanguageSelect"
+      ],
+      "data_io": [
+        "PATCH /api/settings/locale"
+      ],
+      "design_tokens": [
+        "typography/i18n"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "SETTINGS-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "0000001011a25bfa",
+      "write_target": "descriptions_page",
+      "persona_tags": [
+        "pm",
+        "designer"
+      ],
+      "token_usage": {
+        "input_tokens": 1550,
+        "output_tokens": 800
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "SETTINGS-05",
+      "display_id": "SETTINGS-05",
+      "title": "조직 멤버",
+      "intent": "관리자가 조직 멤버를 관리한다",
+      "user_value": "팀 조직 변경을 셀프서비스로 처리한다",
+      "success_criteria": "초대 발송 후 5초 이내 멤버 목록 갱신",
+      "states": [
+        "default",
+        "inviting",
+        "error"
+      ],
+      "edge_cases": [
+        "좌석 한도 초과",
+        "이미 멤버"
+      ],
+      "component_refs": [
+        "MemberRow",
+        "InviteForm"
+      ],
+      "data_io": [
+        "GET /api/org/members",
+        "POST /api/org/invite"
+      ],
+      "design_tokens": [
+        "color/neutral/300"
+      ],
+      "variants": [
+        "wide"
+      ],
+      "navigation": [
+        "SETTINGS-06"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "00000010afd9d5ab",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "dev"
+      ],
+      "token_usage": {
+        "input_tokens": 1580,
+        "output_tokens": 818
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "SETTINGS-06",
+      "display_id": "SETTINGS-06",
+      "title": "역할·권한",
+      "intent": "관리자가 역할별 권한을 본다",
+      "user_value": "권한 정책 점검 시간을 줄인다",
+      "success_criteria": "권한 매트릭스가 2초 이내 표시",
+      "states": [
+        "default",
+        "loading"
+      ],
+      "edge_cases": [
+        "권한 정책 충돌"
+      ],
+      "component_refs": [
+        "RoleMatrix"
+      ],
+      "data_io": [
+        "GET /api/org/roles"
+      ],
+      "design_tokens": [
+        "color/neutral/100"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "SETTINGS-05"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "000000114e114f5c",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "designer",
+        "dev",
+        "qa"
+      ],
+      "token_usage": {
+        "input_tokens": 1610,
+        "output_tokens": 836
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "SETTINGS-07",
+      "display_id": "SETTINGS-07",
+      "title": "API 키",
+      "intent": "관리자가 API 키를 관리한다",
+      "user_value": "외부 통합 운영의 보안 위생을 유지한다",
+      "success_criteria": "키 생성 시 1회 노출 후 마스킹",
+      "states": [
+        "default",
+        "creating",
+        "revoked"
+      ],
+      "edge_cases": [
+        "키 이름 중복",
+        "회수 후 사용 시도"
+      ],
+      "component_refs": [
+        "TokenRow",
+        "RevokeButton"
+      ],
+      "data_io": [
+        "GET /api/keys",
+        "POST /api/keys",
+        "DELETE /api/keys"
+      ],
+      "design_tokens": [
+        "color/warn/500"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "SETTINGS-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "00000011ec48c90d",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "designer"
+      ],
+      "token_usage": {
+        "input_tokens": 1640,
+        "output_tokens": 854
+      },
+      "stale": false
+    },
+    {
+      "screen_id": "SETTINGS-08",
+      "display_id": "SETTINGS-08",
+      "title": "결제",
+      "intent": "관리자가 구독·결제를 관리한다",
+      "user_value": "조직 비용 가시성과 자가 관리를 제공한다",
+      "success_criteria": "결제 수단 변경이 3초 이내 반영",
+      "states": [
+        "default",
+        "processing",
+        "error"
+      ],
+      "edge_cases": [
+        "카드 검증 실패",
+        "환불 진행 중"
+      ],
+      "component_refs": [
+        "BillingCard",
+        "PlanSelect"
+      ],
+      "data_io": [
+        "GET /api/billing",
+        "POST /api/billing/payment"
+      ],
+      "design_tokens": [
+        "color/primary/500"
+      ],
+      "variants": [
+        "default"
+      ],
+      "navigation": [
+        "SETTINGS-01"
+      ],
+      "confidence": 0.85,
+      "intent_mismatch": false,
+      "source_hash": "000000128a8042be",
+      "write_target": "annotation_card",
+      "persona_tags": [
+        "pm",
+        "dev"
+      ],
+      "token_usage": {
+        "input_tokens": 1670,
+        "output_tokens": 872
+      },
+      "stale": false
+    }
+  ]
+}

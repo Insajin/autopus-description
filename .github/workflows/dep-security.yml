@@ -1,0 +1,23 @@
+name: dep-security
+
+on:
+  pull_request:
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/check-dep-security.sh"
+  push:
+    branches: [main]
+
+jobs:
+  dep-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run dependency security gate (REQ-08)
+        run: bash scripts/check-dep-security.sh package.json

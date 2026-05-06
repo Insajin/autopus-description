@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autopus.co/schema/figma/description-manifest.schema.json",
+  "title": "Frame Description Manifest",
+  "description": "Container for a set of frame description entries produced for a Figma file pilot. SPEC-FIGMA-001 v0.2.0 (additive minor over v0.1.0; new optional pilot_metadata fields for SPEC-FIGMA-003 telemetry per REQ-NFR-02).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "pilot_metadata", "frames"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+      "description": "Semver string for the schema this manifest was produced against. Minor bumps SHALL be additive only per REQ-NFR-02."
+    },
+    "pilot_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pm_reviewer_id", "pilot_date", "figma_file_ids", "total_token_cost"],
+      "properties": {
+        "pm_reviewer_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier of the PM reviewer responsible for this pilot run."
+        },
+        "pilot_date": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "ISO-8601 calendar date (YYYY-MM-DD) of the pilot session."
+        },
+        "figma_file_ids": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "description": "Figma file identifiers covered by this manifest."
+        },
+        "total_token_cost": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Aggregate generator token cost across all frames. Telemetry slot, no cost enforcement at schema level."
+        },
+        "vision_call_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Telemetry: number of Vision-augmented calls made (REQ-21, SPEC-FIGMA-003 AC-S4). Optional, additive in v0.2.0."
+        },
+        "run_timestamp": {
+          "type": "string",
+          "description": "ISO-8601 datetime of generation run; volatile field, normalized in determinism tests (AC-S12). Optional, additive in v0.2.0."
+        },
+        "model_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Pinned LLM model identifier per SPEC-FIGMA-003 REQ-NFR-05. Optional, additive in v0.2.0."
+        },
+        "per_mode_breakdown": {
+          "type": "object",
+          "description": "Telemetry breakdown by mode (node-only vs vision). Optional, additive in v0.2.0."
+        },
+        "prompt_version": {
+          "type": "string",
+          "description": "Prompt template version label per REQ-30. Optional, additive in v0.2.0."
+        },
+        "prompt_git_sha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$",
+          "description": "Active prompt template git SHA per REQ-30. Optional, additive in v0.2.0."
+        }
+      },
+      "description": "Pilot run metadata header (REQ-21)."
+    },
+    "frames": {
+      "type": "array",
+      "items": { "$ref": "frame-description.schema.json" },
+      "minItems": 0,
+      "description": "Frame description entries. Producer contract requires sort by screen_id ascending under JSON-text byte comparison (REQ-03). screen_id uniqueness within this array is enforced by the validator post-pass (REQ-10)."
+    }
+  }
+}

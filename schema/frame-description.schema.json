@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autopus.co/schema/figma/frame-description.schema.json",
+  "title": "Frame Description Entry",
+  "description": "Single Figma frame description entry. SPEC-FIGMA-001 v0.1.0. Persona tag membership for each field is encoded inline within its description using the canonical marker [persona_tags: <comma-list>] per spec.md section 4.1.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "screen_id",
+    "display_id",
+    "title",
+    "intent",
+    "user_value",
+    "success_criteria",
+    "states",
+    "edge_cases",
+    "component_refs",
+    "data_io",
+    "design_tokens",
+    "variants",
+    "navigation",
+    "confidence",
+    "intent_mismatch",
+    "source_hash",
+    "write_target",
+    "persona_tags",
+    "token_usage"
+  ],
+  "properties": {
+    "screen_id": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_-]{1,63}$",
+      "description": "Unique screen identifier within a manifest. ASCII upper-case identifier, 2 to 64 chars total. [persona_tags: pm, designer, dev, qa]"
+    },
+    "display_id": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_-]{1,63}$",
+      "description": "Display surface identifier, may equal screen_id when there is a single display. [persona_tags: pm, designer, dev, qa]"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable frame title. UTF-8, no language enforcement at schema level. [persona_tags: pm, designer, dev, qa]"
+    },
+    "intent": {
+      "type": "string",
+      "minLength": 0,
+      "description": "One-line summary of the frame's intent. PM-facing free text in project language. Empty string allowed when SPEC-FIGMA-003 anti-hallucination (REQ-09) blanks the field. [persona_tags: pm, designer, dev, qa]"
+    },
+    "user_value": {
+      "type": "string",
+      "minLength": 0,
+      "description": "User value statement: what the user gains from this screen. Empty string allowed when SPEC-FIGMA-003 anti-hallucination (REQ-09) blanks the field. PM review and retrospective surface. [persona_tags: pm]"
+    },
+    "success_criteria": {
+      "type": "string",
+      "minLength": 0,
+      "description": "Acceptance criterion observable by PM. Empty string allowed when SPEC-FIGMA-003 anti-hallucination (REQ-09) blanks the field. PM review and retrospective surface. [persona_tags: pm]"
+    },
+    "states": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Enumerated visual or behavioral states (loading, empty, error, populated, etc.). [persona_tags: qa, dev]"
+    },
+    "edge_cases": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Edge cases and exceptional flows for QA scenario authoring and Dev branch coverage. [persona_tags: qa, dev]"
+    },
+    "component_refs": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "References to design system components or code components used by the frame. Implementation entry point. [persona_tags: dev]"
+    },
+    "data_io": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Data inputs and outputs (API calls, props, events). Implementation entry point. [persona_tags: dev]"
+    },
+    "design_tokens": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Design tokens applied (color, spacing, typography). Design system change-detection surface. [persona_tags: designer]"
+    },
+    "variants": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Component or layout variants in use. Design system change-detection surface. [persona_tags: designer]"
+    },
+    "navigation": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Navigation targets and entry transitions for this frame. [persona_tags: pm, designer, dev, qa]"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Generator confidence score in the closed interval [0.0, 1.0]. Review-routing signal. [persona_tags: pm, designer]"
+    },
+    "intent_mismatch": {
+      "type": "boolean",
+      "description": "True when generator detected a likely intent mismatch (designer escalation flag). Review-routing signal. [persona_tags: pm, designer]"
+    },
+    "source_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{8,128}$",
+      "description": "Lower-case hex digest of the source frame inputs. Algorithm is defined by SPEC-FIGMA-002. Operator metadata for staleness detection. [persona_tags: pm]"
+    },
+    "write_target": {
+      "type": "string",
+      "enum": ["annotation_card", "descriptions_page", "frame_name", "plugin_data", "none"],
+      "description": "Surface the description should be written back to. Operator metadata. [persona_tags: pm]"
+    },
+    "persona_tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["pm", "designer", "dev", "qa"]
+      },
+      "uniqueItems": true,
+      "minItems": 1,
+      "description": "Per-frame audience tags asserted by the producer. Schema-level persona membership for each field is encoded inline in field descriptions per spec.md section 4.1. Operator metadata. [persona_tags: pm]"
+    },
+    "token_usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input_tokens", "output_tokens"],
+      "properties": {
+        "input_tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Input tokens consumed by the generator for this frame. Telemetry slot; budget enforcement is SPEC-FIGMA-003."
+        },
+        "output_tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Output tokens produced by the generator for this frame. Telemetry slot; budget enforcement is SPEC-FIGMA-003."
+        }
+      },
+      "description": "Generator token telemetry. Operator metadata. [persona_tags: pm]"
+    },
+    "stale": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when source_hash differs from the baseline manifest entry for the same screen_id (REQ-05). Operator metadata. [persona_tags: pm]",
+      "$comment": "stale derivation field per REQ-05; persona group: operator metadata (extension of spec.md § 4)"
+    },
+    "review_status": {
+      "type": "string",
+      "enum": ["approved", "pending_review"],
+      "description": "Post-hoc review state set by SPEC-FIGMA-003 prompt-injection detector. 'pending_review' marks an entry the detector flagged as suspect; the entry is retained for PM audit rather than dropped. Optional, additive in v0.2.0. [persona_tags: pm]"
+    }
+  }
+}

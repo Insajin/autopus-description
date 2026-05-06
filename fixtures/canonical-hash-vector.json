@@ -1,0 +1,20 @@
+{
+  "_comment": "SPEC-FIGMA-002 AC-S1 / AC-S2 oracle vectors. computeSourceHash MUST byte-equal expected_source_hash.",
+  "vectors": [
+    {
+      "id": "AC-S1",
+      "node_tree_summary": { "a": 1, "b": 2 },
+      "image_bytes_ascii": "abc",
+      "expected_image_bytes_sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+      "expected_canonical_json": "{\"image_bytes_sha256\":\"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\",\"node_tree_summary\":{\"a\":1,\"b\":2}}",
+      "expected_source_hash": "014ed33c550bcd29e8f89dda0c140a9bd46643cdc78bd422b9fb532af338b420"
+    },
+    {
+      "id": "AC-S2",
+      "node_tree_summary": { "a": 1, "b": 2 },
+      "image_bytes_ascii": "abd",
+      "expected_image_bytes_sha256": "a52d159f262b2c6ddb724a61840befc36eb30c88877a4030b65cbe86298449c9",
+      "expected_source_hash": "4d37393bcfd9719d10c9fd512971443cb20f6eb74123ffa60b546b86758a7b11"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@autopus/validate-manifest",
+  "version": "0.1.0",
+  "description": "SPEC-FIGMA-001 description-manifest.json validator (AJV + JSON Schema Draft 2020-12).",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "validate-manifest": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node --experimental-strip-types src/index.ts",
+    "test": "node --test --experimental-strip-types test/golden.test.ts",
+    "validate": "node --experimental-strip-types src/index.ts"
+  },
+  "engines": {
+    "node": ">=20.6.0"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.11.0"
+  }
+}

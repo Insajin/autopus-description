@@ -1,0 +1,30 @@
+{
+  "name": "@autopus/figma-read",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SPEC-FIGMA-002 Figma MCP read-only adapter pipeline + SPEC-FIGMA-003 description generation loop.",
+  "type": "module",
+  "bin": {
+    "figma-read": "./dist/src/cli.js",
+    "generate-descriptions": "./dist/src/cli/generate-descriptions.js"
+  },
+  "main": "./dist/src/cli.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run --reporter=default",
+    "test:watch": "vitest",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=20.6.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@vitest/coverage-v8": "^1.6.1",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}
