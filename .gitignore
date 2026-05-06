@@ -3,6 +3,8 @@
 dist/
 .audit/
 coverage/
+**/tsconfig.tsbuildinfo
+**/.next/
 
 # Autopus-ADK generated files
 .claude/rules/autopus/
