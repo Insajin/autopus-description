@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autopus.co/schema/figma/manifest.schema.json",
+  "title": "Figma Description Manifest (SPEC-FIGMA-001 declared schema_version)",
+  "description": "Companion file declaring the schema_version constant referenced by SPEC-FIGMA-002 AC-S7. The authoritative validator schemas remain description-manifest.schema.json + frame-description.schema.json.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.1.0"
+    }
+  },
+  "required": ["schema_version"]
+}

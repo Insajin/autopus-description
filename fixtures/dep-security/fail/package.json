@@ -1,0 +1,8 @@
+{
+  "name": "fixture-fail",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "figma-developer-mcp": "0.6.0"
+  }
+}

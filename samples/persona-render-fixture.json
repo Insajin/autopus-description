@@ -1,0 +1,36 @@
+{
+  "schema_version": "0.1.0",
+  "pilot_metadata": {
+    "pm_reviewer_id": "pm-fixture",
+    "pilot_date": "2026-05-10",
+    "figma_file_ids": ["fixture-001"],
+    "total_token_cost": 0
+  },
+  "frames": [
+    {
+      "screen_id": "FIX-01",
+      "display_id": "FIX-01",
+      "title": "로그인 진입",
+      "intent": "사용자가 이메일과 비밀번호로 로그인한다",
+      "user_value": "PM이 로그인 후 즉시 대시보드에 도달함을 보장한다",
+      "success_criteria": "정상 사용자는 5초 이내 대시보드 진입",
+      "states": ["default", "validating", "error"],
+      "edge_cases": ["네트워크 끊김", "5회 비밀번호 오류"],
+      "component_refs": ["LoginForm", "PrimaryButton"],
+      "data_io": ["POST /api/auth/login"],
+      "design_tokens": ["color/primary/500", "spacing/md"],
+      "variants": ["compact"],
+      "navigation": ["DASH-01"],
+      "confidence": 0.88,
+      "intent_mismatch": false,
+      "source_hash": "f1e2d3c4b5a69788",
+      "write_target": "annotation_card",
+      "persona_tags": ["pm", "designer", "dev", "qa"],
+      "token_usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "stale": false
+    }
+  ]
+}

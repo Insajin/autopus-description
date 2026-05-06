@@ -1,0 +1,765 @@
+{
+  "file_id": "MOCK-DOGFOOD-001",
+  "prototype": {
+    "entry": "1:101",
+    "transitions": [
+      {
+        "from": "1:101",
+        "to": "1:102",
+        "trigger": "ON_CLICK"
+      },
+      {
+        "from": "1:102",
+        "to": "1:103",
+        "trigger": "ON_CLICK"
+      }
+    ]
+  },
+  "frames": [
+    {
+      "figma_node_id": "1:101",
+      "screen_id": "AUTH-LOGIN",
+      "title": "AUTH login",
+      "page_name": "AUTH",
+      "parent_section_name": "AUTH",
+      "image_path": "images/screen-001.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:101",
+        "type": "FRAME",
+        "name": "AUTH-LOGIN"
+      }
+    },
+    {
+      "figma_node_id": "1:102",
+      "screen_id": "AUTH-SIGNUP",
+      "title": "AUTH signup",
+      "page_name": "AUTH",
+      "parent_section_name": "AUTH",
+      "image_path": "images/screen-002.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:102",
+        "type": "FRAME",
+        "name": "AUTH-SIGNUP"
+      }
+    },
+    {
+      "figma_node_id": "1:103",
+      "screen_id": "AUTH-RESET-PW",
+      "title": "AUTH reset pw",
+      "page_name": "AUTH",
+      "parent_section_name": "AUTH",
+      "image_path": "images/screen-003.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:103",
+        "type": "FRAME",
+        "name": "AUTH-RESET-PW"
+      }
+    },
+    {
+      "figma_node_id": "1:104",
+      "screen_id": "AUTH-VERIFY-EMAIL",
+      "title": "AUTH verify email",
+      "page_name": "AUTH",
+      "parent_section_name": "AUTH",
+      "image_path": "images/screen-004.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:104",
+        "type": "FRAME",
+        "name": "AUTH-VERIFY-EMAIL"
+      }
+    },
+    {
+      "figma_node_id": "1:105",
+      "screen_id": "AUTH-SSO",
+      "title": "AUTH sso",
+      "page_name": "AUTH",
+      "parent_section_name": "AUTH",
+      "image_path": "images/screen-005.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:105",
+        "type": "FRAME",
+        "name": "AUTH-SSO"
+      }
+    },
+    {
+      "figma_node_id": "1:106",
+      "screen_id": "AUTH-TWO-FA",
+      "title": "AUTH two fa",
+      "page_name": "AUTH",
+      "parent_section_name": "AUTH",
+      "image_path": "images/screen-006.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:106",
+        "type": "FRAME",
+        "name": "AUTH-TWO-FA"
+      }
+    },
+    {
+      "figma_node_id": "1:107",
+      "screen_id": "AUTH-LOCKOUT",
+      "title": "AUTH lockout",
+      "page_name": "AUTH",
+      "parent_section_name": "AUTH",
+      "image_path": "images/screen-007.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:107",
+        "type": "FRAME",
+        "name": "AUTH-LOCKOUT"
+      }
+    },
+    {
+      "figma_node_id": "1:108",
+      "screen_id": "DASH-HOME",
+      "title": "DASH home",
+      "page_name": "DASH",
+      "parent_section_name": "DASH",
+      "image_path": "images/screen-008.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:108",
+        "type": "FRAME",
+        "name": "DASH-HOME"
+      }
+    },
+    {
+      "figma_node_id": "1:109",
+      "screen_id": "DASH-STATS",
+      "title": "DASH stats",
+      "page_name": "DASH",
+      "parent_section_name": "DASH",
+      "image_path": "images/screen-009.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:109",
+        "type": "FRAME",
+        "name": "DASH-STATS"
+      }
+    },
+    {
+      "figma_node_id": "1:110",
+      "screen_id": "DASH-ACTIVITY",
+      "title": "DASH activity",
+      "page_name": "DASH",
+      "parent_section_name": "DASH",
+      "image_path": "images/screen-010.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:110",
+        "type": "FRAME",
+        "name": "DASH-ACTIVITY"
+      }
+    },
+    {
+      "figma_node_id": "1:111",
+      "screen_id": "DASH-WIDGETS",
+      "title": "DASH widgets",
+      "page_name": "DASH",
+      "parent_section_name": "DASH",
+      "image_path": "images/screen-011.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:111",
+        "type": "FRAME",
+        "name": "DASH-WIDGETS"
+      }
+    },
+    {
+      "figma_node_id": "1:112",
+      "screen_id": "SETTINGS-PROFILE",
+      "title": "SETTINGS profile",
+      "page_name": "SETTINGS",
+      "parent_section_name": "SETTINGS",
+      "image_path": "images/screen-012.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:112",
+        "type": "FRAME",
+        "name": "SETTINGS-PROFILE"
+      }
+    },
+    {
+      "figma_node_id": "1:113",
+      "screen_id": "SETTINGS-NOTIFICATIONS",
+      "title": "SETTINGS notifications",
+      "page_name": "SETTINGS",
+      "parent_section_name": "SETTINGS",
+      "image_path": "images/screen-013.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:113",
+        "type": "FRAME",
+        "name": "SETTINGS-NOTIFICATIONS"
+      }
+    },
+    {
+      "figma_node_id": "1:114",
+      "screen_id": "SETTINGS-BILLING",
+      "title": "SETTINGS billing",
+      "page_name": "SETTINGS",
+      "parent_section_name": "SETTINGS",
+      "image_path": "images/screen-014.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:114",
+        "type": "FRAME",
+        "name": "SETTINGS-BILLING"
+      }
+    },
+    {
+      "figma_node_id": "1:115",
+      "screen_id": "SETTINGS-INTEGRATIONS",
+      "title": "SETTINGS integrations",
+      "page_name": "SETTINGS",
+      "parent_section_name": "SETTINGS",
+      "image_path": "images/screen-015.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:115",
+        "type": "FRAME",
+        "name": "SETTINGS-INTEGRATIONS"
+      }
+    },
+    {
+      "figma_node_id": "1:116",
+      "screen_id": "SETTINGS-SECURITY",
+      "title": "SETTINGS security",
+      "page_name": "SETTINGS",
+      "parent_section_name": "SETTINGS",
+      "image_path": "images/screen-016.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:116",
+        "type": "FRAME",
+        "name": "SETTINGS-SECURITY"
+      }
+    },
+    {
+      "figma_node_id": "1:117",
+      "screen_id": "SETTINGS-TEAM",
+      "title": "SETTINGS team",
+      "page_name": "SETTINGS",
+      "parent_section_name": "SETTINGS",
+      "image_path": "images/screen-017.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:117",
+        "type": "FRAME",
+        "name": "SETTINGS-TEAM"
+      }
+    },
+    {
+      "figma_node_id": "1:118",
+      "screen_id": "SETTINGS-AUDIT-LOG",
+      "title": "SETTINGS audit log",
+      "page_name": "SETTINGS",
+      "parent_section_name": "SETTINGS",
+      "image_path": "images/screen-018.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:118",
+        "type": "FRAME",
+        "name": "SETTINGS-AUDIT-LOG"
+      }
+    },
+    {
+      "figma_node_id": "1:119",
+      "screen_id": "SETTINGS-API-KEYS",
+      "title": "SETTINGS api keys",
+      "page_name": "SETTINGS",
+      "parent_section_name": "SETTINGS",
+      "image_path": "images/screen-019.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:119",
+        "type": "FRAME",
+        "name": "SETTINGS-API-KEYS"
+      }
+    },
+    {
+      "figma_node_id": "1:120",
+      "screen_id": "SETTINGS-DELETE-ACCOUNT",
+      "title": "SETTINGS delete account",
+      "page_name": "SETTINGS",
+      "parent_section_name": "SETTINGS",
+      "image_path": "images/screen-020.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:120",
+        "type": "FRAME",
+        "name": "SETTINGS-DELETE-ACCOUNT"
+      }
+    },
+    {
+      "figma_node_id": "1:121",
+      "screen_id": "PROFILE-VIEW",
+      "title": "PROFILE view",
+      "page_name": "PROFILE",
+      "parent_section_name": "PROFILE",
+      "image_path": "images/screen-021.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:121",
+        "type": "FRAME",
+        "name": "PROFILE-VIEW"
+      }
+    },
+    {
+      "figma_node_id": "1:122",
+      "screen_id": "PROFILE-EDIT",
+      "title": "PROFILE edit",
+      "page_name": "PROFILE",
+      "parent_section_name": "PROFILE",
+      "image_path": "images/screen-022.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:122",
+        "type": "FRAME",
+        "name": "PROFILE-EDIT"
+      }
+    },
+    {
+      "figma_node_id": "1:123",
+      "screen_id": "PROFILE-AVATAR",
+      "title": "PROFILE avatar",
+      "page_name": "PROFILE",
+      "parent_section_name": "PROFILE",
+      "image_path": "images/screen-023.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:123",
+        "type": "FRAME",
+        "name": "PROFILE-AVATAR"
+      }
+    },
+    {
+      "figma_node_id": "1:124",
+      "screen_id": "PROFILE-PREFERENCES",
+      "title": "PROFILE preferences",
+      "page_name": "PROFILE",
+      "parent_section_name": "PROFILE",
+      "image_path": "images/screen-024.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:124",
+        "type": "FRAME",
+        "name": "PROFILE-PREFERENCES"
+      }
+    },
+    {
+      "figma_node_id": "1:125",
+      "screen_id": "PROFILE-HISTORY",
+      "title": "PROFILE history",
+      "page_name": "PROFILE",
+      "parent_section_name": "PROFILE",
+      "image_path": "images/screen-025.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:125",
+        "type": "FRAME",
+        "name": "PROFILE-HISTORY"
+      }
+    },
+    {
+      "figma_node_id": "1:126",
+      "screen_id": "PROFILE-CONNECTIONS",
+      "title": "PROFILE connections",
+      "page_name": "PROFILE",
+      "parent_section_name": "PROFILE",
+      "image_path": "images/screen-026.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:126",
+        "type": "FRAME",
+        "name": "PROFILE-CONNECTIONS"
+      }
+    },
+    {
+      "figma_node_id": "1:127",
+      "screen_id": "PROFILE-BADGES",
+      "title": "PROFILE badges",
+      "page_name": "PROFILE",
+      "parent_section_name": "PROFILE",
+      "image_path": "images/screen-027.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:127",
+        "type": "FRAME",
+        "name": "PROFILE-BADGES"
+      }
+    },
+    {
+      "figma_node_id": "1:128",
+      "screen_id": "PROFILE-SHARE",
+      "title": "PROFILE share",
+      "page_name": "PROFILE",
+      "parent_section_name": "PROFILE",
+      "image_path": "images/screen-028.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:128",
+        "type": "FRAME",
+        "name": "PROFILE-SHARE"
+      }
+    },
+    {
+      "figma_node_id": "1:129",
+      "screen_id": "PROFILE-EXPORT",
+      "title": "PROFILE export",
+      "page_name": "PROFILE",
+      "parent_section_name": "PROFILE",
+      "image_path": "images/screen-029.png",
+      "image_scale": 2,
+      "design_tokens": [
+        "color/primary/500",
+        "spacing/md"
+      ],
+      "variants": [
+        "compact"
+      ],
+      "navigation": [],
+      "payload_oversize_2x": true,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 200,
+      "node_tree_summary": {
+        "id": "1:129",
+        "type": "FRAME",
+        "name": "PROFILE-EXPORT"
+      }
+    },
+    {
+      "figma_node_id": "1:130",
+      "screen_id": "PROFILE-CLOSE",
+      "title": "PROFILE close",
+      "page_name": "PROFILE",
+      "parent_section_name": "PROFILE",
+      "image_path": "images/screen-030.png",
+      "image_scale": 2,
+      "design_tokens": null,
+      "variants": null,
+      "navigation": [],
+      "payload_oversize_2x": false,
+      "payload_oversize_1x": false,
+      "design_tokens_status": 403,
+      "node_tree_summary": {
+        "id": "1:130",
+        "type": "FRAME",
+        "name": "PROFILE-CLOSE"
+      }
+    }
+  ]
+}

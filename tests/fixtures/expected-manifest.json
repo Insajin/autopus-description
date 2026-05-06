@@ -1,0 +1,1018 @@
+{
+  "schema_version": "0.2.0",
+  "pilot_metadata": {
+    "pm_reviewer_id": "ci-mock",
+    "pilot_date": "1970-01-01",
+    "figma_file_ids": [
+      "mock-figma-file"
+    ],
+    "total_token_cost": 57000,
+    "vision_call_count": 9,
+    "run_timestamp": "2026-05-06T00:00:00.000Z",
+    "model_id": "claude-opus-4-7-20260115",
+    "per_mode_breakdown": {
+      "node-only": {
+        "calls": 30,
+        "input_tokens": 45000,
+        "output_tokens": 12000
+      },
+      "vision": {
+        "calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0
+      }
+    }
+  },
+  "frames": [
+    {
+      "screen_id": "F00",
+      "display_id": "F00",
+      "title": "F00",
+      "intent": "프레임 AUTH-01 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F01",
+      "display_id": "F01",
+      "title": "F01",
+      "intent": "프레임 AUTH-02 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F02",
+      "display_id": "F02",
+      "title": "F02",
+      "intent": "프레임 AUTH-03 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F03",
+      "display_id": "F03",
+      "title": "F03",
+      "intent": "프레임 AUTH-04 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F04",
+      "display_id": "F04",
+      "title": "F04",
+      "intent": "프레임 AUTH-05 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F05",
+      "display_id": "F05",
+      "title": "F05",
+      "intent": "프레임 AUTH-06 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F06",
+      "display_id": "F06",
+      "title": "F06",
+      "intent": "프레임 DASH-01 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F07",
+      "display_id": "F07",
+      "title": "F07",
+      "intent": "프레임 DASH-02 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F08",
+      "display_id": "F08",
+      "title": "F08",
+      "intent": "프레임 DASH-03 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F09",
+      "display_id": "F09",
+      "title": "F09",
+      "intent": "프레임 DASH-04 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F10",
+      "display_id": "F10",
+      "title": "F10",
+      "intent": "프레임 DASH-05 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F11",
+      "display_id": "F11",
+      "title": "F11",
+      "intent": "프레임 DASH-06 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F12",
+      "display_id": "F12",
+      "title": "F12",
+      "intent": "프레임 SETTINGS-01 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F13",
+      "display_id": "F13",
+      "title": "F13",
+      "intent": "프레임 SETTINGS-02 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F14",
+      "display_id": "F14",
+      "title": "F14",
+      "intent": "프레임 SETTINGS-03 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F15",
+      "display_id": "F15",
+      "title": "F15",
+      "intent": "프레임 SETTINGS-04 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F16",
+      "display_id": "F16",
+      "title": "F16",
+      "intent": "프레임 SETTINGS-05 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F17",
+      "display_id": "F17",
+      "title": "F17",
+      "intent": "프레임 SETTINGS-06 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F18",
+      "display_id": "F18",
+      "title": "F18",
+      "intent": "프레임 PROFILE-01 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F19",
+      "display_id": "F19",
+      "title": "F19",
+      "intent": "프레임 PROFILE-02 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F20",
+      "display_id": "F20",
+      "title": "F20",
+      "intent": "프레임 PROFILE-03 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.8,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F21",
+      "display_id": "F21",
+      "title": "F21",
+      "intent": "프레임 PROFILE-04 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.5,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F22",
+      "display_id": "F22",
+      "title": "F22",
+      "intent": "프레임 PROFILE-05 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.5,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F23",
+      "display_id": "F23",
+      "title": "F23",
+      "intent": "프레임 PROFILE-06 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.5,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F24",
+      "display_id": "F24",
+      "title": "F24",
+      "intent": "프레임 BILLING-01 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.5,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F25",
+      "display_id": "F25",
+      "title": "F25",
+      "intent": "프레임 BILLING-02 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.5,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F26",
+      "display_id": "F26",
+      "title": "F26",
+      "intent": "프레임 BILLING-03 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.5,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F27",
+      "display_id": "F27",
+      "title": "F27",
+      "intent": "프레임 BILLING-04 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.5,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F28",
+      "display_id": "F28",
+      "title": "F28",
+      "intent": "프레임 BILLING-05 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.5,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    },
+    {
+      "screen_id": "F29",
+      "display_id": "F29",
+      "title": "F29",
+      "intent": "프레임 BILLING-06 의도",
+      "user_value": "사용자가 화면에서 핵심 가치를 얻는다",
+      "success_criteria": "PM 검수 통과",
+      "states": [
+        "default"
+      ],
+      "edge_cases": [
+        "empty data"
+      ],
+      "component_refs": [],
+      "data_io": [
+        "GET /resource"
+      ],
+      "design_tokens": [],
+      "variants": [],
+      "navigation": [],
+      "confidence": 0.5,
+      "intent_mismatch": false,
+      "source_hash": "abc123def456",
+      "write_target": "none",
+      "persona_tags": [
+        "pm"
+      ],
+      "token_usage": {
+        "input_tokens": 1500,
+        "output_tokens": 400
+      },
+      "review_status": "approved"
+    }
+  ]
+}
