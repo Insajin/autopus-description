@@ -3,7 +3,8 @@
     "target": "ES2022",
     "module": "ES2022",
     "moduleResolution": "Bundler",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "preserve",
     "outDir": "dist",
     "rootDir": ".",
     "strict": true,
@@ -21,6 +22,17 @@
       "@autopus/review-ui/*": ["apps/review-ui/src/*"]
     }
   },
-  "include": ["src/**/*.ts", "types/**/*.d.ts", "tests/**/*.ts"],
-  "exclude": ["node_modules", "dist", "tools/**"]
+  "include": [
+    "src/**/*.ts",
+    "types/**/*.d.ts",
+    "tests/**/*.ts",
+    "tests/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tools/**",
+    "apps/**",
+    "packages/**"
+  ]
 }
