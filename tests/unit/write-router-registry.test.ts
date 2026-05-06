@@ -88,13 +88,22 @@ describe("WriteRouter.apply (REQ-03 / REQ-04 / INV-003)", () => {
     );
   });
 
-  it("default stub adapters throw NOT_IMPLEMENTED in W1", async () => {
-    const router = new WriteRouter();
-    for (const t of ALL_TARGETS) {
-      const err = await router.apply(makeEntry(t)).catch((e) => e);
-      expect(err).toBeInstanceOf(WriteRouterError);
-      expect((err as WriteRouterError).code).toBe(ERROR_CODES.NOT_IMPLEMENTED);
-    }
+  it("explicit NotImplemented override propagates the NOT_IMPLEMENTED code", async () => {
+    const stub: Adapter = {
+      async apply() {
+        throw new WriteRouterError(
+          ERROR_CODES.NOT_IMPLEMENTED,
+          "stub for assertion",
+        );
+      },
+      async undo() {
+        throw new WriteRouterError(ERROR_CODES.NOT_IMPLEMENTED, "stub undo");
+      },
+    };
+    const router = new WriteRouter({ adapters: { annotation_card: stub } });
+    const err = await router.apply(makeEntry("annotation_card")).catch((e) => e);
+    expect(err).toBeInstanceOf(WriteRouterError);
+    expect((err as WriteRouterError).code).toBe(ERROR_CODES.NOT_IMPLEMENTED);
   });
 
   it("dispatches to the adapter registered for the entry's write_target", async () => {
