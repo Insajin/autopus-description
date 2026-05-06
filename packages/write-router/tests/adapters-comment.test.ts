@@ -80,13 +80,12 @@ describe("comment adapter (REQ-04(c) / REQ-08 / INV-002 / INV-003)", () => {
     expect(client.commentPost.mock.calls[0][0].fileKey).toBe("OVERRIDE-KEY");
   });
 
-  it("apply throws when fileKey cannot be resolved (no env, no ctx)", async () => {
+  it("apply uses 'default' fileKey when no env / ctx / entry override is provided", async () => {
     delete process.env.FIGMA_FILE_KEY;
     const client = makeMockClient();
-    await expect(applyComment(makeEntry(), { figma: client })).rejects.toThrow(
-      /FIGMA_FILE_KEY/,
-    );
-    expect(client.commentPost).not.toHaveBeenCalled();
+    await applyComment(makeEntry(), { figma: client });
+    expect(client.commentPost).toHaveBeenCalledTimes(1);
+    expect(client.commentPost.mock.calls[0][0].fileKey).toBe("default");
   });
 
   it("apply throws when ctx.figma is null", async () => {
@@ -126,15 +125,17 @@ describe("comment adapter (REQ-04(c) / REQ-08 / INV-002 / INV-003)", () => {
     expect(client.deleteComment).not.toHaveBeenCalled();
   });
 
-  it("undo throws when fileKey is unset", async () => {
+  it("undo uses 'default' fileKey when no override is set", async () => {
     delete process.env.FIGMA_FILE_KEY;
     const client = makeMockClient();
-    await expect(
-      undoComment(
-        { type: "delete-comment", comment_id: "x" },
-        { figma: client },
-      ),
-    ).rejects.toThrow(/FIGMA_FILE_KEY/);
+    await undoComment(
+      { type: "delete-comment", comment_id: "x" },
+      { figma: client },
+    );
+    expect(client.deleteComment).toHaveBeenCalledWith({
+      fileKey: "default",
+      commentId: "x",
+    });
   });
 
   it("commentAdapter exposes both apply and undo bound to the named functions", () => {

@@ -5,6 +5,8 @@ dist/
 coverage/
 **/tsconfig.tsbuildinfo
 **/.next/
+audit.log
+plugin-bridge-inbox.jsonl
 
 # Autopus-ADK generated files
 .claude/rules/autopus/
