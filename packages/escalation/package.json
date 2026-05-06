@@ -1,0 +1,22 @@
+{
+  "name": "@autopus/escalation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "SPEC-FIGMA-004 designer escalation transports (Slack DM, REQ-20).",
+  "main": "./src/slack.ts",
+  "exports": {
+    ".": "./src/slack.ts",
+    "./slack": "./src/slack.ts"
+  },
+  "scripts": {
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=20.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.0"
+  }
+}

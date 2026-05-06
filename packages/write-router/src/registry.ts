@@ -1,11 +1,18 @@
-import type { Adapter, WriteTarget } from "./types.js";
+import type {
+  Adapter,
+  AdapterApplyResult,
+  AdapterContext,
+  ManifestEntry,
+  UndoDescriptor,
+  WriteTarget,
+} from "./types.js";
 import { ERROR_CODES, WriteRouterError } from "./types.js";
-import { annotationCardAdapter } from "./adapters/annotation-card.js";
-import { commentAdapter } from "./adapters/comment.js";
-import { descriptionsPageAdapter } from "./adapters/descriptions-page.js";
-import { pluginDataAdapter } from "./adapters/plugin-data.js";
-import { frameNameAdapter } from "./adapters/frame-name.js";
-import { noneAdapter } from "./adapters/none.js";
+import * as annotationCard from "./adapters/annotation-card.js";
+import * as comment from "./adapters/comment.js";
+import * as descriptionsPage from "./adapters/descriptions-page.js";
+import * as pluginData from "./adapters/plugin-data.js";
+import * as frameName from "./adapters/frame-name.js";
+import * as noneAdapterMod from "./adapters/none.js";
 
 const TARGETS: WriteTarget[] = [
   "annotation_card",
@@ -33,17 +40,59 @@ function notImplementedAdapter(target: WriteTarget): Adapter {
   };
 }
 
-// W2 default registrations: all six write_target enum values now resolve to
-// concrete adapter implementations. Register-time overrides via the
-// AdapterRegistry constructor's `initial` argument still take precedence so
+// Dynamic-dispatch adapter wrappers: each wrapper looks up the named export on
+// the adapter module at call time so that vi.spyOn(adaptersModule, "applyXxx")
+// installed in tests is observed by the router. Plain object adapters that
+// snapshot the function reference at module load do not honor spies.
+type ApplyFn = (entry: ManifestEntry, ctx: AdapterContext) => Promise<AdapterApplyResult>;
+type UndoFn = (descriptor: UndoDescriptor, ctx: AdapterContext) => Promise<void>;
+
+function dynamicAdapter(
+  ns: { [k: string]: unknown },
+  applyKey: string,
+  undoKey: string,
+): Adapter {
+  return {
+    apply: (entry, ctx) => (ns[applyKey] as ApplyFn)(entry, ctx),
+    undo: (descriptor, ctx) => (ns[undoKey] as UndoFn)(descriptor, ctx),
+  };
+}
+
+// W2 default registrations: all six write_target enum values resolve to
+// concrete adapter implementations via module-namespace dynamic dispatch.
+// Constructor-supplied `initial` overrides still take precedence so
 // integration tests can swap any adapter for a spy.
 const defaultAdapters: Partial<Record<WriteTarget, Adapter>> = {
-  annotation_card: annotationCardAdapter,
-  comment: commentAdapter,
-  descriptions_page: descriptionsPageAdapter,
-  plugin_data: pluginDataAdapter,
-  frame_name: frameNameAdapter,
-  none: noneAdapter,
+  annotation_card: dynamicAdapter(
+    annotationCard as { [k: string]: unknown },
+    "applyAnnotationCard",
+    "undoAnnotationCard",
+  ),
+  comment: dynamicAdapter(
+    comment as { [k: string]: unknown },
+    "applyComment",
+    "undoComment",
+  ),
+  descriptions_page: dynamicAdapter(
+    descriptionsPage as { [k: string]: unknown },
+    "applyDescriptionsPage",
+    "undoDescriptionsPage",
+  ),
+  plugin_data: dynamicAdapter(
+    pluginData as { [k: string]: unknown },
+    "applyPluginData",
+    "undoPluginData",
+  ),
+  frame_name: dynamicAdapter(
+    frameName as { [k: string]: unknown },
+    "applyFrameName",
+    "undoFrameName",
+  ),
+  none: dynamicAdapter(
+    noneAdapterMod as { [k: string]: unknown },
+    "applyNone",
+    "undoNone",
+  ),
 };
 
 export class AdapterRegistry {
