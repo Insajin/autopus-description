@@ -13,7 +13,13 @@
     "declaration": true,
     "resolveJsonModule": true,
     "allowImportingTsExtensions": false,
-    "noEmitOnError": true
+    "noEmitOnError": true,
+    "baseUrl": ".",
+    "paths": {
+      "@autopus/write-router": ["packages/write-router/src/index.ts"],
+      "@autopus/write-router/*": ["packages/write-router/src/*"],
+      "@autopus/review-ui/*": ["apps/review-ui/src/*"]
+    }
   },
   "include": ["src/**/*.ts", "types/**/*.d.ts", "tests/**/*.ts"],
   "exclude": ["node_modules", "dist", "tools/**"]
