@@ -24,9 +24,20 @@ export async function POST(req: Request): Promise<Response> {
     );
   }
 
-  const result = await loadManifest(body.manifestPath);
-  return new Response(JSON.stringify(result), {
-    status: result.valid ? 200 : 422,
-    headers: { "content-type": "application/json" },
-  });
+  try {
+    const result = await loadManifest(body.manifestPath);
+    return new Response(JSON.stringify(result), {
+      status: result.valid ? 200 : 422,
+      headers: { "content-type": "application/json" },
+    });
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    if (code === "INVALID_MANIFEST_PATH") {
+      return new Response(
+        JSON.stringify({ error: code, message: (err as Error).message }),
+        { status: 400, headers: { "content-type": "application/json" } },
+      );
+    }
+    throw err;
+  }
 }

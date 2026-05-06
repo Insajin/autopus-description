@@ -4,6 +4,8 @@
 // configured, escalation throws SLACK_NOT_CONFIGURED so the UI can disable
 // the escalate button + render a tooltip explaining the missing prerequisite.
 
+import { redactTokens } from "@autopus/write-router/redactor";
+
 export const SLACK_API_URL = "https://slack.com/api/chat.postMessage";
 export const ERR_NOT_CONFIGURED = "SLACK_NOT_CONFIGURED";
 
@@ -92,10 +94,14 @@ export class SlackEscalator {
 }
 
 export function renderMessage(payload: EscalatePayload): string {
+  // Defense-in-depth: PM-supplied draft/reason fields can occasionally
+  // contain pasted credentials. REQ-13 scopes redaction to audit log / UI /
+  // error messages — this surface is none of those, but redacting tokens
+  // before the Slack DM ships removes a credential-leak path no one expected.
   const lines = [
     `🔍 Description review needed — ${payload.frameId}`,
-    `Reason: ${payload.intentMismatchReason}`,
-    `Draft: ${payload.draftText}`,
+    `Reason: ${redactTokens(payload.intentMismatchReason)}`,
+    `Draft: ${redactTokens(payload.draftText)}`,
     `Open in Figma: ${payload.deepLink}`,
   ];
   return lines.join("\n");

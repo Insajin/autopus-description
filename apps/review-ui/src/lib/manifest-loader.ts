@@ -6,6 +6,9 @@
 
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
+import path from "node:path";
+
+export const ERR_INVALID_MANIFEST_PATH = "INVALID_MANIFEST_PATH";
 
 export interface ValidationError {
   code: string;
@@ -34,6 +37,37 @@ export interface LoadOptions {
 
 const DEFAULT_VALIDATOR =
   "tools/validate-manifest/dist/index.js";
+
+// Resolve the manifest-root containment boundary. Defaults to process.cwd()
+// so localhost dev usage stays scoped to the workspace; production callers
+// can override via MANIFEST_ROOT to permit a curated directory.
+function manifestRoot(): string {
+  return path.resolve(process.env.MANIFEST_ROOT ?? process.cwd());
+}
+
+// Reject paths that escape the manifest root or contain traversal segments.
+// Returns the canonical absolute path on success.
+export function assertSafeManifestPath(
+  candidate: string,
+  rootOverride?: string,
+): string {
+  if (typeof candidate !== "string" || candidate.length === 0) {
+    const err = new Error("manifestPath must be a non-empty string");
+    (err as { code?: string }).code = ERR_INVALID_MANIFEST_PATH;
+    throw err;
+  }
+  const root = rootOverride ? path.resolve(rootOverride) : manifestRoot();
+  const resolved = path.resolve(root, candidate);
+  const rootWithSep = root.endsWith(path.sep) ? root : root + path.sep;
+  if (resolved !== root && !resolved.startsWith(rootWithSep)) {
+    const err = new Error(
+      `manifestPath escapes manifest root (${root})`,
+    );
+    (err as { code?: string }).code = ERR_INVALID_MANIFEST_PATH;
+    throw err;
+  }
+  return resolved;
+}
 
 function parseStderr(stderr: string): ValidationError[] {
   const out: ValidationError[] = [];
@@ -92,6 +126,13 @@ export async function loadManifest<T = unknown>(
   const options: LoadOptions =
     typeof arg === "string" ? { manifestPath: arg } : arg;
 
+  // Path traversal guard. Skipped when stubValidator is supplied (test-only
+  // fast path — production never sets stubValidator). Production callers
+  // always exercise the guard against MANIFEST_ROOT.
+  const safeManifestPath = options.stubValidator !== undefined
+    ? options.manifestPath
+    : assertSafeManifestPath(options.manifestPath);
+
   let exitCode: number;
   let stderr: string;
 
@@ -101,7 +142,7 @@ export async function loadManifest<T = unknown>(
   } else {
     const r = await runValidator(
       options.validatorBin ?? DEFAULT_VALIDATOR,
-      options.manifestPath,
+      safeManifestPath,
     );
     exitCode = r.exitCode;
     stderr = r.stderr;
@@ -113,7 +154,7 @@ export async function loadManifest<T = unknown>(
       data = options.manifestContent as T;
     } else {
       try {
-        data = JSON.parse(await readFile(options.manifestPath, "utf8")) as T;
+        data = JSON.parse(await readFile(safeManifestPath, "utf8")) as T;
       } catch {
         data = undefined;
       }

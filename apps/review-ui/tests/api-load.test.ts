@@ -11,12 +11,23 @@ import { join } from "node:path";
 import { POST } from "../src/app/api/load/route.js";
 
 let tmpRoot: string;
+let prevManifestRoot: string | undefined;
 
 beforeEach(() => {
   tmpRoot = mkdtempSync(join(tmpdir(), "api-load-"));
+  prevManifestRoot = process.env.MANIFEST_ROOT;
+  // Widen the allowed manifest root to tmpRoot so path traversal guard
+  // accepts test fixtures created under os.tmpdir(). Production callers
+  // configure MANIFEST_ROOT to a curated directory.
+  process.env.MANIFEST_ROOT = tmpRoot;
 });
 
 afterEach(() => {
+  if (prevManifestRoot === undefined) {
+    delete process.env.MANIFEST_ROOT;
+  } else {
+    process.env.MANIFEST_ROOT = prevManifestRoot;
+  }
   if (existsSync(tmpRoot)) rmSync(tmpRoot, { recursive: true, force: true });
 });
 
@@ -66,5 +77,18 @@ describe("POST /api/load route handler", () => {
     expect(res.status).toBe(422);
     const body = await res.json();
     expect(body.valid).toBe(false);
+  });
+
+  it("returns 400 INVALID_MANIFEST_PATH on path traversal attempt", async () => {
+    // Attacker tries to escape the configured MANIFEST_ROOT via "../"
+    const escape = join(tmpRoot, "..", "..", "etc", "passwd");
+    const req = new Request("http://localhost/api/load", {
+      method: "POST",
+      body: JSON.stringify({ manifestPath: escape }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("INVALID_MANIFEST_PATH");
   });
 });

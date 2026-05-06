@@ -112,4 +112,18 @@ describe("renderMessage", () => {
     expect(text).toContain("사용자 인증 게이트");
     expect(text).toContain("https://www.figma.com/file/X/Y?node-id=1:1");
   });
+
+  it("redacts figd_/xoxb- tokens in draftText and intentMismatchReason", () => {
+    const leaky: EscalatePayload = {
+      ...payload(),
+      intentMismatchReason: "Pasted xoxb-TESTABCDE12345 by mistake",
+      draftText: "draft with figd_TESTTOKEN1234567890ABCDEF in body",
+    };
+    const text = renderMessage(leaky);
+    expect(text).toContain("<REDACTED>");
+    expect(text).not.toMatch(/figd_[A-Za-z0-9_-]{16,}/);
+    expect(text).not.toMatch(/xoxb-[A-Za-z0-9_-]{8,}/);
+    // The deep-link URL must NOT be redacted (no figd_/xoxb- shape).
+    expect(text).toContain("https://www.figma.com/file/X/Y?node-id=1:1");
+  });
 });
