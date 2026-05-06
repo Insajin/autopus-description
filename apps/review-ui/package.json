@@ -1,0 +1,25 @@
+{
+  "name": "@autopus/review-ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "SPEC-FIGMA-004 PM review dashboard (Next.js 15 + React 19).",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@autopus/write-router": "*",
+    "next": "15.5.16",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.4.0"
+  }
+}

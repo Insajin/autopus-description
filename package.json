@@ -4,6 +4,10 @@
   "private": true,
   "description": "SPEC-FIGMA-002 Figma MCP read-only adapter pipeline + SPEC-FIGMA-003 description generation loop.",
   "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "bin": {
     "figma-read": "./dist/src/cli.js",
     "generate-descriptions": "./dist/src/cli/generate-descriptions.js"
