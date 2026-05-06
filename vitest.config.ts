@@ -8,7 +8,11 @@ const reviewUiSrc = path.resolve(here, "apps/review-ui/src");
 
 export default defineConfig({
   test: {
-    include: ["tests/**/*.test.ts"],
+    include: [
+      "tests/**/*.test.ts",
+      "packages/**/tests/**/*.test.ts",
+      "apps/**/tests/**/*.test.ts",
+    ],
     exclude: ["node_modules/**", "dist/**", "tools/**"],
     testTimeout: 60_000,
     coverage: {
