@@ -128,4 +128,44 @@ describe("POST /api/apply route handler", () => {
     const parsed = JSON.parse(readFileSync(auditLogPath, "utf8").trim());
     expect(parsed.pm_identity_or_unknown).toBe("pm-test-user");
   });
+
+  it("returns 400 INVALID_ENTRY_SHAPE when entry is not an object", async () => {
+    const req = new Request("http://localhost/api/apply", {
+      method: "POST",
+      body: JSON.stringify({ entry: "not-an-object" }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("INVALID_ENTRY_SHAPE");
+    expect(body.field).toBe("entry");
+  });
+
+  it("returns 400 INVALID_ENTRY_SHAPE when frame_id is missing", async () => {
+    const e = makeEntry();
+    delete (e as Record<string, unknown>).frame_id;
+    const req = new Request("http://localhost/api/apply", {
+      method: "POST",
+      body: JSON.stringify({ entry: e }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("INVALID_ENTRY_SHAPE");
+    expect(body.field).toBe("frame_id");
+  });
+
+  it("returns 400 INVALID_ENTRY_SHAPE when write_target is unknown", async () => {
+    const req = new Request("http://localhost/api/apply", {
+      method: "POST",
+      body: JSON.stringify({
+        entry: { ...makeEntry(), write_target: "evil_target" },
+      }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("INVALID_ENTRY_SHAPE");
+    expect(body.field).toBe("write_target");
+  });
 });
