@@ -8,6 +8,12 @@ coverage/
 audit.log
 plugin-bridge-inbox.jsonl
 
+# SPEC-FIGMA-007 integration test artifacts
+tests/integration/figma-007/.tmp/
+
+# SPEC-FIGMA-008 probe runner runtime artifact (config.json is committed)
+.autopus/probes/transport-matrix.jsonl
+
 # Autopus-ADK generated files
 .claude/rules/autopus/
 .claude/skills/autopus/

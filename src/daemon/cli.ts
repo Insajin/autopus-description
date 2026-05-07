@@ -74,6 +74,16 @@ async function cmdStart(opts: RunCliOptions, flags: Record<string, string>): Pro
   const dir = autopusDir(opts.cwd);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
+  // SPEC-FIGMA-008 REQ-16: cowork probe failure gate. When --tunnel=cloudflared
+  // is passed and the most recent claude-cowork probe row has status:"failed",
+  // refuse to start with exit code 1 and a stderr substring oracle (AC-T13).
+  if (flags.tunnel === "cloudflared") {
+    const gate = checkCoworkProbeGate(opts.cwd);
+    if (!gate.allow) {
+      return { stdout: "", stderr: gate.stderr, exitCode: 1 };
+    }
+  }
+
   const state: DaemonState = {
     pid: process.pid,
     transport,
@@ -139,6 +149,28 @@ export async function runDaemonCli(argv: string[], opts: RunCliOptions): Promise
         exitCode: 2,
       };
   }
+}
+
+// SPEC-FIGMA-008 REQ-16: read latest claude-cowork probe row; if status==="failed"
+// the daemon refuses --tunnel=cloudflared start. Stderr substring is oracled.
+function checkCoworkProbeGate(cwd: string): { allow: boolean; stderr: string } {
+  const jsonl = join(autopusDir(cwd), "probes", "transport-matrix.jsonl");
+  if (!existsSync(jsonl)) return { allow: true, stderr: "" };
+  const lines = readFileSync(jsonl, "utf8").trim().split("\n").filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i--) {
+    try {
+      const r = JSON.parse(lines[i]) as Record<string, unknown>;
+      if (r.probe_target === "claude-cowork" && r.status === "failed") {
+        return {
+          allow: false,
+          stderr:
+            "cowork probe failed: re-run autopus-daemon start --probe=claude-cowork before enabling tunnel\n",
+        };
+      }
+      if (r.probe_target === "claude-cowork") break;
+    } catch { /* skip */ }
+  }
+  return { allow: true, stderr: "" };
 }
 
 // Direct CLI entry point (npm bin).
