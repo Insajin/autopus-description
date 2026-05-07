@@ -1,9 +1,9 @@
-// SPEC-FIGMA-009 REQ-03 / REQ-04 / REQ-06.
+// SPEC-FIGMA-009 REQ-03 / REQ-04 / REQ-06 + SPEC-FIGMA-011 REQ-01 / REQ-05.
 // Resource and tool request handlers for the stdio MCP wire transport.
 // All outbound `text` payloads pass through `redact` (INV-W2).
-// `READ_ONLY_TOOLS` is the canonical 4-entry tool surface (INV-W4); write
-// tools from SPEC-FIGMA-007 (`plan_emit`/`dry_run`/`approve`/`apply`/`undo`)
-// MUST NOT appear here.
+// `READ_ONLY_TOOLS` is the canonical 4-entry read-only baseline (INV-W4).
+// Write tools/resources are merged in via the optional contexts on
+// `HandlerWiring`; ListTools concatenates read-first, write-second.
 
 import {
   CallToolRequestSchema,
@@ -16,6 +16,10 @@ import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { redact } from "../token-redactor.js";
 import type { McpResources } from "./mcp-resources.js";
 import { handleMcpToolCall } from "./mcp-tools.js";
+import type {
+  WriteToolDispatchContext,
+  WriteResourceReadContext,
+} from "./mcp-stdio-write-handlers.js";
 
 export interface ToolDescriptor {
   readonly name: string;
@@ -69,6 +73,32 @@ const READ_ONLY_NAMES: ReadonlySet<string> = new Set(
 
 export interface HandlerWiring {
   readonly mcp: McpResources;
+  readonly writeToolContext?: WriteToolDispatchContext;
+  readonly writeResourceContext?: WriteResourceReadContext;
+}
+
+function toToolWire(t: ToolDescriptor): {
+  name: string;
+  description: string;
+  inputSchema: object;
+} {
+  return {
+    name: t.name,
+    description: t.description,
+    inputSchema: {
+      type: t.inputSchema.type,
+      properties: { ...t.inputSchema.properties },
+      additionalProperties: t.inputSchema.additionalProperties,
+      ...((t.inputSchema as unknown as { required?: readonly string[] }).required
+        ? {
+            required: [
+              ...((t.inputSchema as unknown as { required: readonly string[] })
+                .required),
+            ],
+          }
+        : {}),
+    },
+  };
 }
 
 export function registerResourceHandlers(
@@ -77,14 +107,22 @@ export function registerResourceHandlers(
 ): void {
   server.setRequestHandler(ListResourcesRequestSchema, async () => {
     const items = await wiring.mcp.list();
-    return {
-      resources: items.map((r) => ({ uri: r.uri, name: r.name })),
-    };
+    const base = items.map((r) => ({ uri: r.uri, name: r.name }));
+    const writes = wiring.writeResourceContext
+      ? wiring.writeResourceContext.resources.map((r) => ({
+          uri: r.uri,
+          name: r.name,
+        }))
+      : [];
+    return { resources: [...base, ...writes] };
   });
 
   server.setRequestHandler(ReadResourceRequestSchema, async (req) => {
     const uri = req.params.uri;
-    const data = await wiring.mcp.read(uri);
+    const data =
+      wiring.writeResourceContext && wiring.writeResourceContext.handles(uri)
+        ? wiring.writeResourceContext.read(uri)
+        : await wiring.mcp.read(uri);
     /* @AX:WARN: [AUTO] zero-leak invariant — every outbound `text` payload on
      * the ReadResource path MUST pass through `redact()`. Removing or
      * bypassing this call leaks tunnel URLs / secrets to the MCP client.
@@ -92,49 +130,40 @@ export function registerResourceHandlers(
      * between daemon-internal JSON and the wire transport. */
     const text = redact(JSON.stringify(data));
     return {
-      contents: [
-        {
-          uri,
-          mimeType: "application/json",
-          text,
-        },
-      ],
+      contents: [{ uri, mimeType: "application/json", text }],
     };
   });
 }
 
-export function registerToolHandlers(server: Server): void {
-  server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: READ_ONLY_TOOLS.map((t) => ({
-      name: t.name,
-      description: t.description,
-      inputSchema: {
-        type: t.inputSchema.type,
-        properties: { ...t.inputSchema.properties },
-        additionalProperties: t.inputSchema.additionalProperties,
-      },
-    })),
-  }));
+export function registerToolHandlers(
+  server: Server,
+  wiring?: Pick<HandlerWiring, "writeToolContext">,
+): void {
+  const writeCtx = wiring?.writeToolContext;
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    const reads = READ_ONLY_TOOLS.map(toToolWire);
+    const writes = writeCtx ? writeCtx.tools.map(toToolWire) : [];
+    return { tools: [...reads, ...writes] };
+  });
 
   server.setRequestHandler(CallToolRequestSchema, async (req) => {
     const name = req.params.name;
     const args = (req.params.arguments ?? {}) as Record<string, unknown>;
-    if (!READ_ONLY_NAMES.has(name)) {
-      return {
-        content: [{ type: "text", text: redact("unknown tool") }],
-        isError: true,
-      };
+    if (READ_ONLY_NAMES.has(name)) {
+      const result = await handleMcpToolCall({ tool: name, args });
+      /* @AX:WARN: [AUTO] zero-leak invariant — CallTool outbound `text` MUST be
+       * redacted before reaching the transport.
+       * @AX:REASON: SPEC-FIGMA-009 INV-W2 — single redaction chokepoint on the
+       * read tool-call response path. */
+      return { content: [{ type: "text", text: redact(result.constructed_prompt) }] };
     }
-    const result = await handleMcpToolCall({ tool: name, args });
-    /* @AX:WARN: [AUTO] zero-leak invariant — CallTool outbound `text` MUST be
-     * redacted before reaching the transport. Direct return of
-     * `result.constructed_prompt` would leak any tunnel URL embedded by upstream
-     * tool builders.
-     * @AX:REASON: SPEC-FIGMA-009 INV-W2 — single redaction chokepoint on the
-     * tool-call response path. */
-    const text = redact(result.constructed_prompt);
+    if (writeCtx) {
+      const r = await writeCtx.dispatch(name, args);
+      return r as unknown as { content: Array<{ type: "text"; text: string }>; isError?: boolean };
+    }
     return {
-      content: [{ type: "text", text }],
+      content: [{ type: "text", text: redact("unknown tool") }],
+      isError: true,
     };
   });
 }

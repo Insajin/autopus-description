@@ -109,8 +109,74 @@ key set 은 SPEC-FIGMA-008 AC-T10 `codex-windows` 행 7-key 와 일치 (set equa
 - **`capabilities` 배열 mismatch** — `CapabilityProfileRegistry.matchProfile` 의 substring match 가 다른 profile 로 falling. 의도한 profile 이 `claude-code-local` 인지 client name 으로 재확인.
 - **`booted` JSON 라인이 stdout 에 등장** — `autopus-mcp-stdio` 가 아닌 `autopus-daemon start` 를 실수로 등록한 경우. config 의 `command` 재확인 (INV-W5 lifecycle 분리).
 
+## Write tools (SPEC-FIGMA-011)
+
+SPEC-FIGMA-011 부터 stdio MCP wire 는 read-only 4-tool surface 에 더해 5 개의 write tool 을 노출한다. 외부 client 가 SPEC-FIGMA-007 plugin-confirmation gate 를 우회하지 않도록, daemon 은 connected plugin bridge 가 없을 때 절대로 Figma 노드를 수정하지 않는다 (REQ-03 security invariant).
+
+### 9-tool surface
+
+순서는 `ListTools` 응답에서 byte-equal 로 보존된다 (AC-WR-1).
+
+```
+get_active_selection         (read)
+get_pending_descriptions     (read)
+get_audit_events             (read)
+get_stale_frames             (read)
+plan_emit                    (write)  → {plan_id, manifest_entry_hash, plugin_commands}
+dryRun                       (write)  → 7-key PendingWriteSerializable
+approve                      (write)  → {approved, approved_at, rejected_reason}
+apply                        (write)  → ApplyResult
+undo                         (write)  → UndoResult
+```
+
+### 6-resource surface
+
+```
+autopus://active_selection
+autopus://pending_descriptions
+autopus://audit_events
+autopus://stale_frames
+autopus://pending_writes      (SPEC-FIGMA-011 신규)
+autopus://applied_writes      (SPEC-FIGMA-011 신규)
+```
+
+### 추천 흐름 — `dryRun → designer Approve → apply → undo`
+
+1. 외부 MCP client 가 `dryRun({frame_id, write_target})` 호출 → daemon 이 `pending_id` 를 발급하고 60s TTL 로 `PendingWriteStore` 에 보관.
+2. 디자이너가 Figma 의 plugin status panel 에서 Approve 를 누름 → plugin 이 daemon 으로 postMessage 송신 → daemon 이 client 의 `approve(pending_id)` 호출에 `{approved:true, approved_at, rejected_reason:null}` 응답.
+3. 외부 client 가 `apply({pending_id, source_hash_recomputed})` 호출 → daemon 이 connected plugin bridge 로 plugin command 디스패치 → 성공 시 `SUCCESS_KEYS_5` audit row + `applied_writes` 에 등록.
+4. 필요 시 `undo({write_id})` → 역방향 plugin command 디스패치 + `UNDO_KEYS` audit row.
+
+### 보안 노트 (REQ-03)
+
+- daemon 은 plugin bridge 가 `null` 일 때 `apply` 를 절대로 실행하지 않는다. 이 경우 즉시 JSON-RPC `isError:true` 응답과 함께 `APPLY_PARTIAL_DISCONNECT` audit row 1 개를 emit (REJECTION_KEYS_7).
+- 외부 client 가 보낸 모든 args 는 untrusted prompt evidence 로 간주한다. 이 invariant 는 prompt-injection 으로 daemon-direct write 를 트리거하지 못하도록 막는 구조적 보호다.
+- 모든 wire text 는 `redact()` 를 통과해 `figd_*` 토큰이 0 회 등장한다 (REQ-06 / AC-WR-7).
+
+### 등록 예 (Codex CLI / Claude Code)
+
+`~/.codex/config.toml` (SPEC-FIGMA-011 이후 권장 형태 — 더 이상 `node <abs-path>/dist/...` workaround 가 필요하지 않다):
+
+```toml
+[mcp_servers.autopus_figma]
+command = "autopus-mcp-stdio"
+args = []
+
+[mcp_servers.autopus_figma.env]
+AUTOPUS_AUDIT_DIR = "/Users/<you>/Documents/github/auto-discription/.autopus"
+```
+
+Claude Code:
+
+```bash
+claude mcp add autopus-figma -- autopus-mcp-stdio
+```
+
+`npm run build` 가 `scripts/prepend-shebang.mjs` 를 실행해 `dist/src/daemon/mcp-stdio-entry.js` 와 `dist/src/daemon/cli.js` 모두에 shebang + execute bit 를 보장한다 (AC-WR-8). 따라서 `command = "autopus-mcp-stdio"` 만으로 ENOEXEC 없이 spawn 된다.
+
 ## 관련 문서
 
 - SPEC: [.autopus/specs/SPEC-FIGMA-009/spec.md](../../.autopus/specs/SPEC-FIGMA-009/spec.md)
 - 수락 기준: [.autopus/specs/SPEC-FIGMA-009/acceptance.md](../../.autopus/specs/SPEC-FIGMA-009/acceptance.md)
 - 리서치 부록 (origin): [.autopus/specs/SPEC-FIGMA-009/research.md](../../.autopus/specs/SPEC-FIGMA-009/research.md) — Appendix A
+- Write 확장: [.autopus/specs/SPEC-FIGMA-011/spec.md](../../.autopus/specs/SPEC-FIGMA-011/spec.md)

@@ -32,6 +32,7 @@
 | **Generation** (FIGMA-003) | LLM (Claude / OpenAI / mock) 호출, Vision/Node 라우팅, token budget, audit | `src/providers/`, `src/batch-*.ts`, `src/routing.ts`, `src/pipeline.ts`, CLI `generate-descriptions` |
 | **Review & Write** (FIGMA-004) | PM 웹 UI 검수 + 6-route 어댑터 dispatch + idempotency + undo + Slack escalation | `apps/review-ui/`, `packages/write-router/`, `packages/escalation/` |
 | **MCP Daemon** (FIGMA-006) | Plugin selection-change → daemon → MCP resource 발행 (read-only wedge) + Phase 0 telemetry 4-counter + capability negotiation | `src/daemon/`, `vendor/cursor-talk-to-figma-mcp/`, `apps/review-ui/src/app/api/telemetry-summary/` |
+| **MCP Stdio Wire** (FIGMA-009 + FIGMA-011) | External MCP client (Codex CLI / Claude Code / Cursor) 를 위한 long-running stdio JSON-RPC entry — 6 resources + 9 tools (4 read + 5 write) + plugin-confirmation gate 보존 + bin shebang/exec | `src/daemon/mcp-stdio-{entry,handlers,write-handlers}.ts`, `scripts/prepend-shebang.mjs`, `tests/integration/figma-011/` |
 | **Validation** (cross-cut) | Anti-hallucination, post-hoc injection 검출, untrusted prompt 격리 | `src/validators/`, `src/prompts/` |
 
 ---
@@ -155,6 +156,9 @@ LLM provider는 swap-able interface(`src/types/llm-provider.ts`) — Anthropic C
 - **Per-session token + 127.0.0.1 binding** (SPEC-FIGMA-006): WebSocket bridge가 daemon start 시 1회 stdout으로 출력하는 토큰을 요구. plugin debug log에 `figd_*` 누출 방지를 위한 outbound `redact` 게이트
 - **MCP capability negotiation** (SPEC-FIGMA-006): 클라이언트 transport class(`stdio`/`http`/`tunnel`) 자동 감지, `client_profile_attached` audit row + `capabilities[]` 발행. tunnel은 `fallback.polling` degraded 모드로 표기
 - **Phase 0 telemetry counters** (SPEC-FIGMA-006): `selection_to_chat_ms` / `generation_ms` / `ai_requery_count` / `dwell_ms` 4-counter를 `.autopus/telemetry/phase0.jsonl`에 monotonic append. 30-event 시퀀스에서 daemon RSS ≤ 256 MB
+- **Stdio write surface composition** (SPEC-FIGMA-011): `mcp-stdio-handlers.ts` 가 read-first / write-second byte-order deterministic merge — 4개 read-only tool 뒤에 5개 write tool (`plan_emit` / `dryRun` / `approve` / `apply` / `undo`) 이 frozen 순서로 advertise. `READ_ONLY_TOOLS` 상수 mutation 0, SPEC-FIGMA-009 INV-W4 byte-equal 보존. 모든 outbound `text` 가 `redact()` 통과 (REQ-06, INV-W2 zero-leak)
+- **Plugin gate as wire-level invariant** (SPEC-FIGMA-011 REQ-03): `apply` dispatch 가 `writeExtension.bridge !== null` 을 wire-level 에서 추가 검증; bridge=null 시 `appendAuditPartialDisconnect` 1개 row + JSON-RPC error — daemon-direct write 영구 제외, prompt-injection driven Figma mutation 차단
+- **Bin shebang + execute bit** (SPEC-FIGMA-011 REQ-08): TS 소스 line 1 `#!/usr/bin/env node` + post-`tsc` `scripts/prepend-shebang.mjs` 가 idempotent shebang assert + `chmod 0o755`. 외부 client 는 `command = "autopus-mcp-stdio"` / `"autopus-daemon"` 로 직접 spawn (ENOEXEC 회피, SPEC-FIGMA-009 의 `node <abs-path>` workaround 제거)
 
 ---
 
@@ -181,17 +185,26 @@ LLM provider는 swap-able interface(`src/types/llm-provider.ts`) — Anthropic C
 
 ## 9. 후속 작업
 
-SPEC-FIGMA-001~006은 `completed` 상태입니다.
+SPEC-FIGMA-001~009 + SPEC-FIGMA-011은 `completed` 상태입니다.
 다음 단계는 SPEC-FIGMA-006이 발행한 Phase 0 telemetry counter 4종을 토대로
 **30-frame end-to-end 도그푸딩 측정** 을 운영 단계에서 진행하는 것이며,
-sibling SPEC-FIGMA-007 (write path — PluginCommand emit + dryRun/approve/apply
-+ undo)이 baseline 측정 종료 후 진행됩니다. SPEC-FIGMA-008 (MCP transport
-matrix · Claude.ai cowork tunnel)는 optional 트랙으로 SPEC-FIGMA-007과 병행
-가능하며, **Phase A (T1 capability-profile-registry + T8 redactTunnelUrl)
-한정으로 partial 진척** (status `approved` 유지) — Phase B+ (tunnel adapter,
-bearer/TTL session, probe runner, threat model + opsec runbook)는 후속. SPEC-FIGMA-005 측정 metric (`aggregate_cache_hit_ratio`,
-`--batch` cost ratio, strict mode JSON repair retry, file_id dedup count) 은
-SPEC-FIGMA-006의 daemon이 동일 provider 재사용으로 자동 승계합니다.
+이번 SPEC-FIGMA-011 의 wire-level write surface 가 외부 client 측정 경로의
+선행 조건입니다. SPEC-FIGMA-008 (MCP transport matrix · Claude.ai cowork
+tunnel)는 optional 트랙으로 SPEC-FIGMA-007과 병행 가능하며, **Phase A
+(T1 capability-profile-registry + T8 redactTunnelUrl) 한정으로 partial 진척**
+(status `approved` 유지) — Phase B+ (tunnel adapter, bearer/TTL session,
+probe runner, threat model + opsec runbook)는 후속.
+
+**Deferred from SPEC-FIGMA-011** (각각 독립 invariant 검증 필요):
+- HTTP/SSE write transport (web IDE / remote agent) — 후속 SPEC-FIGMA-013 (TBD)
+- Tunnel × write 합성 (claude-cowork remote write) — AC-T10 cowork stable
+  signal 미닫힘
+- Multi-frame batch apply over stdio
+- Windows codex stdio matrix `unverified → verified` 승격
+
+SPEC-FIGMA-005 측정 metric (`aggregate_cache_hit_ratio`, `--batch` cost ratio,
+strict mode JSON repair retry, file_id dedup count) 은 SPEC-FIGMA-006의
+daemon이 동일 provider 재사용으로 자동 승계합니다.
 
 ---
 

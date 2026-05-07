@@ -16,7 +16,7 @@
   },
   "main": "./dist/src/cli.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/prepend-shebang.mjs",
     "test": "vitest run --reporter=default",
     "test:watch": "vitest",
     "lint": "tsc -p tsconfig.json --noEmit"
