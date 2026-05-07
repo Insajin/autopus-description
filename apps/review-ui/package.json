@@ -5,21 +5,21 @@
   "type": "module",
   "description": "SPEC-FIGMA-004 PM review dashboard (Next.js 15 + React 19).",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@autopus/write-router": "*",
-    "next": "15.5.16",
-    "react": "19.0.0",
-    "react-dom": "19.0.0"
+    "next": "^16.2.5",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@types/node": "^20.11.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "typescript": "^5.4.0"
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^6.0.3"
   }
 }

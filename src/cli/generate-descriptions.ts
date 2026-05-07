@@ -15,8 +15,11 @@ import { join, relative, resolve } from "node:path";
 import { runBatch } from "../batch-executor.js";
 import { MockLLMProvider } from "../providers/mock-provider.js";
 import { AnthropicClaudeAdapter } from "../providers/anthropic-provider.js";
+import { OpenAIResponsesAdapter } from "../providers/openai-provider.js";
 import type { LLMProvider } from "../types/llm-provider.js";
 import type { FrameInput } from "../routing.js";
+
+const DEFAULT_OPENAI_MODEL = "gpt-5.5";
 
 const HELP = `Usage: generate-descriptions <input-dir> <output-manifest>
 
@@ -27,8 +30,11 @@ Options:
   --temperature=N       LLM temperature (default 0)
   --mode=node-only|auto routing mode (default auto)
   --audit-dir=PATH      audit JSONL output directory (default .audit)
-  --provider=mock|anthropic provider adapter (default mock)
-  --model=ID            pinned LLM model id (default claude-opus-4-7-20260115)
+  --provider=mock|anthropic|openai provider adapter (default mock)
+                        anthropic uses ANTHROPIC_API_KEY; openai uses
+                        OPENAI_API_KEY (Responses API, default gpt-5.5).
+  --model=ID            pinned LLM model id (default claude-opus-4-7-20260115
+                        for anthropic, gpt-5.5 for openai)
   --help, -h            show this help and exit 0
 `;
 
@@ -40,7 +46,7 @@ interface ParsedArgs {
   temperature?: number;
   mode?: "node-only" | "auto";
   audit_dir?: string;
-  provider?: "mock" | "anthropic";
+  provider?: "mock" | "anthropic" | "openai";
   model?: string;
 }
 
@@ -71,7 +77,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     }
     if (arg.startsWith("--provider=")) {
       const v = arg.slice("--provider=".length);
-      if (v === "mock" || v === "anthropic") out.provider = v;
+      if (v === "mock" || v === "anthropic" || v === "openai") out.provider = v;
       continue;
     }
     if (arg.startsWith("--model=")) {
@@ -141,10 +147,24 @@ function buildProvider(args: ParsedArgs, inputDir: string): LLMProvider {
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
   }
+  if (args.provider === "openai") {
+    return new OpenAIResponsesAdapter({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
   return new MockLLMProvider({
     responses: new Map(),
     useFixtureDir: inputDir,
   });
+}
+
+// Fallback model when --provider=openai is selected without --model.
+// Exposed for the unit test that pins the default to gpt-5.5.
+export function defaultModelFor(
+  provider: ParsedArgs["provider"],
+): string | undefined {
+  if (provider === "openai") return DEFAULT_OPENAI_MODEL;
+  return undefined;
 }
 
 export async function main(argv: string[]): Promise<number> {
@@ -186,7 +206,7 @@ export async function main(argv: string[]): Promise<number> {
     temperature: args.temperature,
     mode: args.mode,
     audit_dir: args.audit_dir,
-    model_id: args.model,
+    model_id: args.model ?? defaultModelFor(args.provider),
   });
   process.stdout.write(result.stdout);
   if (result.stderr) process.stderr.write(result.stderr);
