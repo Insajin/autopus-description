@@ -186,7 +186,9 @@ SPEC-FIGMA-001~006은 `completed` 상태입니다.
 sibling SPEC-FIGMA-007 (write path — PluginCommand emit + dryRun/approve/apply
 + undo)이 baseline 측정 종료 후 진행됩니다. SPEC-FIGMA-008 (MCP transport
 matrix · Claude.ai cowork tunnel)는 optional 트랙으로 SPEC-FIGMA-007과 병행
-가능합니다. SPEC-FIGMA-005 측정 metric (`aggregate_cache_hit_ratio`,
+가능하며, **Phase A (T1 capability-profile-registry + T8 redactTunnelUrl)
+한정으로 partial 진척** (status `approved` 유지) — Phase B+ (tunnel adapter,
+bearer/TTL session, probe runner, threat model + opsec runbook)는 후속. SPEC-FIGMA-005 측정 metric (`aggregate_cache_hit_ratio`,
 `--batch` cost ratio, strict mode JSON repair retry, file_id dedup count) 은
 SPEC-FIGMA-006의 daemon이 동일 provider 재사용으로 자동 승계합니다.
 

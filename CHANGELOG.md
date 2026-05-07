@@ -4,6 +4,24 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added — SPEC-FIGMA-008 Phase A (2026-05-07, partial)
+
+MCP transport matrix wedge — Phase A 한정 (T1 + T8 / 17). 전체 SPEC closure 아님 (SPEC status `approved` 유지). Phase B+ 후속 진행 대상은 tunnel adapter, bearer/TTL session, 1-click revoke, probe runner, threat model + opsec runbook.
+
+- **`src/daemon/capability-profile-registry.ts` (신규, 90 lines)** — 3-profile registry (`claude-code-local` / `codex-windows-stdio` / `claude-cowork-remote`). SPEC-FIGMA-006 INV-007 baseline 위에 additive. `Object.freeze` 기반 immutability + `readonly` 타입 + nested freeze로 capability arrays 보호. `default_capabilities_locked: true` 게이트 (REQ-01, REQ-02, NFR-02).
+  - AC-T1 oracle (canonical 3-profile order) + AC-T12 oracle (FIGMA-006 baseline byte-equal `["resources.read","tools.call"]` / `["resources.read","tools.call","fallback.polling"]`) 단위 테스트로 검증.
+  - `matchProfile()`은 unknown transport에서 `null` 반환 (fail-closed 기본값).
+
+- **`src/token-redactor.ts` (additive +9 lines)** — `TUNNEL_URL_PATTERN` + `redactTunnelUrl` export 추가 (REQ-08, NFR-03). 기존 `redact` / `TOKEN_PATTERN` (figd_ surface)와 독립적; 합성은 caller 책임.
+  - regex `/https:\/\/[a-z0-9-]+\.trycloudflare\.com(?::\d+)?(?:\/[^"'\s]*)?/g` — `[^"'\s]*` 경로 클래스로 JSON 직렬화 컨텍스트의 닫는 `"` / `'` 소비 방지 (AC-T9 oracle: parseable JSON 보존). 선택적 `:port` 그룹으로 비표준 포트 URL의 path 잔류 차단.
+  - 회귀 테스트: JSON-embedded URL은 parseable 출력, port-bearing URL `:8443/secret/path` 완전 제거.
+
+- **단위 테스트 (신규)** — `tests/unit/daemon-capability-registry.test.ts` (12 tests), `tests/unit/token-redactor-tunnel-url.test.ts` (8 active + 1 skip). registry 100% lines / 92.85% branches / 100% funcs, redactTunnelUrl 100% 신규 함수 커버리지.
+
+**파이프라인 결과**: subagent dispatch 8회 (tester→executor→validator→executor→annotator→reviewer→security-auditor→reviewer), Gate 2 RALF iter 1/5 (tsc null-assertion 수정), Phase 4 RALF iter 1/3 (regex 보안 수정으로 reviewer HIGH+MEDIUM 2건 closure).
+
+**Phase B follow-up (security-auditor F1, LOW)**: `redactTunnelUrl`이 `https://user:pass@host` userinfo prefix 우회 가능 — Phase A에서 production caller 없어 영향 없으나, Phase B integration 시점에 regex `(?:[^@\s/]+@)?` 추가 필요.
+
 ### Added — SPEC-FIGMA-006 (2026-05-07)
 
 Autopus MCP Daemon (read-only wedge) — sonnylazuardi backend adopt + Phase 0
