@@ -111,6 +111,7 @@ LLM provider는 swap-able interface(`src/types/llm-provider.ts`) — Anthropic C
 | `figma-read` | CLI bin | `src/cli.ts` → `dist/src/cli.js` |
 | `generate-descriptions` | CLI bin | `src/cli/generate-descriptions.ts` → `dist/src/cli/generate-descriptions.js` |
 | `autopus-daemon` | CLI bin (start/stop/status) | `src/daemon/cli.ts` → `dist/src/daemon/cli.js` |
+| `autopus-mcp-stdio` | CLI bin (long-running stdio MCP wire — SPEC-FIGMA-009) | `src/daemon/mcp-stdio-entry.ts` → `dist/src/daemon/mcp-stdio-entry.js` |
 | `validate-manifest` | CLI tool (AJV) | `tools/validate-manifest/` (child-process로 호출됨) |
 | Review UI dev server | Web | `apps/review-ui` → `next dev` |
 | API: `/api/load` | HTTP POST | `apps/review-ui/src/app/api/load/route.ts` |
