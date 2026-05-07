@@ -4,6 +4,107 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added — SPEC-FIGMA-011 sync (2026-05-07)
+
+SPEC-FIGMA-011 status `implemented` → `completed` sync. Closes the BS-001
+read+write loop on the `autopus-mcp-stdio` wire transport — external MCP
+clients (Codex CLI / Claude Code / Cursor) can now drive the
+`plan_emit → dryRun → approve → apply → undo` flow over stdio while the
+SPEC-FIGMA-007 plugin-confirmation gate stays the sole consent boundary.
+SPEC-FIGMA-007 (write surfaces) 와 SPEC-FIGMA-009 (read-only wedge) 를 호출
+대상으로만 사용 — write 로직 reimplement, audit keyset 변경, `READ_ONLY_TOOLS`
+mutation, `tools.write` capability flag 추가는 모두 금지 (REQ-04).
+
+- **5 write tools on stdio wire** (신규 `src/daemon/mcp-stdio-write-handlers.ts`)
+  — `plan_emit`, `dryRun`, `approve`, `apply`, `undo` 가 4개 read-only tool
+  뒤에 byte-equal 순서로 advertise (REQ-01, AC-WR-1: `tools.length === 9`,
+  name array byte-equal). `WRITE_TOOLS` frozen `ToolDescriptor[]` + `WRITE_NAMES`
+  set + `registerWriteHandlers(server, {writeExtension, writeResources})` dispatch.
+  모든 outbound `text` payload (success / JSON-RPC error / drift abort /
+  partial-disconnect notice) 가 `redact()` 통과 (REQ-06, AC-WR-7: 동기 fixture
+  `figd_AAAA…` 16+자 zero-occurrence). 289 LOC — 300줄 hard limit 미만.
+
+- **`mcp-stdio-handlers.ts` dispatcher 확장** (`src/daemon/mcp-stdio-handlers.ts`,
+  140 → 251 lines) — `registerToolHandlers` 와 `registerResourceHandlers` 가
+  optional `writeContext` 를 받아 read-first / write-second byte-order
+  deterministic merge (REQ-01, REQ-05). `READ_ONLY_TOOLS` 상수 mutation 0,
+  AC-S7 (4-URI baseline) 와 INV-W4 (read-only invariant) byte-equal 보존 —
+  SPEC-FIGMA-009 의 9개 AC (AC-W1..W5 + 4 read-only sub-test) 회귀 PASS.
+
+- **`mcp-stdio-entry.ts` wiring + DEFAULT_INSTRUCTIONS** (`src/daemon/mcp-stdio-entry.ts`,
+  ~161 → ~234 lines) — `CreateMcpStdioServerInput` 에 optional `writeExtension?:
+  DaemonWriteExtension` / `writeResources?: WriteMcpResources` 추가. `runMcpStdio`
+  가 `auditDir` 기반으로 `appendAudit*` log path 를 구성하고 두 객체를 instantiate
+  하여 inject. DEFAULT_INSTRUCTIONS 텍스트가 "(4 resources, 4 tools)" → "(6
+  resources, 9 tools)" 로 갱신. `Server` constructor `capabilities` 인자는
+  `{ resources: {}, tools: {} }` 로 동결 — `tools.write` flag 추가 금지 (REQ-04,
+  AC-WR-9: `client_profile_attached` audit row capabilities byte-equal
+  `["resources.read","tools.call"]`).
+
+- **2 write resources on stdio wire** (`src/daemon/mcp-stdio-handlers.ts` —
+  `WriteMcpResources` delegation) — `autopus://pending_writes` /
+  `autopus://applied_writes` 가 4개 read resource 뒤에 advertise (REQ-05,
+  AC-WR-10: `resources.length === 6`, URI array byte-equal). `ReadResource`
+  결과는 `redact()` + 필요 시 `redactTunnelUrl()` 합성 통과 — SPEC-FIGMA-008
+  NFR-03 (redactTunnelUrl 와 redact 의 독립 합성) 보존.
+
+- **Plugin-confirmation gate (REQ-03 P0 invariant)** — `apply` dispatch 가
+  `writeExtension.bridge !== null` 을 wire-level 에서 추가 검증. bridge=null
+  시 `appendAuditPartialDisconnect({frame_id, manifest_entry_hash,
+  pm_identity_or_unknown, write_target})` 1개 row + JSON-RPC error
+  `{error: "PLUGIN_NOT_CONNECTED"}` 반환. 이는 `applyApprovedWrite` 내부
+  guard 의 belt-and-suspenders 추가 layer — 절대 daemon-direct write 없음
+  (AC-WR-4: REJECTION_KEYS_7 키셋 + `reason="APPLY_PARTIAL_DISCONNECT"`,
+  prompt-injection 으로 Figma mutation 트리거 불가).
+
+- **Audit keyset preservation (REQ-07)** — wire 경유 success / drift / undo
+  audit row 가 SPEC-FIGMA-007 frozen baseline 과 byte-equal: SUCCESS_KEYS_5
+  (5키, AC-WR-3), DRIFT_ABORT_KEYS (9키, AC-WR-5), REJECTION_KEYS_7 / UNDO_KEYS
+  (7키, AC-WR-6). wire-transport context 추가 금지 — 추가 메타는 별도 row
+  family (`client_profile_attached` 등) 에만.
+
+- **Bin shebang + execute bit** (REQ-08, 신규 `scripts/prepend-shebang.mjs`,
+  32 LOC; `src/daemon/cli.ts` line 1; `src/daemon/mcp-stdio-entry.ts` line 1)
+  — TS 소스 1행에 `#!/usr/bin/env node` 추가 (`tsconfig.json` 의 default
+  `removeComments: false` 가 보존). `package.json::scripts.build` 가
+  `tsc -p tsconfig.json && node scripts/prepend-shebang.mjs` 로 확장 —
+  post-tsc 스크립트가 idempotent 하게 shebang assert + `chmod 0o755`. AC-WR-8:
+  `head -1 dist/src/daemon/{mcp-stdio-entry,cli}.js === '#!/usr/bin/env node'`
+  AND `(mode & 0o111) !== 0` AND `bash -c 'echo {init JSON} | autopus-mcp-stdio'`
+  ENOEXEC 없이 정상 JSON-RPC initialize 응답. SPEC-FIGMA-009 의 `node <abs-path>`
+  workaround 가 `command = "autopus-mcp-stdio"` / `"autopus-daemon"` 직접 spawn
+  으로 대체.
+
+- **Acceptance verification** (신규 `tests/integration/figma-011/AC-WR-{1..10}.test.ts`,
+  `AC-WR-2a.plan-emit-shape.test.ts`, `AC-WR-3a-3c.approve-shape.test.ts`,
+  `AC-WR-edges.test.ts`) — 14개 oracle scenario (AC-WR-1, 2, 2a, 3, 3a, 3b,
+  3c, 4..10) 모두 in-memory SDK `Client` + `StdioClientTransport` pair 로
+  검증. `AC-WR-2a` 는 `plan_emit` 의 3-key `{plan_id, manifest_entry_hash,
+  plugin_commands}` byte-equal + leak fixture 0 occurrence + PendingWriteStore
+  size 불변. `AC-WR-3a-3c` 는 fake plugin postMessage harness 로 APPROVE /
+  REJECT / TIMEOUT (60s+1ms) 3 sub-case 의 3-key `{approved, approved_at,
+  rejected_reason}` byte-equal 과 mock bridge `dispatchCommand` counter === 0
+  (approve 자체가 Figma mutation 트리거 안 함) 을 검증.
+
+- **Codex stdio runbook 갱신** (`docs/runbooks/figma-009-codex-stdio.md`,
+  +66 lines) — "Write tools (SPEC-FIGMA-011)" 섹션 추가: 9-tool surface +
+  6-resource URI list, `dryRun → apply → undo` interactive flow 예시,
+  designer-must-click-Approve 보안 노트, `command = "autopus-mcp-stdio"`
+  recipe 가 `node <abs-path>` workaround 를 대체. SPEC-FIGMA-009 의 외부
+  client onboarding 절차 1차 사이트.
+
+### Out of Scope — deferred to successor SPECs
+
+- **HTTP/SSE write transport** (web IDE / remote agent) — successor candidate
+  SPEC-FIGMA-013 (TBD).
+- **Tunnel × write 합성** (claude-cowork remote write) — precondition: AC-T10
+  cowork stable signal 미닫힘.
+- **Multi-frame batch apply over stdio** — single-frame apply only.
+- **Plugin-less daemon-direct write fallback** — 영구 제외 (REQ-03 invariant
+  conflict).
+- **Windows codex stdio matrix `unverified → verified` 승격** — operational,
+  not a SPEC dependency.
+
 ### Added — SPEC-FIGMA-009 sync (2026-05-07)
 
 SPEC-FIGMA-009 status `implemented` → `completed` sync. MCP stdio wire transport

@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // SPEC-FIGMA-006 REQ-01, AC-S5: Autopus daemon CLI (start | stop | status).
 //
 // In-process invocation surface — `runDaemonCli(argv, {cwd})` returns the
