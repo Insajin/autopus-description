@@ -173,3 +173,46 @@ Per `.claude/rules/autopus/file-size-limit.md` exclusion list, the vendored dire
 `vendor/cursor-talk-to-figma-mcp/**` is **out-of-scope** for the 300-line hard limit.
 This applies to upstream source files only; Autopus-authored patch overlays still fall
 under the daemon source rule (≤300 lines per `[NEW] src/daemon/*.ts`).
+
+## Tool Mapping Changes
+
+SPEC-FIGMA-007 REQ-09, REQ-17 — mapping between autopus `WriteTarget` values and the
+sonnylazuardi tool names invoked by `autopus_command_dispatch.ts`. When sonnylazuardi
+renames a tool upstream, update both this table AND the dispatcher's switch arms in
+the same sync PR. The "last verified" column carries the upstream commit hash that
+last passed AC-S13 sync drift audit.
+
+| autopus WriteTarget | sonnylazuardi tool name | last verified | notes |
+|---------------------|-------------------------|---------------|-------|
+| annotation_card     | set_annotation          | 1c46823f      | three sub-commands (create-node / set-text / attach-link) per AC-S8 partial-disconnect oracle |
+| descriptions_page   | upsert_descriptions_page_node | 1c46823f | autopus-authored handler — sonnylazuardi has no native equivalent |
+| comment             | post_comment            | 1c46823f      | uses figma file REST commentPost; not available via Plugin Bridge |
+| plugin_data         | set_plugin_data         | 1c46823f      | key prefix `description_${screen_id}` — matches executor adapter |
+| frame_name          | set_frame_name          | 1c46823f      | gated by ALLOW_FRAME_NAME opt-in (REQ-05 of SPEC-FIGMA-004) |
+| none                | noop                    | 1c46823f      | broadcast-only path; zero Figma mutation |
+
+## Sync Drift Audit
+
+SPEC-FIGMA-007 REQ-17 monthly checklist. Each item is recorded explicitly (PASS / FAIL /
+N/A) in the sync PR description before `pinned_commit` advances. Items (a)–(e) are the
+SPEC-FIGMA-006 NFR-07 baseline; item (f) is the SPEC-FIGMA-007 REQ-17 extension.
+
+- (a) **WebSocket auth** — diff `src/cursor_mcp_plugin/code.js` and
+  `src/talk_to_figma_mcp/server.ts` for new connection handlers, removed token checks,
+  or relaxed origin policy. Daemon binds 127.0.0.1 + per-session token (REQ-14 SPEC-FIGMA-006).
+- (b) **postMessage validation** — diff `src/cursor_mcp_plugin/ui.html` and
+  `src/cursor_mcp_plugin/code.js` for new postMessage handlers or removed payload checks.
+  Plugin payloads are untrusted prompt evidence (REQ-13).
+- (c) **Network whitelist** — grep candidate for new `fetch(`, `XMLHttpRequest`,
+  `WebSocket` host literals, or DNS lookups. Upstream MUST stay within
+  `localhost`/`127.0.0.1`. Any external host introduction is a REJECT.
+- (d) **License / attribution** — verify `LICENSE` first line still equals
+  `The MIT License (MIT)`, copyright holder still names sonnylazuardi.
+- (e) **Supply-chain dep diff** — diff `package.json` (and `bun.lock`) for new runtime
+  deps. New deps require manual publisher reputation review.
+- (f) **Tool name diff for the 6 mapped tools** (SPEC-FIGMA-007 REQ-17) — for every row
+  in the `## Tool Mapping Changes` table above, verify the tool name still exists in
+  the upstream `src/talk_to_figma_mcp/server.ts` tool registration. Any rename forces
+  the table's "sonnylazuardi tool name" column to record `<old> → <new>` and the
+  `autopus_command_dispatch.ts` switch arm to delegate to the new name. The next
+  daemon start emits `daemon_vendor_tool_renamed` audit row when this row changes.

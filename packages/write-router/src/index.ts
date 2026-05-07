@@ -1,9 +1,5 @@
-// SPEC-FIGMA-004 WriteRouter — full integration of W2 adapters with W3 layers:
-// idempotency dedup (REQ-07), undo registry (REQ-08), JSONL audit logger
-// (REQ-11), token redaction (REQ-13), and Plugin Bridge fallback (REQ-06).
-// Public API: apply(entry), undo(write_id), getEntryStatus(entry),
-// hasUndoEntry(write_id), listAdapters().
-
+// SPEC-FIGMA-004 WriteRouter — adapters + idempotency + undo + audit + redact
+// + plugin-bridge fallback. SPEC-FIGMA-007: adds `mode:"plan-emit"` option.
 import {
   ERROR_CODES,
   WriteRouterError,
@@ -32,7 +28,12 @@ import {
   type McpErrorClass,
 } from "./fallback/error-classifier.js";
 import { applyViaPluginBridge } from "./fallback/plugin-bridge.js";
+import { planEmit } from "./plan-emit/index.js";
+import type { PlanEmitContext, PlanEmitResult } from "./plan-emit/types.js";
 
+export interface WriteRouterApplyOptions {
+  mode?: "executor" | "plan-emit"; planContext?: PlanEmitContext;
+}
 export interface WriteRouterOptions {
   registry?: AdapterRegistry;
   adapters?: Partial<Record<WriteTarget, Adapter>>;
@@ -72,7 +73,11 @@ export class WriteRouter {
     this.pmIdentity = options.pmIdentity ?? "unknown";
   }
 
-  async apply(entry: ManifestEntry): Promise<WriteResult> {
+  async apply(entry: ManifestEntry): Promise<WriteResult>;
+  async apply(entry: ManifestEntry, options: { mode: "plan-emit"; planContext?: PlanEmitContext }): Promise<PlanEmitResult>;
+  async apply(entry: ManifestEntry, options: { mode?: "executor"; planContext?: PlanEmitContext }): Promise<WriteResult>;
+  async apply(entry: ManifestEntry, options?: WriteRouterApplyOptions): Promise<WriteResult | PlanEmitResult> {
+    if (options?.mode === "plan-emit") return planEmit(entry, options.planContext);
     if (!this.valid) {
       throw new WriteRouterError(
         ERROR_CODES.MANIFEST_INVALID,

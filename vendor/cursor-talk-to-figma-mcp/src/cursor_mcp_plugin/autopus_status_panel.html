@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  SPEC-FIGMA-007 REQ-03, REQ-20 — autopus status panel.
+  Status strip + dryRun preview + Approve/Undo buttons.
+  Confirmation is exclusive to the [Approve] button click handler.
+  See REQ-20 / AC-S11 — conversational confirmation surfaces are forbidden.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Autopus status panel</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+    margin: 0;
+    padding: 12px;
+    color: #111;
+    background: #fff;
+    font-size: 12px;
+  }
+  .strip { display: flex; gap: 8px; align-items: center; padding-bottom: 8px; border-bottom: 1px solid #eee; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; }
+  .chip { font-family: ui-monospace, monospace; font-size: 11px; padding: 2px 6px; background: #f4f4f4; border-radius: 3px; }
+  #dryrun-preview { margin-top: 8px; max-height: 240px; overflow-y: auto; }
+  .preview-row { padding: 6px 0; border-bottom: 1px solid #f0f0f0; font-family: ui-monospace, monospace; font-size: 11px; }
+  .actions { display: flex; gap: 8px; margin-top: 12px; }
+  button { padding: 6px 12px; border-radius: 4px; border: 1px solid #ccc; background: #fff; cursor: pointer; font-size: 12px; }
+  button[data-action="approve"] { background: #1565c0; color: #fff; border-color: #1565c0; }
+  button[data-action="undo"] { background: #fff; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  #drift-abort { display: none; margin-top: 8px; padding: 8px; background: #fdecea; border: 1px solid #f44336; color: #b71c1c; font-size: 11px; }
+  #drift-abort.visible { display: block; }
+</style>
+</head>
+<body>
+  <div class="strip">
+    <span class="dot" id="conn-dot" data-testid="conn-dot"></span>
+    <span id="conn-label">connected</span>
+    <span class="chip" data-testid="source-hash-chip" id="source-hash-chip">--------...--------</span>
+    <span class="chip" id="selection-id-chip">no selection</span>
+  </div>
+
+  <div id="dryrun-preview" data-testid="dryrun-preview" data-pending-id=""></div>
+
+  <div id="drift-abort" data-testid="drift-abort">DRIFT detected — rerun dryRun</div>
+
+  <div class="actions">
+    <button data-action="approve" data-pending-id="" id="btn-approve" disabled>Approve</button>
+    <button data-action="undo" data-write-id="" id="btn-undo" disabled>Undo</button>
+  </div>
+
+  <script src="autopus_status_panel.js" defer></script>
+</body>
+</html>

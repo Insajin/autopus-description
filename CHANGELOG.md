@@ -4,6 +4,90 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added — SPEC-FIGMA-007 (2026-05-07)
+
+Autopus MCP Daemon **write path** — sonnylazuardi plugin fork에 dryRun → Approve →
+apply → 1-step undo 게이트 추가. SPEC-FIGMA-006 read-only wedge 위에 additive
+plan-emit 브랜치로 구성, SPEC-FIGMA-004 6-route executor contract 보존
+(NFR-04 byte-equal). BS-003 OSS Adoption Update Decision 1+2 closure — chat UI
+없이 plugin status panel만이 confirmation 표면.
+
+- **write-router `mode:"plan-emit"` option** (`packages/write-router/src/index.ts`
+  +5-line guard, `packages/write-router/src/plan-emit/` 신규 7개 파일)
+  — Figma mutation 없이 직렬화된 `PluginCommand[]` + `manifest_entry_hash` +
+  `undo_descriptor_template` 반환. 6 write target (annotation_card /
+  descriptions_page / comment / plugin_data / frame_name / none) 별 helper.
+  default(executor) 모드 byte-equal 보존 (REQ-01, NFR-04).
+
+- **Daemon write tools** (신규 `src/daemon/{dryrun-tool,apply-tool,undo-tool,
+  pending-writes,write-audit,write-mcp-resources,daemon-undo-registry,
+  plugin-port,client-handshake,probe-runner}.ts`)
+  — `autopus.dryRunWrite` / `autopus.applyWrite` / `autopus.undoWrite` 3 MCP
+  tool. `pending_id` 기반 60s TTL 스냅샷 (`expires_at` GC). `autopus://
+  pending_writes` + `autopus://applied_writes` 리소스 발행 (REQ-02, REQ-15).
+
+- **Drift guard + apply atomicity** (`src/daemon/apply-tool.ts`,
+  `src/daemon/write-audit.ts` `appendAuditDriftAbort` 9-key writer)
+  — plugin webcrypto port `autopus_source_hash.ts`로 Approve 시점 source_hash
+  재계산 → daemon에서 `source_hash_dryrun` 와 byte-equal 비교. mismatch 시
+  `APPLY_DRIFT_ABORT` 거부 + 9-key audit row 발행. dryRun 미경유 apply는
+  `MISSING_DRYRUN_GATE`로 차단 (REQ-04~05, REQ-12, REQ-19, INV-008/009).
+
+- **Idempotent re-apply + 1-step undo** — 기존 `computeManifestEntryHash`
+  재사용 (NFR-07 dual hash 금지). `IdempotencyTracker` 히트 시
+  `IDEMPOTENT_SKIP` 7-key audit. `UndoDescriptor` 5-variant (`delete-node` /
+  `delete-comment` / `clear-plugin-data` / `restore-frame-name` / `noop`)
+  inverse `PluginCommand[]`로 직렬화 후 plugin dispatch. undo 후 source_hash
+  byte-equal pre-dryRun (REQ-07~08).
+
+- **Audit retention guard — DEBUG raw redaction** (`src/daemon/
+  audit-retention-guard.ts` 145 lines, `src/daemon/redact-extended.ts` 73
+  lines, `src/redact-patterns.ts` 38 lines, single source of truth)
+  — frozen `src/audit-emitter.ts` (NFR-04) 의 DEBUG=true raw 파일 영속화
+  경로를 wrapper로 우회: `prompt_text` / `response_text`를 figd_ + xoxb- +
+  bearer + absolute-path 패턴으로 redact한 뒤 `.audit/<batch_id>/raw/*.json`에
+  기록. frozen 파일 미수정. 3-port redact 패턴 parity 검증
+  (`tests/unit/redact-patterns-parity.test.ts`) 으로 drift detection
+  (REQ-10/13/21, NFR-03).
+
+- **Plugin status panel + Approve/Undo button** (`vendor/cursor-talk-to-
+  figma-mcp/src/cursor_mcp_plugin/autopus_status_panel.{html,ts}`,
+  `autopus_command_dispatch.ts`, `autopus_redact.ts`,
+  `autopus_source_hash.ts`)
+  — chat UI 0개 (BS-003 Decision 2). `[Approve]` 버튼이 유일한
+  `apply_request` emission site (REQ-20). 6 sonnylazuardi 도구 매핑 +
+  미매핑 시 autopus 전용 dispatcher switch (REQ-09).
+
+- **Phase 0 telemetry 확장** (`src/daemon/telemetry.ts` +75 lines)
+  — `dryrun_count`, `approve_count`, `undo_count`, `apply_drift_abort_count`
+  4개 monotonic counter 추가 (REQ-11, INV-002 확장).
+
+- **Plugin disconnect 복구 + pending expiry** (REQ-14, REQ-15)
+  — 부분 완료 후 disconnect 시 `IdempotencyTracker` 미기록 →
+  `APPLY_PARTIAL_DISCONNECT` audit + 재연결 시 inverse 롤백. 60s TTL 만료
+  pending은 `PENDING_EXPIRED`로 거부.
+
+- **30-frame sequential approve oracle** (`tests/integration/figma-007/
+  AC-S{1..14}.test.ts`, `AC-S12.fixtures.ts`, `__helpers/
+  mock-plugin-bridge.ts`) — 30 distinct frame: dryRun → Approve → apply
+  60-record audit chain (`prompt_sha256` 64-hex, 0 break), 0 drift abort,
+  0 idempotency violation. 첫/마지막 record `prompt_sha256` literal hash
+  oracle (REQ-18, AC-S12).
+
+- **Web `/api/apply` & `/api/undo` 보존** (REQ-16) — 두 route 파일 byte-diff
+  0. daemon write path 와 web bulk dashboard path는 process-local
+  `IdempotencyTracker` 인스턴스 분리 (SPEC-FIGMA-004 NFR-01).
+
+**파이프라인 결과**: 신규 21 tasks (T1..T21) closure, 신규 파일 90+ (src/daemon/
+25개, plan-emit/ 8개, tests 37개, plugin 5개), 6/6 write target 매핑, 14/14 AC
+oracle PASS, multi-provider review verdict PASS (claude/gemini 34/34 PASS,
+0 FAIL). frozen contract regression 0 (write-router idempotency / undo-registry /
+audit-log / source-hash / audit-emitter / token-redactor / web routes).
+
+**Sibling SPEC handoff**: SPEC-FIGMA-008 (MCP transport matrix · cloudflared
+tunnel) 은 본 SPEC daemon WebSocket bridge에 transport hardening을 부착
+가능하나 directly dependent 아님 — 두 SPEC 독립 ship.
+
 ### Added — SPEC-FIGMA-008 Phase A (2026-05-07, partial)
 
 MCP transport matrix wedge — Phase A 한정 (T1 + T8 / 17). 전체 SPEC closure 아님 (SPEC status `approved` 유지). Phase B+ 후속 진행 대상은 tunnel adapter, bearer/TTL session, 1-click revoke, probe runner, threat model + opsec runbook.
