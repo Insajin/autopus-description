@@ -4,6 +4,62 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added — SPEC-FIGMA-009 sync (2026-05-07)
+
+SPEC-FIGMA-009 status `implemented` → `completed` sync. MCP stdio wire transport
+for Autopus Daemon — read-only wedge over the in-process Daemon body. SPEC-FIGMA-006
+(Daemon / McpResources / handleMcpToolCall) 와 SPEC-FIGMA-008 (CapabilityProfileRegistry
+frozen baseline) 을 호출 대상으로만 사용; reimplement / baseline drift 없음.
+
+- **`autopus-mcp-stdio` long-running bin** (신규 `src/daemon/mcp-stdio-entry.ts`,
+  신규 `src/daemon/mcp-stdio-handlers.ts`) — 외부 MCP client (Codex CLI / Claude
+  Code / Cursor) 가 spawn 시 SDK `Server` + `StdioServerTransport` 로 read-only
+  wedge 노출. 4 resources (`autopus://{active_selection,pending_descriptions,
+  audit_events,stale_frames}`) + 4 read-only tools (`get_active_selection`,
+  `get_pending_descriptions`, `get_audit_events`, `get_stale_frames`) 만 advertise;
+  SPEC-FIGMA-007 write tool surface (`plan_emit` / `dryRun` / `approve` / `apply`
+  / `undo`) 는 `ListTools` 응답에서 0개 노출 (INV-W4). 기존 `autopus-daemon` bin
+  (start/stop/status state-init) 과 독립 프로세스 — 한쪽 종료가 다른 쪽에 영향
+  없음 (INV-W5).
+
+- **`@modelcontextprotocol/sdk` production dependency** (`package.json`,
+  `package-lock.json`) — 기존 vendored 사본 (`vendor/cursor-talk-to-figma-mcp/`)
+  대신 root `dependencies` 로 정식 등록 (`^1.13.1`). `bin` 엔트리에
+  `autopus-mcp-stdio` → `dist/src/daemon/mcp-stdio-entry.js` 추가.
+
+- **`client_profile_attached` audit on handshake** (`src/daemon/mcp-stdio-entry.ts`)
+  — `initialize` exchange 직후 `CapabilityProfileRegistry.matchProfile({transport:
+  "stdio"})` 로 stdio profile resolve 후 `DaemonAuditWriter.emitEvent` 로 1개
+  audit row emit. `capabilities` 배열 byte-equal `["resources.read","tools.call"]`
+  (SPEC-FIGMA-006 AC-S11 + SPEC-FIGMA-008 AC-T1 baseline). single-row invariant
+  (INV-W1) — 동일 session 에서 두 번째 row emission 차단.
+
+- **Outbound text redaction chokepoint** (`src/daemon/mcp-stdio-handlers.ts`) —
+  `ReadResource` 응답의 `contents[].text`, `CallTool` 응답의 `content[].text`,
+  unknown URI/tool 에러 메시지까지 모든 outbound text 가 `redact` 통과 후 wire
+  로 송출. SPEC-FIGMA-006 INV-006 (`figd_*` zero-occurrence) 보존; SPEC-FIGMA-008
+  NFR-03 (`redactTunnelUrl` 와 `redact` 의 독립 합성) 보존 — tunnel wiring 합성은
+  out-of-scope.
+
+- **Codex stdio runbook + Windows unverified probe** (신규 `docs/runbooks/figma-009-
+  codex-stdio.md`, `.autopus/probes/transport-matrix.jsonl` append-only 행) — `~/.codex/
+  config.toml` `[mcp_servers.autopus_figma]` 등록 절차, Claude Code `claude mcp add`
+  등가 명령, macOS verify 절차 (audit.jsonl `client_profile_attached` row 관찰),
+  Windows desktop `codex_windows_stdio` `unverified` probe row append (`status:
+  "unverified"`, key set: `probe_target / started_at / finished_at / status /
+  mcp_protocol_version / capabilities_advertised / error_text_redacted` — SPEC-FIGMA-008
+  AC-T10 codex-windows shape byte-equal). Windows 정식 승격 (`status: "verified"`)
+  은 후속 SPEC.
+
+- **Acceptance verification** (신규 `tests/integration/figma-009/AC-W{1..5}.test.ts`,
+  신규 `tests/unit/daemon-mcp-stdio-{handshake,redact,tool-surface}.test.ts`) —
+  AC-W1 (handshake + single audit row, capability byte-equality) / AC-W2 (4 URI
+  ListResources + ReadResource roundtrip) / AC-W3 (4 read-only tools + 0 write
+  tools + unknown tool error) / AC-W4 (figd_/tunnel URL zero-occurrence) / AC-W5
+  (process lifecycle + runbook + unverified probe row) 모두 in-process SDK `Client`
+  + `StdioClientTransport` 로 검증 — 외부 Codex CLI / Claude Code 바이너리 spawn
+  없이 닫힘 (NFR-04 test isolation).
+
 ### Hardened — SPEC-FIGMA-008 sync (2026-05-07)
 
 SPEC-FIGMA-008 status `implemented` → `completed` sync. Defense-in-depth
