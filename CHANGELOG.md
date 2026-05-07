@@ -4,6 +4,78 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added — SPEC-FIGMA-004 (2026-05-07)
+
+Review & Write-back — PM 웹 UI dashboard + non-invasive Figma write 라우터
++ Plugin Bridge fallback + 4-페르소나 view 렌더러 + 감사 추적. BS-001
+4-SPEC 분해의 마지막 슬라이스로, PM이 Figma Plugin 미설치 환경
+(Slack/Notion/ChatGPT 가정)에서 description manifest를 검수·수정·승인·
+broadcast할 수 있는 사용자-체감 지점을 닫음.
+
+- **Review UI 대시보드** (`apps/review-ui/`)
+  - Next.js 15 + TypeScript app router. Frame 목록 + per-frame editor
+    (`FrameRow`, `FrameEditor`) + 4-페르소나 view 렌더러 (`PersonaView`)
+    + stale 배지 + digest 모드 (`StaleBadge`) + token-cost telemetry
+    strip (`TokenStrip`).
+  - API routes: `/api/load` (manifest 로더 + FIGMA-001 `validate-manifest`
+    child-process 호출), `/api/apply`, `/api/undo`, `/api/feedback`.
+  - `assertSafeManifestPath()` confines manifest paths to `MANIFEST_ROOT`
+    (default `cwd`) — path traversal rejected with `INVALID_MANIFEST_PATH`.
+  - `/api/apply` validates `body.entry` shape server-side (frame_id +
+    write_target enum) — direct curl bypass closed.
+- **Write-target 라우팅 엔진** (`packages/write-router/`)
+  - 6-route adapter dispatch: `annotation_card`, `descriptions_page`,
+    `comment`, `plugin_data`, `frame_name` (opt-in gated, REQ-05),
+    `none` (no-op).
+  - `manifest_entry_hash` (SHA-256 over canonical PM-facing fields +
+    write_target) idempotency dedup → `IDEMPOTENT_SKIP` on duplicate
+    (REQ-07, REQ-NFR-01).
+  - Per-write undo registry — single-step `undo last write` reverses
+    annotation_card / descriptions_page / comment / plugin_data /
+    frame_name (REQ-08, REQ-NFR-02).
+  - Plugin Bridge fallback + error classifier — auto-route on MCP
+    permission/seat/plan-tier errors with `FALLBACK_VIA_PLUGIN_BRIDGE`
+    audit trail and UI banner (REQ-06, INV-006).
+  - JSON Lines audit log with the exact 5-key set
+    `{frame_id, write_target, timestamp_iso, pm_identity_or_unknown,
+    manifest_entry_hash}` (REQ-11, INV-009).
+  - Token redaction: `(figd_[A-Za-z0-9_-]{16,}|xoxb-[A-Za-z0-9_-]{8,})`
+    → `<REDACTED>` across audit log, UI, error messages (REQ-13).
+- **Slack 디자이너 escalation** (`packages/escalation/`)
+  - DM 어댑터 with `redactTokens()` applied to `draftText` and
+    `intentMismatchReason` (defense-in-depth beyond REQ-13 surfaces).
+  - REQ-20 Should priority; disabled with tooltip when workspace
+    integration absent.
+- **30-frame 통합 테스트 suite** (`tests/integration/figma-004/`)
+  - 12 per-AC integration files (36 oracle-grade assertions) covering
+    AC-S1..S12. Mock Figma write API spy + JSON Lines audit byte
+    comparison + persona-render-fixture verbatim re-use from
+    SPEC-FIGMA-001 AC-S6 oracle.
+- **Final coverage**: 492 tests across 66 files; 96.56% lines, 90.27%
+  branches, 96.58% functions. 85% line / 80% branch floor enforced via
+  vitest threshold gate.
+
+### Notes — SPEC-FIGMA-004
+
+- Stack: TypeScript + Next.js 15 + Node.js 20 ESM, vitest.
+  Workspace path aliases configured for `@autopus/write-router` and
+  `apps/review-ui` cross-references.
+- `frame_name` adapter DEFAULT DISABLED — `--allow-frame-name` opt-in
+  required; rejection emits `FRAME_NAME_OPT_IN_REQUIRED` and exits
+  non-zero / shows UI banner (REQ-05, X4 mitigation).
+- Audit `pm_identity_or_unknown` defaults to literal `"unknown"`; PM
+  authentication is v0.2 deferred (PRD § 11 Q1, Q2).
+- **Phase 4 defense-in-depth follow-ups** (commit 8564897): path
+  traversal guard on `/api/load`, write_target enum membership check on
+  `/api/apply`, Slack DM body redaction.
+- **Deferred follow-ups**: rate-limiting on API routes (auditor LOW-3),
+  live `next dev` smoke test, real-world `MANIFEST_ROOT` mis-config
+  validation, Slack workspace end-to-end — all pinned to Phase 0
+  dogfood (30-frame end-to-end measurement of BS-001 75% handoff-time
+  reduction success metric).
+- BS-001 outcome closure: Phase 0 도그푸딩이 v0.1 → v1.0 lock 의사결정의
+  실측 입력을 제공하며, **후속 sibling SPEC 없음**.
+
 ### Added — SPEC-FIGMA-003 (2026-05-06)
 
 Description Generation Loop — LLM-based pipeline that turns SPEC-FIGMA-002
