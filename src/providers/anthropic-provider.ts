@@ -1,10 +1,14 @@
 // SPEC-FIGMA-003 T2: Anthropic Claude provider adapter.
-// Two classes ship from this file:
-//   - AnthropicClaudeAdapter: live SDK call wrapper (production path)
-//   - RecordedAnthropicProvider: replay-only adapter used by AC-S8 to verify
-//     interface substitutability without touching the real API.
+// SPEC-FIGMA-005 T2+T7: Prompt Caching (REQ-01), Structured Outputs strict
+// (REQ-02), Files API file_id reference (REQ-04). Strict path bypasses the
+// silent JSON repair fallback (REQ-NFR-02). file_id reference (vs base64
+// inline) reuses the upload across calls with the same screenshot sha256.
+//
+// Companion files extracted to keep this under the 300-line cap:
+//   - anthropic-replay.ts: RecordedAnthropicProvider (AC-S8 substitutability)
+//   - anthropic-errors.ts: SDK error → ProviderError mapping helpers
 
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 
 import Anthropic from "@anthropic-ai/sdk";
 
@@ -15,10 +19,16 @@ import {
   type LLMResponse,
   type ProviderOpts,
 } from "../types/llm-provider.js";
+import { mapSdkError, mapFilesError } from "./anthropic-errors.js";
+
+export { RecordedAnthropicProvider } from "./anthropic-replay.js";
+export type { RecordedAnthropicOptions } from "./anthropic-replay.js";
 
 interface AnthropicUsage {
   input_tokens?: number;
   output_tokens?: number;
+  cache_read_input_tokens?: number;
+  cache_creation_input_tokens?: number;
 }
 
 interface AnthropicTextBlock {
@@ -27,8 +37,13 @@ interface AnthropicTextBlock {
 }
 
 interface AnthropicMessageResponse {
+  id?: string;
   content?: Array<AnthropicTextBlock | { type: string }>;
   usage?: AnthropicUsage;
+}
+
+interface AnthropicFileResponse {
+  id: string;
 }
 
 function extractText(resp: AnthropicMessageResponse): string {
@@ -39,8 +54,9 @@ function extractText(resp: AnthropicMessageResponse): string {
     .join("");
 }
 
-// LLM is instructed to return strict JSON. Parse defensively — partial
-// failure should yield a low-confidence response, not crash the batch.
+// Non-strict JSON parse with silent fallback. Retained ONLY for the
+// non-strict path (when opts.structured_output_schema is not set) so
+// MockLLMProvider replay paths and legacy tests continue to work.
 function parseJsonBody(text: string): {
   confidence: number;
   intent_mismatch: boolean;
@@ -51,8 +67,7 @@ function parseJsonBody(text: string): {
       confidence?: unknown;
       intent_mismatch?: unknown;
     };
-    const conf =
-      typeof parsed.confidence === "number" ? parsed.confidence : 0;
+    const conf = typeof parsed.confidence === "number" ? parsed.confidence : 0;
     const im =
       typeof parsed.intent_mismatch === "boolean"
         ? parsed.intent_mismatch
@@ -63,11 +78,55 @@ function parseJsonBody(text: string): {
   }
 }
 
+// Strict path JSON parse (REQ-02, REQ-NFR-02). Strict mode contract: SDK
+// returns valid JSON conforming to the json_schema. A throw here means SDK
+// breaking change — surface as PROVIDER_SDK_BREAKING_CHANGE.
+function strictParseJsonBody(
+  text: string,
+  screen_id?: string,
+): { confidence: number; intent_mismatch: boolean } {
+  const trimmed = text.trim();
+  let parsed: { confidence?: unknown; intent_mismatch?: unknown };
+  try {
+    parsed = JSON.parse(trimmed) as {
+      confidence?: unknown;
+      intent_mismatch?: unknown;
+    };
+  } catch (err) {
+    throw new ProviderError(
+      ErrorCode.PROVIDER_SDK_BREAKING_CHANGE,
+      `strict mode response failed JSON.parse: ${(err as Error).message}`,
+      screen_id,
+    );
+  }
+  const conf = typeof parsed.confidence === "number" ? parsed.confidence : 0;
+  const im =
+    typeof parsed.intent_mismatch === "boolean"
+      ? parsed.intent_mismatch
+      : false;
+  return { confidence: conf, intent_mismatch: im };
+}
+
 export interface AnthropicAdapterOptions {
   apiKey?: string;
-  // Override base URL (test harness, regional endpoint, proxy).
   baseURL?: string;
 }
+
+function detectSdkVersion(): string {
+  try {
+    const url = new URL(
+      "../../node_modules/@anthropic-ai/sdk/package.json",
+      import.meta.url,
+    );
+    const raw = readFileSync(url, "utf-8");
+    const pkg = JSON.parse(raw) as { version?: string };
+    return pkg.version ?? "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+const SDK_VERSION = detectSdkVersion();
 
 export class AnthropicClaudeAdapter implements LLMProvider {
   private readonly client: Anthropic;
@@ -94,6 +153,31 @@ export class AnthropicClaudeAdapter implements LLMProvider {
     return this.call(prompt, image, opts);
   }
 
+  /**
+   * SPEC-FIGMA-005 REQ-04, REQ-21: upload screenshot bytes to the Anthropic
+   * Files API and return the file_id. Caller (FileIdCache) caches by sha256.
+   */
+  async uploadScreenshot(image: Buffer): Promise<string> {
+    try {
+      const filesNs = this.client as unknown as {
+        files?: { create?: (req: { file: Buffer }) => Promise<AnthropicFileResponse> };
+        beta?: { files?: { upload?: (req: { file: Buffer }) => Promise<AnthropicFileResponse> } };
+      };
+      const target = filesNs.files ?? filesNs.beta?.files;
+      const fn = filesNs.files?.create ?? filesNs.beta?.files?.upload;
+      if (!fn || !target) {
+        throw new ProviderError(
+          ErrorCode.PROVIDER_SDK_BREAKING_CHANGE,
+          "Anthropic SDK does not expose files.create or beta.files.upload",
+        );
+      }
+      const resp = await fn.call(target, { file: image });
+      return resp.id;
+    } catch (err) {
+      throw mapFilesError(err);
+    }
+  }
+
   private async call(
     prompt: string,
     image: Buffer | undefined,
@@ -101,118 +185,87 @@ export class AnthropicClaudeAdapter implements LLMProvider {
   ): Promise<LLMResponse> {
     const userBlocks: Array<Record<string, unknown>> = [];
     if (image) {
-      userBlocks.push({
-        type: "image",
-        source: {
-          type: "base64",
-          media_type: "image/png",
-          data: image.toString("base64"),
-        },
-      });
+      // REQ-04: opts.file_id ⇒ file reference (image_input_tokens = 0).
+      if (opts.file_id) {
+        userBlocks.push({
+          type: "image",
+          source: { type: "file", file_id: opts.file_id },
+        });
+      } else {
+        userBlocks.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: "image/png",
+            data: image.toString("base64"),
+          },
+        });
+      }
     }
     userBlocks.push({ type: "text", text: prompt });
+
+    // REQ-01: cache_control on the static prefix.
+    const systemBlocks: Array<Record<string, unknown>> = [];
+    if (opts.cache_control_region) {
+      systemBlocks.push({
+        type: "text",
+        text: opts.cache_control_region,
+        cache_control: { type: "ephemeral" },
+      });
+    }
+
+    const requestBody: Record<string, unknown> = {
+      model: opts.model_id,
+      max_tokens: opts.max_output_tokens,
+      temperature: opts.temperature,
+      messages: [{ role: "user", content: userBlocks as never }],
+    };
+    if (systemBlocks.length > 0) {
+      requestBody.system = systemBlocks;
+    }
+    // REQ-02: Structured Outputs strict mode opt-in.
+    if (opts.structured_output_schema) {
+      requestBody.response_format = {
+        type: "json_schema",
+        json_schema: {
+          strict: true,
+          schema: opts.structured_output_schema,
+        },
+      };
+    }
+
     let resp: AnthropicMessageResponse;
     try {
-      resp = (await this.client.messages.create({
-        model: opts.model_id,
-        max_tokens: opts.max_output_tokens,
-        temperature: opts.temperature,
-        messages: [{ role: "user", content: userBlocks as never }],
-      })) as AnthropicMessageResponse;
+      resp = (await this.client.messages.create(
+        requestBody as never,
+      )) as AnthropicMessageResponse;
     } catch (err) {
-      throw mapSdkError(err);
+      throw mapSdkError(err, SDK_VERSION, opts);
     }
     const text = extractText(resp);
-    const meta = parseJsonBody(text);
+    const meta = opts.structured_output_schema
+      ? strictParseJsonBody(text)
+      : parseJsonBody(text);
+
+    const usage = resp.usage ?? {};
     return {
       text,
-      input_tokens: resp.usage?.input_tokens ?? 0,
-      output_tokens: resp.usage?.output_tokens ?? 0,
+      input_tokens: usage.input_tokens ?? 0,
+      output_tokens: usage.output_tokens ?? 0,
       confidence: meta.confidence,
       intent_mismatch: meta.intent_mismatch,
+      cache_read_input_tokens: usage.cache_read_input_tokens ?? 0,
+      cache_creation_input_tokens: usage.cache_creation_input_tokens ?? 0,
+      dynamic_input_tokens: usage.input_tokens ?? 0,
+      file_id: opts.file_id,
+      provider_sdk_version: SDK_VERSION,
+      request_id: resp.id,
     };
   }
 }
 
-function mapSdkError(err: unknown): ProviderError {
-  const e = err as { status?: number; message?: string };
-  const msg = e?.message ?? "Anthropic SDK call failed";
-  if (e?.status === 429) {
-    return new ProviderError(ErrorCode.RATE_LIMIT_EXCEEDED, msg, undefined, {
-      http_status: 429,
-    });
-  }
-  return new ProviderError(ErrorCode.PROVIDER_ERROR, msg, undefined, {
-    http_status: e?.status,
-  });
+// Test-only exports for unit tests.
+export function _getSdkVersion(): string {
+  return SDK_VERSION;
 }
-
-// ─── Replay adapter (used by AC-S8 substitutability test) ─────────────────
-
-export interface RecordedAnthropicOptions {
-  fixtureFile: string;
-}
-
-interface RecordedFixture {
-  frames: Array<{
-    screen_id: string;
-    response: {
-      text: string;
-      input_tokens: number;
-      output_tokens: number;
-      confidence: number;
-      intent_mismatch: boolean;
-    };
-  }>;
-}
-
-// Replays previously-captured Anthropic responses from a fixture file. Used
-// to prove the AnthropicClaudeAdapter's surface is interchangeable with the
-// MockLLMProvider without making live API calls in CI.
-export class RecordedAnthropicProvider implements LLMProvider {
-  private readonly responses = new Map<string, RecordedFixture["frames"][0]["response"]>();
-
-  constructor(opts: RecordedAnthropicOptions) {
-    if (!existsSync(opts.fixtureFile)) {
-      throw new ProviderError(
-        ErrorCode.PROVIDER_ERROR,
-        `Recorded fixture not found: ${opts.fixtureFile}`,
-      );
-    }
-    const data = JSON.parse(
-      readFileSync(opts.fixtureFile, "utf-8"),
-    ) as RecordedFixture;
-    for (const f of data.frames ?? []) {
-      this.responses.set(f.screen_id, f.response);
-    }
-  }
-
-  async generateNodeOnly(
-    prompt: string,
-    _opts: ProviderOpts,
-  ): Promise<LLMResponse> {
-    return this.replay(prompt);
-  }
-
-  async generateVision(
-    prompt: string,
-    _image: Buffer,
-    _opts: ProviderOpts,
-  ): Promise<LLMResponse> {
-    return this.replay(prompt);
-  }
-
-  private replay(prompt: string): LLMResponse {
-    const match = prompt.match(/"screen_id"\s*:\s*"([A-Z][A-Z0-9_-]{1,63})"/);
-    const screen_id = match ? match[1] : undefined;
-    const spec = screen_id ? this.responses.get(screen_id) : undefined;
-    if (!spec) {
-      throw new ProviderError(
-        ErrorCode.PROVIDER_ERROR,
-        `RecordedAnthropicProvider: no fixture for screen_id ${screen_id ?? "<unknown>"}`,
-        screen_id,
-      );
-    }
-    return { ...spec };
-  }
-}
+export { strictParseJsonBody as _strictParseJsonBody };

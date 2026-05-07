@@ -4,6 +4,91 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added — SPEC-FIGMA-005 (2026-05-07)
+
+Anthropic SDK 0.95 신기능 4종 도입 — Prompt Caching / Structured Outputs strict
+/ Files API / Message Batches. 30-frame 도그푸딩 baseline 진입 전 비용·지연·
+결정성 헤드룸을 확보합니다. 스키마(`schema/frame-description.schema.json`)와
+`manifest_entry_hash` 입력 명세는 변경하지 않고 audit-only 필드만 추가합니다.
+
+- **Prompt Caching cache_control 분리 모듈** (`src/providers/static-prefix.ts`)
+  - `buildStaticPrefix(systemPrompt, schemaInstruction)` — cache_control
+    영역에 정적 텍스트만 진입.
+  - `lintStaticPrefix(text)` — frame-specific 토큰 (`screen_id`, `source_hash`,
+    `display_id`, sha256 hex ≥16자, `<UNTRUSTED_DESIGN_TEXT` 누출,
+    `frame_meta`) 0건 검증. AC-S9 vitest 하드 게이트.
+- **Structured Outputs strict + AJV 2차 게이트** (`src/providers/anthropic-provider.ts`,
+  `src/validators/strict-bridge.ts`)
+  - `response_format: {type: "json_schema", json_schema: {strict: true, schema}}`
+    옵션 분기. strict path는 `parseJsonBody` silent fallback 우회 →
+    `_strictParseJsonBody`가 PROVIDER_SDK_BREAKING_CHANGE 직격.
+  - `assertAjvValid(entry)` — `tools/validate-manifest` child-process 재호출.
+    AJV 위반은 SCHEMA_AJV_VIOLATION + json_pointer 메타.
+- **Files API file_id 재사용** (`src/providers/files-cache.ts`,
+  `AnthropicClaudeAdapter.uploadScreenshot`)
+  - `FileIdCache`: `screenshot_sha256 → {file_id, uploaded_at}` Map +
+    `.audit/<batch_id>/file-id-map.json` 영속. `getDedupCount()`로
+    `aggregate_files_api_dedup_count` 산출.
+  - 동일 sha256 두 번째 Vision 호출은 base64 inline 대신
+    `{type: "image", source: {type: "file", file_id}}` 블록 → image input
+    tokens = 0 (AC-S3, AC-S4).
+- **Message Batches `--batch` lane** (`src/providers/batch-lane.ts`,
+  `src/batch-lane-runner.ts`)
+  - `submitBatch / pollUntilComplete / fetchResults / alignByInputOrder /
+    composeBatchRequest`. custom_id ↔ screen_id로 input 순서 복원.
+  - `--batch` 모드 부분 실패 시 manifest는 successful frames만 input order로
+    유지, `errors.jsonl` 별도 file에 failed frames (AC-S6).
+  - CLI: `--batch` / `--realtime` (default) / `--escalate-model` flag 인식.
+    REQ-30 enabler — anthropic 기본 `claude-sonnet-4-6`, 명시적 escalation
+    시 `claude-opus-4-7`.
+- **Audit JSONL row 8개 신규 필드** (`src/audit-emitter.ts`)
+  - `cache_hit`, `cache_read_input_tokens`, `cache_creation_input_tokens`,
+    `dynamic_input_tokens`, `file_id`, `batch_id_provider`, `strict_mode_used`,
+    `provider_sdk_version` (전체 18-key set, AC-S8).
+  - 모든 string 필드를 `src/token-redactor.ts` (figd_ 패턴, REQ-NFR-07)을
+    통해 redact. SPEC-FIGMA-002 `audit-logger.ts` 6-key oracle 무관.
+- **Token-counter cached/dynamic 분리** (`src/token-counter.ts`)
+  - `splitInputTokens(usage) ⇒ {cache_read, cache_creation, dynamic, total}`.
+    `enforceInputCap`는 합산을 8K cap에 비교 (REQ-NFR-01).
+- **Aggregate summary stdout** (`src/audit-emitter.ts::computeAggregateSummary`,
+  `formatAggregateSummary`)
+  - `RESULT pass=N fail=M` 다음 줄에 `aggregate_cache_hit_ratio`,
+    `aggregate_cached_input_tokens`, `aggregate_dynamic_input_tokens`,
+    `aggregate_files_api_dedup_count`, `provider_sdk_version` 출력 (REQ-22).
+- **결정성 보존 (REQ-07, REQ-NFR-03)**: `file_id`, `batch_id_provider`,
+  `cache_id`, `request_id`, `provider_sdk_version`, response timestamp는
+  audit JSONL row에만 진입. write-router의 `computeManifestEntryHash`는
+  ManifestEntry만 입력으로 받으므로 transient id가 자연스럽게 배제됨.
+- **9개 신규 source 파일 + 9개 신규 test 파일**
+  - source: `src/providers/static-prefix.ts`, `src/providers/files-cache.ts`,
+    `src/providers/batch-lane.ts`, `src/providers/anthropic-replay.ts`,
+    `src/providers/anthropic-errors.ts`, `src/batch-lane-runner.ts`,
+    `src/validators/strict-bridge.ts`.
+  - tests: `tests/unit/static-prefix-lint.test.ts` (AC-S9),
+    `files-cache.test.ts` (AC-S3, AC-S4),
+    `audit-emitter-figma005.test.ts` (AC-S8),
+    `fence-isolation.test.ts` (AC-S10),
+    `anthropic-provider-strict-cache.test.ts` (REQ-01/02/04 + AC-S12),
+    `batch-lane.test.ts` (AC-S5/S6 ordering),
+    `cli-figma005-flags.test.ts` (REQ-30),
+    `token-counter-figma005.test.ts` (REQ-20/NFR-01),
+    `strict-bridge.test.ts` (REQ-03).
+- **테스트 커버리지**: 504 → 561 tests / 67 → 76 files. 회귀 0.
+- **모든 신규/수정 파일 ≤ 300 라인** (`.claude/rules/autopus/file-size-limit.md`).
+  `anthropic-provider.ts`는 `anthropic-replay.ts` + `anthropic-errors.ts`로
+  분할하여 271 라인으로 축소.
+
+#### Notes (Phase 0 도그푸딩 인계)
+
+본 SPEC는 BS-001 success metric (handoff 75% 절감) 실측을 위한 30-frame Phase
+0 도그푸딩의 enabler입니다. Phase 0 측정 시 다음 metric을 audit JSONL에서
+읽어내어 합의 임계값과 비교합니다 — `aggregate_cache_hit_ratio ≥ 0.5`,
+`--batch` 모드 cost ≤ 0.5 × `--realtime` (±2% tolerance), `strict_mode_used`
+frame의 JSON repair retry 0건, 동일 `screenshot_sha256` 재처리 시 image
+input tokens 0. Phase 0 결과를 토대로 SPEC-FIGMA-006 (Citations × Review UI)
+와 SPEC-FIGMA-007 (Extended Thinking + 4축 PM-risk score) 진행 여부를 결정
+합니다.
+
 ### Added — SPEC-FIGMA-004 (2026-05-07)
 
 Review & Write-back — PM 웹 UI dashboard + non-invasive Figma write 라우터
