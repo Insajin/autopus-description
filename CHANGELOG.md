@@ -4,6 +4,90 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added — SPEC-FIGMA-006 (2026-05-07)
+
+Autopus MCP Daemon (read-only wedge) — sonnylazuardi backend adopt + Phase 0
+dogfood telemetry. Plugin selection-change → daemon → MCP resource 발행 경로를
+기존 `runReadPipeline` / `runBatch` / `wrapUntrustedFigmaText` /
+`emitAuditRecord` 호출만으로 구성하는 parallel branch. 30-frame Phase 0
+도그푸딩 측정용 4-counter telemetry 발행. Write 경로(PluginCommand emit /
+dryRun/approve/apply / undo)는 sibling SPEC-FIGMA-007로 분기.
+
+- **`autopus-daemon` CLI** (`src/daemon/cli.ts` → `dist/src/daemon/cli.js`)
+  - `start --transport=stdio|http --port=<n>` / `stop` / `status` 3 서브커맨드
+  - PID 파일 lifecycle, stale PID 감지 시 `daemon_recovered_from_crash` audit row 발행
+  - `start` 시 per-session token 생성 (regex `/^[A-Za-z0-9_-]{32,}$/`) 후 stdout 1회 출력
+  - `status` 출력: `pid`, `transport`, `port`, `uptime_ms`, `connected_clients`, `last_selection_event_at`
+- **WebSocket bridge** (`src/daemon/bridge.ts`)
+  - `127.0.0.1` only bind — 외부 인터페이스 노출 차단 (REQ-14/NFR-03)
+  - per-session token strict equality 게이트, mismatch 시 close code 4401
+  - 모든 outbound frame `redact()` 통과 — `figd_*` 토큰 누출 0건 보증 (INV-006)
+- **Selection FIFO + 200ms debounce/coalesce** (`src/daemon/selection-queue.ts`)
+  - 동일 frame_id 200ms 내 trailing 이벤트 단일 accept로 coalesce
+  - 다른 frame_id 간 emission order 100% 보존 (INV-001)
+- **Read/Generation 재사용 (no reimplement)**
+  - `runReadPipeline` (`src/read-pipeline.ts`) — 입출력 스키마 변경 없이 호출만
+  - `runBatch` (`src/batch-executor.ts`) + `wrapUntrustedFigmaText`
+    (`src/prompts/untrusted-fence.ts`) — daemon이 받은 모든 plugin 페이로드는 fence 통과
+  - `computeSourceHash` (`src/source-hash.ts`) — 동일 frame 입력 byte-equal 재계산
+- **4 MCP resources** (`src/daemon/mcp-resources.ts`)
+  - `autopus://active_selection` — 현재 active selection 단일 entry
+  - `autopus://pending_descriptions` — 최근 30 entry ring (PENDING_LIMIT)
+  - `autopus://audit_events` — JSONL stream (`EmittedAudit` 16-key shape 보존)
+  - `autopus://stale_frames` — `source_hash` 재계산이 가장 최근 발행과 다른 frame ids (INV-004)
+  - 모든 read는 idempotent + state 무변경
+- **Phase 0 telemetry** (`src/daemon/telemetry.ts`,
+  `apps/review-ui/src/app/api/telemetry-summary/route.ts`)
+  - 4 monotonic counter 발행: `selection_to_chat_ms`, `generation_ms`,
+    `ai_requery_count`, `dwell_ms`
+  - `.autopus/telemetry/phase0.jsonl` (gitignored) append-only — 7-key
+    JSONL byte-stable shape. 키 추가 시 `/api/telemetry-summary` 스키마 bump 필요
+  - `Math.max` 기반 INV-002 monotonic guard
+  - Web UI는 bulk metrics dashboard로 demote, single-frame 검수는 plugin으로
+    이관 (REQ-11). `/api/load|apply|undo|feedback` 변경 없음
+- **Capability negotiation** (`src/daemon/capability-profile.ts`)
+  - 클라이언트 transport class 자동 감지: `stdio` / `http` / `tunnel` 3 profiles
+  - `client_profile_attached` audit row + `capabilities[]` 발행
+  - tunnel은 `["resources.read","tools.call","fallback.polling"]` (degraded mode)
+- **Untrusted MCP input sanitization** (`src/daemon/untrusted-mcp-input.ts`,
+  `src/daemon/mcp-tools.ts`)
+  - 모든 MCP tool string arg는 `wrapUntrustedFigmaText` 통과 후에만
+    provider prompt 어셈블리 진입
+  - HTML-escape 보존 — `</UNTRUSTED_DESIGN_TEXT>` 리터럴이 constructed_prompt에
+    절대 등장 금지 (AC-S8 oracle)
+  - `redact` 통과 후에만 audit emit
+- **Audit chain** (`src/daemon/audit-writer.ts`)
+  - `mode="node-only"` / `mode="vision"` 라우팅 결정에 따른 record 발행
+  - record N+1의 `prompt_sha256`은 prompt text 변경 시 record N과 byte-distinct
+    (INV-003 chain continuity)
+  - `EmittedAudit` 16-key shape 무변경 (NFR-04)
+- **sonnylazuardi vendor pinning** (`vendor/cursor-talk-to-figma-mcp/`,
+  `vendor/cursor-talk-to-figma-mcp/AUTOPUS_PIN.md`)
+  - 단일 commit hash 고정 file copy. **npm dependency 아님**
+  - upstream MIT LICENSE 보존
+  - `tsconfig.json` `exclude: ["vendor/**"]` 추가
+  - 300줄 file-size-limit out-of-scope (NFR-06)
+  - monthly manual rebase 런북 + security audit checklist 포함
+- **Plugin UI scope (vendored copy 한정)**
+  - status strip (connected/disconnected/source_hash chip) + placeholder
+    approve/undo panel만 렌더 — chat UI 금지 (BS-003 Decision 2)
+  - `community publish` 메타데이터 변경 없음 — distribution은 organization
+    private only
+
+**테스트**: daemon unit 12개 (`tests/unit/daemon-*.test.ts`) + integration
+14 AC 시나리오 (`tests/integration/figma-006/`) +
+review-ui telemetry-summary 1개 (`tests/unit/review-ui-telemetry-summary.test.ts`).
+14 AC 모두 oracle-grade — concrete expected values (source_hash 014ed33c…b420,
+capabilities tuple, generation_ms 1500ms 경계) 또는 byte-stable shape 확인.
+
+**Notes**: SPEC-FIGMA-006 Phase 0 telemetry는 BS-001 success metric (handoff-time
+75% reduction) 측정의 enabling 인프라. Phase 0 도그푸딩 30-frame 측정 종료
+후 sibling SPEC-FIGMA-007 (write path) 진행. SPEC-FIGMA-008 (MCP transport
+matrix · Claude.ai cowork tunnel)은 optional 트랙으로 SPEC-FIGMA-007과 병행
+가능. SPEC-FIGMA-005 metric (`aggregate_cache_hit_ratio`, `--batch` cost
+ratio, strict mode JSON repair retry, file_id dedup count) 은 daemon이 동일
+provider 재사용으로 자동 승계.
+
 ### Added — SPEC-FIGMA-005 (2026-05-07)
 
 Anthropic SDK 0.95 신기능 4종 도입 — Prompt Caching / Structured Outputs strict

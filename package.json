@@ -10,7 +10,8 @@
   ],
   "bin": {
     "figma-read": "./dist/src/cli.js",
-    "generate-descriptions": "./dist/src/cli/generate-descriptions.js"
+    "generate-descriptions": "./dist/src/cli/generate-descriptions.js",
+    "autopus-daemon": "./dist/src/daemon/cli.js"
   },
   "main": "./dist/src/cli.js",
   "scripts": {
