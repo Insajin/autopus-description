@@ -8,13 +8,17 @@ import { join } from "node:path";
 
 // Mock the SDK before importing the adapter so the adapter's `new Anthropic(...)`
 // resolves to our test double. createMock is the spy each test re-binds.
+// vitest 4 requires `new`-able implementations; a class satisfies the constructor contract.
 const createMock = vi.fn();
+const ctorSpy = vi.fn();
 vi.mock("@anthropic-ai/sdk", () => {
-  return {
-    default: vi.fn().mockImplementation(() => ({
-      messages: { create: createMock },
-    })),
-  };
+  class MockAnthropic {
+    messages = { create: createMock };
+    constructor(opts: unknown) {
+      ctorSpy(opts);
+    }
+  }
+  return { default: MockAnthropic };
 });
 
 import {
