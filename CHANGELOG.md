@@ -30,6 +30,25 @@ contract 보존.
   pre-existing surface 커버리지 보강. `vitest.coverage-figma008.config.ts`
   임시 설정 제거(공통 vitest config로 통합).
 
+- **Plugin-side session storage + tunnel strip ports** (신규 `vendor/cursor-
+  talk-to-figma-mcp/src/cursor_mcp_plugin/autopus_session_storage.ts` 134 lines,
+  `autopus_tunnel_strip.ts` 106 lines) — Figma 플러그인 런타임 측 REQ-05 /
+  REQ-07 / REQ-11 surface. `commitSessionToPluginStorage` /
+  `clearSessionFromPluginStorage` / `computeBearerSha256WebCrypto` (WebCrypto
+  port — Node `createHash` 와 byte-equal 결과, AC-T5 / AC-T8 reference vector
+  PASS). `formatTunnelStripText` / `renderTunnelStrip` / `bindRevokeButton`
+  4-state literal (off / `tunnel: <8charhash>` / expired / revoked) +
+  `tunnel.revoke` postMessage 단일 emission. raw bearer / tunnel URL은
+  pluginData 어떤 키에도 저장 금지 (INV-T6 unrecoverability).
+
+- **Plugin port unit tests** (신규 `tests/unit/plugin-session-storage-port.
+  test.ts` 154 lines / 13 tests, `tests/unit/plugin-tunnel-strip-port.test.ts`
+  150 lines / 10 tests) — AC-T5 / AC-T8 reference vector byte-equality (Node
+  `createHash` vs WebCrypto port), pluginData 모든 키 raw bearer regex
+  zero-match, `tunnel.revoke` 메시지 정확히 1회 emission + button hidden 후
+  추가 클릭 0 emission, `formatTunnelStripText` 4-state literal oracle 및
+  malformed `urlHash8` defensive fallback (`00000000`).
+
 
 
 Autopus MCP Daemon **write path** — sonnylazuardi plugin fork에 dryRun → Approve →
