@@ -66,3 +66,13 @@ export function countTokenMatches(text: string): number {
   const m = text.match(TOKEN_PATTERN);
   return m ? m.length : 0;
 }
+
+// @AX:NOTE:[AUTO] — SPEC-FIGMA-008 REQ-08 / NFR-03: TUNNEL_URL_PATTERN and redactTunnelUrl are additive to and independent from TOKEN_PATTERN/redact (figd_ surface). AC-T9 oracle asserts zero matches of /https:\/\/[a-z0-9-]+\.trycloudflare\.com/ in any audit-emitted serialized JSON. Callers that need both surfaces MUST compose redact() and redactTunnelUrl() explicitly — neither calls the other.
+// SPEC-FIGMA-008 REQ-08 — additive: mask cloudflared trycloudflare.com URLs.
+// Independent from `redact`/`TOKEN_PATTERN` (figd_ surface). Composing both is the caller's responsibility.
+// Path char class excludes `"` and `'` so the pattern stops at JSON/string delimiters when the URL is embedded in serialized JSON (AC-T9). Optional `:port` group prevents path leakage when a non-standard port is injected.
+export const TUNNEL_URL_PATTERN = /https:\/\/[a-z0-9-]+\.trycloudflare\.com(?::\d+)?(?:\/[^"'\s]*)?/g;
+
+export function redactTunnelUrl(text: string): string {
+  return text.replace(TUNNEL_URL_PATTERN, REDACTED);
+}
