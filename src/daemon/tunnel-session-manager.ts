@@ -7,9 +7,27 @@
 // + attach do (REQ-03). The adapter is injected (mock in tests, cloudflared
 // in production).
 
-import { randomBytes } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 
-import { redactTunnelUrl } from "../token-redactor.js";
+import { redact, redactTunnelUrl } from "../token-redactor.js";
+
+// auditor Low-2: cap unauthorized audit row tunnel_session_id length and require
+// the canonical /^ts_[A-Za-z0-9_-]{16,128}$/ shape; otherwise substitute a sentinel
+// so attacker-supplied unbounded ids cannot amplify audit-log volume (CWE-209).
+const TUNNEL_SESSION_ID_REGEX = /^ts_[A-Za-z0-9_-]{16,128}$/;
+function safeAuditTunnelSessionId(raw: string | undefined | null): string {
+  if (typeof raw !== "string") return "invalid_format";
+  return TUNNEL_SESSION_ID_REGEX.test(raw) ? raw : "invalid_format";
+}
+
+// auditor Low-3: timing-safe bearer comparison (CWE-208). timingSafeEqual requires
+// equal-length buffers, so we pre-check lengths and short-circuit on mismatch.
+function bearersEqual(a: string, b: string): boolean {
+  const ba = Buffer.from(a, "utf8");
+  const bb = Buffer.from(b, "utf8");
+  if (ba.length !== bb.length) return false;
+  return timingSafeEqual(ba, bb);
+}
 import {
   TunnelSession,
   generateRandomBearer,
@@ -187,9 +205,9 @@ export class TunnelSessionManager {
       };
     }
 
-    if (req.bearer !== sess.bearer || req.tunnel_session_id !== sess.tunnel_session_id) {
+    if (req.tunnel_session_id !== sess.tunnel_session_id || !bearersEqual(req.bearer, sess.bearer)) {
       this.auditEmitter.emitTerminal({
-        tunnel_session_id: req.tunnel_session_id,
+        tunnel_session_id: safeAuditTunnelSessionId(req.tunnel_session_id),
         event: "tunnel_session_unauthorized",
         ts: new Date(now).toISOString(),
       });
@@ -245,7 +263,7 @@ export class TunnelSessionManager {
   }
 
   private printStdout(payload: Record<string, unknown>): void {
-    const line = redactTunnelUrl(JSON.stringify(payload));
+    const line = redactTunnelUrl(redact(JSON.stringify(payload)));
     for (const l of this.stdoutListeners) l(line);
     if (this.originalStdoutWrite && this.stdoutListeners.length === 0) {
       this.originalStdoutWrite.write(line + "\n");

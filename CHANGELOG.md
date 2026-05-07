@@ -4,7 +4,33 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
-### Added — SPEC-FIGMA-007 (2026-05-07)
+### Hardened — SPEC-FIGMA-008 sync (2026-05-07)
+
+SPEC-FIGMA-008 status `implemented` → `completed` sync. Defense-in-depth
+redaction + file-level coverage closeout (NFR-06 ≥85%) — surface 변경 없음,
+contract 보존.
+
+- **Double-redact on tunnel + bridge surfaces** (`src/daemon/tunnel-bind.ts`,
+  `src/daemon/tunnel-session-manager.ts`, `src/daemon/bridge.ts`) —
+  `opsec_default_safe` / `probe_stale_warning`, tunnel session stdout,
+  WebSocket outbound 프레임 모두 `redactTunnelUrl ∘ redact` 합성 적용.
+  figd_/xoxb-/bearer surface(REQ-11/INV-006)와 trycloudflare URL
+  surface(REQ-08/NFR-03/INV-T7) 양쪽 모두 zero-occurrence invariant 유지.
+  `bridge.ts` `sendOutbound` `@AX:WARN` 갱신.
+
+- **TTL input validation** (`src/daemon/tunnel-session.ts`) — auditor Low-1
+  (CWE-693) 대응. `NaN` / `-Infinity` / 음수 `ttlMs`는 `DEFAULT_TTL_MS`로
+  fallback. NaN TTL이 만료 비교를 영구 false로 만드는 만료 우회 결함 차단
+  (REQ-04, AC-T2 hard cap 8h 보존).
+
+- **Coverage hardening** (`tests/unit/daemon-tunnel-cloudflared.test.ts`
+  +59 lines, `tests/unit/token-redactor-coverage.test.ts` 신규) —
+  CloudflaredTunnelAdapter `onChunk` no-match / settled branch 4종 +
+  token-redactor `countTokenMatches` / `redactJsonValue` / `wrapStream`
+  pre-existing surface 커버리지 보강. `vitest.coverage-figma008.config.ts`
+  임시 설정 제거(공통 vitest config로 통합).
+
+
 
 Autopus MCP Daemon **write path** — sonnylazuardi plugin fork에 dryRun → Approve →
 apply → 1-step undo 게이트 추가. SPEC-FIGMA-006 read-only wedge 위에 additive

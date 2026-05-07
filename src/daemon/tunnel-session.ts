@@ -27,7 +27,13 @@ export class TunnelSession {
     this.salt = input.salt;
     this.attachedAt = input.attachedAt ?? 0;
     // @AX:NOTE:[AUTO] — REQ-04 ttl <= 28_800_000 ms (8h) is hard cap. AC-T2 and the spec table both pin this; reducing the cap is fine but raising it breaks AC-T2.
-    this.ttlMs = Math.min(input.ttlMs ?? DEFAULT_TTL_MS, DEFAULT_TTL_MS);
+    // Reject NaN / -Infinity / negative inputs — auditor Low-1 (CWE-693): NaN TTL would
+    // produce a session that never expires because `now >= attachedAt + NaN` is always false.
+    const requested = input.ttlMs;
+    const validRequested = (typeof requested === "number" && Number.isFinite(requested) && requested >= 0)
+      ? requested
+      : DEFAULT_TTL_MS;
+    this.ttlMs = Math.min(validRequested, DEFAULT_TTL_MS);
     this.tunnel_session_id = input.tunnel_session_id ?? generateTunnelSessionId();
   }
 

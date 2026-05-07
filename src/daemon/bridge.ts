@@ -106,13 +106,14 @@ export class WebSocketBridge {
 
   /**
    * Outbound frame send. Every frame is JSON-serialized and passed through
-   * `redact` (REQ-14). The redacted serialization is what would be written
-   * to the socket and is returned for caller-side assertions.
+   * `redact` (REQ-14, figd_) AND `redactTunnelUrl` (SPEC-FIGMA-008 REQ-08, INV-T7).
+   * The redacted serialization is what would be written to the socket and is
+   * returned for caller-side assertions.
    */
-  // @AX:WARN: [AUTO] outbound redact() is the last line of defense for figd_ token leakage on the wire — every frame MUST go through this method, no direct socket writes. @AX:REASON: INV-006 / REQ-14 — bypass would emit raw figd_ tokens to the plugin.
+  // @AX:WARN: [AUTO] outbound redact() ∘ redactTunnelUrl() is the last line of defense for figd_ AND tunnel-URL leakage on the wire — every frame MUST go through this method, no direct socket writes. @AX:REASON: INV-006 + INV-T7 / REQ-14 + REQ-08 — bypass would emit raw figd_ tokens or trycloudflare URLs to the plugin.
   async sendOutbound(frame: unknown): Promise<OutboundResult> {
     const raw = JSON.stringify(frame);
-    const safe = tokenRedactor.redact(raw);
+    const safe = tokenRedactor.redactTunnelUrl(tokenRedactor.redact(raw));
     return { serialized: safe, bytes: Buffer.byteLength(safe, "utf8") };
   }
 }

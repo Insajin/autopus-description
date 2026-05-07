@@ -6,6 +6,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { redact, redactTunnelUrl } from "../token-redactor.js";
 import { CapabilityProfileRegistry } from "./capability-profile-registry.js";
 import type { DaemonAuditWriter } from "./audit-writer.js";
 import type {
@@ -128,7 +129,7 @@ export async function startWithFlagsImpl(
   const port = input.port ?? 0;
 
   if (input.tunnel === false || input.tunnel === undefined) {
-    stdout(JSON.stringify({ event: "opsec_default_safe", tunnel: false }));
+    stdout(redactTunnelUrl(redact(JSON.stringify({ event: "opsec_default_safe", tunnel: false }))));
     return {
       exitCode: 0,
       listeningSockets: [{ address: "127.0.0.1", port }],
@@ -152,11 +153,11 @@ export async function startWithFlagsImpl(
     const staleDays = computeStaleDays(lastCowork.finished_at);
     if (staleDays >= 30) {
       stdout(
-        JSON.stringify({
+        redactTunnelUrl(redact(JSON.stringify({
           event: "probe_stale_warning",
           probe_target: "claude-cowork",
           stale_days: staleDays,
-        }),
+        }))),
       );
     }
   }
