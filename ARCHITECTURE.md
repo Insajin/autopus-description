@@ -82,7 +82,7 @@ auto-discription (root @autopus/figma-read)
 
 | 패키지 | 용도 | 위치 |
 |--------|------|------|
-| `@anthropic-ai/sdk ^0.95.0` | Claude API client | root `dependencies` |
+| `@anthropic-ai/sdk ^0.95.0` | Claude API client — Prompt Caching, Structured Outputs strict, Files API, Message Batches (SPEC-FIGMA-005) | root `dependencies` |
 | `openai ^6.36.0` | OpenAI Responses API client | root `dependencies` |
 | `next ^16.2.5` | Web UI framework (webpack builder pinned) | `apps/review-ui` |
 | `react ^19.2.0` / `react-dom ^19.2.0` | UI 라이브러리 | `apps/review-ui` |
@@ -133,6 +133,10 @@ LLM provider는 swap-able interface(`src/types/llm-provider.ts`) — Anthropic C
 - **Defense-in-depth redaction**: `figd_…`, `xoxb-…`, bearer 토큰을 audit / UI / error 표면 모두에서 마스킹
 - **Untrusted prompt fence**: `src/prompts/untrusted-fence.ts` 가 사용자 입력을 prompt instruction으로 승격되지 않도록 격리
 - **Plugin Bridge fallback**: MCP write seat 부재 시 Plugin Bridge로 자동 라우팅 (`FALLBACK_VIA_PLUGIN_BRIDGE` audit trail)
+- **Prompt Caching static prefix lint** (SPEC-FIGMA-005): cache_control 영역(`src/providers/static-prefix.ts`)을 별도 모듈로 분리, frame-specific 토큰 0 검증을 vitest 하드 게이트로 강제 (cache 키 안정성 보장)
+- **Files API file_id dedup** (SPEC-FIGMA-005): 동일 `screenshot_sha256` 재처리 시 base64 inline 대신 file_id 참조(`src/providers/files-cache.ts`). image input tokens = 0 on second call. `.audit/<batch_id>/file-id-map.json` 영속
+- **Message Batches lane separation** (SPEC-FIGMA-005): `--realtime` (sync, 기존)과 `--batch` (async, 50% 비용)를 lane parameter로 dispatch (`src/batch-executor.ts` + `src/batch-lane-runner.ts`). manifest 결과는 lane과 무관하게 byte-equivalent
+- **Structured Outputs strict + AJV 2차** (SPEC-FIGMA-005): SDK strict 응답에 대해서도 `tools/validate-manifest`를 child-process로 재호출(`src/validators/strict-bridge.ts`)하는 defense-in-depth. silent JSON repair fallback 제거
 
 ---
 
@@ -141,7 +145,7 @@ LLM provider는 swap-able interface(`src/types/llm-provider.ts`) — Anthropic C
 - 단위 테스트: `tests/unit/`
 - 통합 테스트: `tests/integration/` (특히 `figma-004/` 의 12개 per-AC 파일이 oracle-grade assertion)
 - 커버리지 임계값(`vitest.config.ts`): lines 85%, branches 80%, functions 85%, statements 85%
-- 현재 측정치: lines 96.56%, branches 90.27%, functions 96.58%, 492 tests / 66 files
+- 현재 측정치: 561 tests / 76 files (SPEC-FIGMA-005 반영). 커버리지는 vitest 하드 게이트(`vitest.config.ts` lines 85% / branches 80% / functions 85% / statements 85%)로 자동 강제.
 - 의존성 보안 게이트: `.github/workflows/dep-security.yml` + `scripts/check-dep-security.sh`
 
 ---
@@ -150,7 +154,7 @@ LLM provider는 swap-able interface(`src/types/llm-provider.ts`) — Anthropic C
 
 | 규칙 | 결과 |
 |------|------|
-| 파일 300줄 hard limit (`.claude/rules/autopus/file-size-limit.md`) | `src/*.ts` 최대 223줄 (rate-limit.ts) — **위반 없음** |
+| 파일 300줄 hard limit (`.claude/rules/autopus/file-size-limit.md`) | `src/*.ts` 최대 275줄 (`batch-lane.ts`) — **위반 없음** |
 | 순환 의존성 | review-ui → write-router 단방향 — **위반 없음** |
 | 보안 토큰 노출 | `redact()` 가 stdout/stderr/audit 전 표면에 적용됨 — **위반 없음** |
 | `frame_name` 어댑터 opt-in (REQ-05) | Default disabled, `--allow-frame-name` 명시 시만 활성 — **위반 없음** |
@@ -159,7 +163,15 @@ LLM provider는 swap-able interface(`src/types/llm-provider.ts`) — Anthropic C
 
 ## 9. 후속 작업
 
-본 SPEC 4종은 모두 `completed` 상태. 다음 단계는 BS-001 success metric (75% handoff-time reduction) 실측을 위한 **Phase 0 도그푸딩 (30-frame end-to-end)** 이며, 이는 별도 SPEC 없이 운영 단계에서 수행됩니다 (CHANGELOG.md SPEC-FIGMA-004 Notes 참조).
+SPEC-FIGMA-001~005는 `completed` 상태입니다.
+다음 단계는 BS-001 success metric (75% handoff-time reduction) 실측을 위한
+**Phase 0 도그푸딩 (30-frame end-to-end)** 이며, 이는 별도 SPEC 없이 운영
+단계에서 수행됩니다. SPEC-FIGMA-005가 enabling한 측정 metric은
+`aggregate_cache_hit_ratio`, `--batch` cost ratio, `strict_mode_used` frame의
+JSON repair retry 0건, file_id dedup count입니다 (CHANGELOG.md
+SPEC-FIGMA-005 Notes 참조). Phase 0 결과를 토대로 SPEC-FIGMA-006 (Citations
+× Review UI)와 SPEC-FIGMA-007 (Extended Thinking + 4축 PM-risk score) 진행
+여부를 결정합니다.
 
 ---
 

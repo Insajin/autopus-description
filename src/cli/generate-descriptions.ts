@@ -20,6 +20,9 @@ import type { LLMProvider } from "../types/llm-provider.js";
 import type { FrameInput } from "../routing.js";
 
 const DEFAULT_OPENAI_MODEL = "gpt-5.5";
+// SPEC-FIGMA-005 REQ-30 enabler — sync default sonnet 4.6, escalate to opus 4.7.
+const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-6";
+const ESCALATED_ANTHROPIC_MODEL = "claude-opus-4-7";
 
 const HELP = `Usage: generate-descriptions <input-dir> <output-manifest>
 
@@ -33,8 +36,14 @@ Options:
   --provider=mock|anthropic|openai provider adapter (default mock)
                         anthropic uses ANTHROPIC_API_KEY; openai uses
                         OPENAI_API_KEY (Responses API, default gpt-5.5).
-  --model=ID            pinned LLM model id (default claude-opus-4-7-20260115
+  --model=ID            pinned LLM model id (default claude-sonnet-4-6
                         for anthropic, gpt-5.5 for openai)
+  --batch               submit via Anthropic Message Batches API (50% cost,
+                        24h SLA). SPEC-FIGMA-005 REQ-05.
+  --realtime            force synchronous messages.create path (default).
+                        SPEC-FIGMA-005 REQ-06.
+  --escalate-model      use claude-opus-4-7 instead of claude-sonnet-4-6 for
+                        anthropic provider (SPEC-FIGMA-005 REQ-30).
   --help, -h            show this help and exit 0
 `;
 
@@ -48,6 +57,8 @@ interface ParsedArgs {
   audit_dir?: string;
   provider?: "mock" | "anthropic" | "openai";
   model?: string;
+  lane?: "realtime" | "batch";
+  escalate_model?: boolean;
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -82,6 +93,18 @@ function parseArgs(argv: string[]): ParsedArgs {
     }
     if (arg.startsWith("--model=")) {
       out.model = arg.slice("--model=".length);
+      continue;
+    }
+    if (arg === "--batch") {
+      out.lane = "batch";
+      continue;
+    }
+    if (arg === "--realtime") {
+      out.lane = "realtime";
+      continue;
+    }
+    if (arg === "--escalate-model") {
+      out.escalate_model = true;
       continue;
     }
     if (!arg.startsWith("-")) positional.push(arg);
@@ -158,12 +181,18 @@ function buildProvider(args: ParsedArgs, inputDir: string): LLMProvider {
   });
 }
 
-// Fallback model when --provider=openai is selected without --model.
-// Exposed for the unit test that pins the default to gpt-5.5.
+// Fallback model when no --model is provided. Exposed for the unit test
+// that pins per-provider defaults.
+// SPEC-FIGMA-005 REQ-30: anthropic default is sonnet-4-6; --escalate-model
+// upgrades to opus-4-7.
 export function defaultModelFor(
   provider: ParsedArgs["provider"],
+  escalate?: boolean,
 ): string | undefined {
   if (provider === "openai") return DEFAULT_OPENAI_MODEL;
+  if (provider === "anthropic") {
+    return escalate ? ESCALATED_ANTHROPIC_MODEL : DEFAULT_ANTHROPIC_MODEL;
+  }
   return undefined;
 }
 
@@ -206,7 +235,8 @@ export async function main(argv: string[]): Promise<number> {
     temperature: args.temperature,
     mode: args.mode,
     audit_dir: args.audit_dir,
-    model_id: args.model ?? defaultModelFor(args.provider),
+    model_id: args.model ?? defaultModelFor(args.provider, args.escalate_model),
+    lane: args.lane,
   });
   process.stdout.write(result.stdout);
   if (result.stderr) process.stderr.write(result.stderr);

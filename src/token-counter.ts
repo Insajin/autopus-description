@@ -1,6 +1,12 @@
 // SPEC-FIGMA-003 T4: Provider-aware token counter and budget enforcement.
 // Offline baseline: ceil(chars/4). Within ~20% of Anthropic tokenizer for
 // EN/KO prose mixed with JSON. Swap behind same surface when Phase 0 says.
+//
+// SPEC-FIGMA-005 REQ-20, REQ-NFR-01: cached vs dynamic input token split.
+// Cache budget enforcement counts (cached + dynamic) as the input cap input,
+// so prompt evolution that invalidates the cache cannot silently exceed the
+// 8K cap. splitInputTokens() reads the SDK usage object and returns the
+// per-frame split for audit-emitter consumption.
 
 import { ErrorCode, ProviderError } from "./types/llm-provider.js";
 
@@ -38,6 +44,9 @@ export function predictInputTokens(
 }
 
 // REQ-05 fail-fast. Throws before LLM call so no API spend on oversized input.
+// SPEC-FIGMA-005 REQ-NFR-01: cached + dynamic counted as a single aggregate
+// against the cap. Caller passes the SUM of cache_read + cache_creation +
+// dynamic input tokens (or the predicted total when measuring pre-call).
 export function enforceInputCap(
   measured: number,
   screen_id: string,
@@ -67,6 +76,35 @@ export function enforceOutputCap(
       { measured_output_tokens: measured, limit },
     );
   }
+}
+
+// SPEC-FIGMA-005 REQ-20: split SDK usage into cached vs dynamic measurements.
+// AnthropicUsage shape (subset): { input_tokens, cache_read_input_tokens?,
+// cache_creation_input_tokens? }. The plain input_tokens already excludes
+// cached tokens per Anthropic 0.95 docs, so dynamic = input_tokens.
+export interface AnthropicLikeUsage {
+  input_tokens?: number;
+  cache_read_input_tokens?: number;
+  cache_creation_input_tokens?: number;
+}
+
+export interface InputTokenSplit {
+  cache_read: number;
+  cache_creation: number;
+  dynamic: number;
+  total: number;
+}
+
+export function splitInputTokens(usage: AnthropicLikeUsage): InputTokenSplit {
+  const cache_read = usage.cache_read_input_tokens ?? 0;
+  const cache_creation = usage.cache_creation_input_tokens ?? 0;
+  const dynamic = usage.input_tokens ?? 0;
+  return {
+    cache_read,
+    cache_creation,
+    dynamic,
+    total: cache_read + cache_creation + dynamic,
+  };
 }
 
 export const TOKEN_LIMITS = {
