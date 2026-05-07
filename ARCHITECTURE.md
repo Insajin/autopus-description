@@ -8,12 +8,15 @@
 
 ## 1. 시스템 개요
 
-`@autopus/figma-read` 는 Figma 파일을 읽고, LLM으로 frame별 description을 생성하고, PM이 검수/승인/Figma write-back 까지 처리할 수 있는 4-슬라이스 파이프라인입니다. 4개의 완료된 SPEC (SPEC-FIGMA-001 ~ 004) 으로 구성됩니다.
+`@autopus/figma-read` 는 Figma 파일을 읽고, LLM으로 frame별 description을 생성하고, PM이 검수/승인/Figma write-back 까지 처리할 수 있는 4-슬라이스 파이프라인입니다. SPEC-FIGMA-001 ~ 005 (완료) + SPEC-FIGMA-006 (read-only MCP daemon, 완료) 으로 구성됩니다.
 
 ```
 [Figma File] → [Read Pipeline] → [Description Generator] → [PM Review UI] → [Write Router] → [Figma]
               SPEC-FIGMA-002   SPEC-FIGMA-003          SPEC-FIGMA-004   SPEC-FIGMA-004
                           \________________ Schema (SPEC-FIGMA-001) ______________/
+
+[Figma Plugin (vendor)] ⇄ WS bridge ⇄ [Autopus MCP Daemon] ⇄ MCP (stdio|http) ⇄ [AI client]
+                                       SPEC-FIGMA-006 (read-only wedge)
 ```
 
 엔드 투 엔드 outcome: BS-001 — "디자인 → 핸드오프 문서화 인지 부하 80% 절감".
@@ -28,6 +31,7 @@
 | **Read** (FIGMA-002) | Figma MCP에서 frame meta + screenshot + prototype graph 추출 (read-only) | `src/adapters/`, `src/read-pipeline.ts`, `src/read-adapter.ts`, CLI `figma-read` |
 | **Generation** (FIGMA-003) | LLM (Claude / OpenAI / mock) 호출, Vision/Node 라우팅, token budget, audit | `src/providers/`, `src/batch-*.ts`, `src/routing.ts`, `src/pipeline.ts`, CLI `generate-descriptions` |
 | **Review & Write** (FIGMA-004) | PM 웹 UI 검수 + 6-route 어댑터 dispatch + idempotency + undo + Slack escalation | `apps/review-ui/`, `packages/write-router/`, `packages/escalation/` |
+| **MCP Daemon** (FIGMA-006) | Plugin selection-change → daemon → MCP resource 발행 (read-only wedge) + Phase 0 telemetry 4-counter + capability negotiation | `src/daemon/`, `vendor/cursor-talk-to-figma-mcp/`, `apps/review-ui/src/app/api/telemetry-summary/` |
 | **Validation** (cross-cut) | Anti-hallucination, post-hoc injection 검출, untrusted prompt 격리 | `src/validators/`, `src/prompts/` |
 
 ---
@@ -44,7 +48,12 @@
 │ Application / Pipeline                                       │
 │   src/pipeline.ts          src/read-pipeline.ts              │
 │   src/batch-runtime.ts     src/batch-executor.ts             │
-│   apps/review-ui/src/app/api/{load,apply,undo,feedback}      │
+│   src/daemon/{cli,server,bridge,selection-queue,             │
+│               mcp-resources,mcp-tools,telemetry,             │
+│               audit-writer,capability-profile,               │
+│               untrusted-mcp-input}.ts                        │
+│   apps/review-ui/src/app/api/{load,apply,undo,feedback,      │
+│                                telemetry-summary}            │
 ├─────────────────────────────────────────────────────────────┤
 │ Domain / Routing / Adapter                                   │
 │   src/routing.ts (Vision/Node decision)                      │
@@ -101,12 +110,15 @@ LLM provider는 swap-able interface(`src/types/llm-provider.ts`) — Anthropic C
 |--------|------|------|
 | `figma-read` | CLI bin | `src/cli.ts` → `dist/src/cli.js` |
 | `generate-descriptions` | CLI bin | `src/cli/generate-descriptions.ts` → `dist/src/cli/generate-descriptions.js` |
+| `autopus-daemon` | CLI bin (start/stop/status) | `src/daemon/cli.ts` → `dist/src/daemon/cli.js` |
 | `validate-manifest` | CLI tool (AJV) | `tools/validate-manifest/` (child-process로 호출됨) |
 | Review UI dev server | Web | `apps/review-ui` → `next dev` |
 | API: `/api/load` | HTTP POST | `apps/review-ui/src/app/api/load/route.ts` |
 | API: `/api/apply` | HTTP POST | `apps/review-ui/src/app/api/apply/route.ts` |
 | API: `/api/undo` | HTTP POST | `apps/review-ui/src/app/api/undo/route.ts` |
 | API: `/api/feedback` | HTTP POST | `apps/review-ui/src/app/api/feedback/route.ts` |
+| API: `/api/telemetry-summary` | HTTP GET | `apps/review-ui/src/app/api/telemetry-summary/route.ts` (Phase 0 aggregate) |
+| MCP resources | stdio/http | `autopus://{active_selection,pending_descriptions,audit_events,stale_frames}` |
 
 ### 환경 변수
 
@@ -137,6 +149,11 @@ LLM provider는 swap-able interface(`src/types/llm-provider.ts`) — Anthropic C
 - **Files API file_id dedup** (SPEC-FIGMA-005): 동일 `screenshot_sha256` 재처리 시 base64 inline 대신 file_id 참조(`src/providers/files-cache.ts`). image input tokens = 0 on second call. `.audit/<batch_id>/file-id-map.json` 영속
 - **Message Batches lane separation** (SPEC-FIGMA-005): `--realtime` (sync, 기존)과 `--batch` (async, 50% 비용)를 lane parameter로 dispatch (`src/batch-executor.ts` + `src/batch-lane-runner.ts`). manifest 결과는 lane과 무관하게 byte-equivalent
 - **Structured Outputs strict + AJV 2차** (SPEC-FIGMA-005): SDK strict 응답에 대해서도 `tools/validate-manifest`를 child-process로 재호출(`src/validators/strict-bridge.ts`)하는 defense-in-depth. silent JSON repair fallback 제거
+- **MCP daemon parallel branch** (SPEC-FIGMA-006): plugin selection-change → daemon → MCP resource 발행. 기존 `runReadPipeline` / `runBatch` / `wrapUntrustedFigmaText` / `emitAuditRecord` 를 호출만 하고 reimplement 금지 (NFR-04 freeze)
+- **Vendor pinning** (SPEC-FIGMA-006): `vendor/cursor-talk-to-figma-mcp/`에 sonnylazuardi 저장소 단일 commit hash 고정 복사. npm dependency가 아닌 file copy. tsconfig `exclude: vendor/**` + 300줄 limit out-of-scope
+- **Per-session token + 127.0.0.1 binding** (SPEC-FIGMA-006): WebSocket bridge가 daemon start 시 1회 stdout으로 출력하는 토큰을 요구. plugin debug log에 `figd_*` 누출 방지를 위한 outbound `redact` 게이트
+- **MCP capability negotiation** (SPEC-FIGMA-006): 클라이언트 transport class(`stdio`/`http`/`tunnel`) 자동 감지, `client_profile_attached` audit row + `capabilities[]` 발행. tunnel은 `fallback.polling` degraded 모드로 표기
+- **Phase 0 telemetry counters** (SPEC-FIGMA-006): `selection_to_chat_ms` / `generation_ms` / `ai_requery_count` / `dwell_ms` 4-counter를 `.autopus/telemetry/phase0.jsonl`에 monotonic append. 30-event 시퀀스에서 daemon RSS ≤ 256 MB
 
 ---
 
@@ -145,7 +162,7 @@ LLM provider는 swap-able interface(`src/types/llm-provider.ts`) — Anthropic C
 - 단위 테스트: `tests/unit/`
 - 통합 테스트: `tests/integration/` (특히 `figma-004/` 의 12개 per-AC 파일이 oracle-grade assertion)
 - 커버리지 임계값(`vitest.config.ts`): lines 85%, branches 80%, functions 85%, statements 85%
-- 현재 측정치: 561 tests / 76 files (SPEC-FIGMA-005 반영). 커버리지는 vitest 하드 게이트(`vitest.config.ts` lines 85% / branches 80% / functions 85% / statements 85%)로 자동 강제.
+- 현재 측정치: 561 tests / 76 files (SPEC-FIGMA-005 반영). SPEC-FIGMA-006 추가로 daemon 단위 테스트 12개 + 통합 테스트 14 AC 시나리오 + review-ui telemetry-summary 1개. 커버리지는 vitest 하드 게이트(`vitest.config.ts` lines 85% / branches 80% / functions 85% / statements 85%)로 자동 강제.
 - 의존성 보안 게이트: `.github/workflows/dep-security.yml` + `scripts/check-dep-security.sh`
 
 ---
@@ -154,7 +171,7 @@ LLM provider는 swap-able interface(`src/types/llm-provider.ts`) — Anthropic C
 
 | 규칙 | 결과 |
 |------|------|
-| 파일 300줄 hard limit (`.claude/rules/autopus/file-size-limit.md`) | `src/*.ts` 최대 275줄 (`batch-lane.ts`) — **위반 없음** |
+| 파일 300줄 hard limit (`.claude/rules/autopus/file-size-limit.md`) | `src/*.ts` 최대 275줄 (`batch-lane.ts`), `src/daemon/server.ts` 최대선 — **위반 없음**. `vendor/**`는 NFR-06 vendor 예외 |
 | 순환 의존성 | review-ui → write-router 단방향 — **위반 없음** |
 | 보안 토큰 노출 | `redact()` 가 stdout/stderr/audit 전 표면에 적용됨 — **위반 없음** |
 | `frame_name` 어댑터 opt-in (REQ-05) | Default disabled, `--allow-frame-name` 명시 시만 활성 — **위반 없음** |
@@ -163,15 +180,15 @@ LLM provider는 swap-able interface(`src/types/llm-provider.ts`) — Anthropic C
 
 ## 9. 후속 작업
 
-SPEC-FIGMA-001~005는 `completed` 상태입니다.
-다음 단계는 BS-001 success metric (75% handoff-time reduction) 실측을 위한
-**Phase 0 도그푸딩 (30-frame end-to-end)** 이며, 이는 별도 SPEC 없이 운영
-단계에서 수행됩니다. SPEC-FIGMA-005가 enabling한 측정 metric은
-`aggregate_cache_hit_ratio`, `--batch` cost ratio, `strict_mode_used` frame의
-JSON repair retry 0건, file_id dedup count입니다 (CHANGELOG.md
-SPEC-FIGMA-005 Notes 참조). Phase 0 결과를 토대로 SPEC-FIGMA-006 (Citations
-× Review UI)와 SPEC-FIGMA-007 (Extended Thinking + 4축 PM-risk score) 진행
-여부를 결정합니다.
+SPEC-FIGMA-001~006은 `completed` 상태입니다.
+다음 단계는 SPEC-FIGMA-006이 발행한 Phase 0 telemetry counter 4종을 토대로
+**30-frame end-to-end 도그푸딩 측정** 을 운영 단계에서 진행하는 것이며,
+sibling SPEC-FIGMA-007 (write path — PluginCommand emit + dryRun/approve/apply
++ undo)이 baseline 측정 종료 후 진행됩니다. SPEC-FIGMA-008 (MCP transport
+matrix · Claude.ai cowork tunnel)는 optional 트랙으로 SPEC-FIGMA-007과 병행
+가능합니다. SPEC-FIGMA-005 측정 metric (`aggregate_cache_hit_ratio`,
+`--batch` cost ratio, strict mode JSON repair retry, file_id dedup count) 은
+SPEC-FIGMA-006의 daemon이 동일 provider 재사용으로 자동 승계합니다.
 
 ---
 

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Autopus Read-Only Plugin</title>
+    <!--
+      Autopus local patch (SPEC-FIGMA-006 REQ-12, BS-003 Decision 2):
+      Upstream ui.html shipped a connection/config/about UI plus an inline
+      Google Analytics (GA4) sender that fires on plugin open. Both are
+      demoted in our deployment because:
+        1. Chat goes to the AI client, not the plugin shell (BS-003 D2).
+        2. Phase 0 dogfood is on-device and must not emit external telemetry
+           (NFR-04 / NFR-08): no fetch() to google-analytics.com.
+        3. WebSocket bridge management belongs to the Autopus daemon, not the
+           plugin UI; the plugin only displays selection state.
+      This file is a minimal status strip. code.js is unchanged from upstream
+      so unbound DOM listeners are harmless (DOM IDs missing → no-op).
+    -->
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        margin: 0;
+        padding: 12px 16px;
+        color: #e0e0e0;
+        background-color: #1e1e1e;
+        font-size: 12px;
+      }
+      .strip {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #888;
+        flex-shrink: 0;
+      }
+      .dot.connected { background: #4ade80; }
+      .dot.disconnected { background: #ff6b6b; }
+      .label { color: #cccccc; }
+      .chip {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        background: #2d2d2d;
+        border: 1px solid #444;
+        border-radius: 3px;
+        padding: 2px 6px;
+        color: #e0e0e0;
+        font-size: 11px;
+      }
+      .chip-label { color: #888; margin-right: 4px; font-family: inherit; }
+      .actions { margin-top: 10px; display: flex; gap: 8px; }
+      button.placeholder {
+        background: #2d2d2d;
+        color: #777;
+        border: 1px solid #444;
+        border-radius: 4px;
+        padding: 6px 12px;
+        font-size: 11px;
+        cursor: not-allowed;
+      }
+      button.placeholder[disabled] { opacity: 0.6; }
+      .footnote {
+        margin-top: 10px;
+        color: #666;
+        font-size: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="strip" role="status" aria-live="polite">
+      <span id="conn-dot" class="dot disconnected" aria-hidden="true"></span>
+      <span id="conn-label" class="label">Disconnected</span>
+      <span class="chip"><span class="chip-label">source_hash</span><span id="source-hash-chip">--------</span></span>
+      <span class="chip"><span class="chip-label">selection_id</span><span id="selection-id-chip">none</span></span>
+    </div>
+    <div class="actions">
+      <button id="btn-approve" class="placeholder" disabled
+        title="Approve action — placeholder, ships in SPEC-FIGMA-007">
+        Approve (placeholder — SPEC-FIGMA-007)
+      </button>
+      <button id="btn-undo" class="placeholder" disabled
+        title="Undo action — placeholder, ships in SPEC-FIGMA-007">
+        Undo (placeholder — SPEC-FIGMA-007)
+      </button>
+    </div>
+    <div class="footnote">
+      Autopus read-only wedge · SPEC-FIGMA-006 · status-strip only
+    </div>
+
+    <script>
+      // Read-only status strip listener. Receives plugin-side messages from
+      // code.js via window.onmessage and updates the chips. No outbound
+      // postMessage, no external network calls, no analytics.
+      window.addEventListener("message", (event) => {
+        const msg = event && event.data && event.data.pluginMessage;
+        if (!msg || typeof msg !== "object") return;
+        if (msg.type === "selection-update") {
+          const sel = document.getElementById("selection-id-chip");
+          const sh = document.getElementById("source-hash-chip");
+          if (sel && typeof msg.selection_id === "string") {
+            sel.textContent = msg.selection_id || "none";
+          }
+          if (sh && typeof msg.source_hash === "string") {
+            sh.textContent = (msg.source_hash || "").slice(0, 8) || "--------";
+          }
+        } else if (msg.type === "connection-status") {
+          const dot = document.getElementById("conn-dot");
+          const label = document.getElementById("conn-label");
+          const connected = msg.connected === true;
+          if (dot) dot.className = "dot " + (connected ? "connected" : "disconnected");
+          if (label) label.textContent = connected ? "Connected" : "Disconnected";
+        }
+      });
+    </script>
+  </body>
+</html>
