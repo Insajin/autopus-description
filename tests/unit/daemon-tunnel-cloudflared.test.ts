@@ -180,6 +180,65 @@ describe("CloudflaredTunnelAdapter (SPEC-FIGMA-008)", () => {
     expect(proc.kill).toHaveBeenCalledWith("SIGTERM");
   });
 
+  it("ignores non-URL chunks then resolves on URL chunk (no-match branch)", async () => {
+    const proc = makeFakeProc();
+    (spawn as unknown as ReturnType<typeof vi.fn>).mockReturnValue(proc);
+
+    const adapter = new CloudflaredTunnelAdapter({ localPort: 8080, spawnTimeoutMs: 500 });
+    const promise = adapter.attach();
+    queueMicrotask(() => {
+      proc.stdout.emit("data", Buffer.from("INF starting tunnel...\n"));
+      proc.stderr.emit("data", Buffer.from("DBG no url here yet\n"));
+      proc.stdout.emit("data", Buffer.from("INF Visit https://nonurl-x.trycloudflare.com\n"));
+    });
+    const result = await promise;
+    expect(result.tunnelUrl).toBe("https://nonurl-x.trycloudflare.com");
+  });
+
+  it("ignores chunk events after settle (settled branch in onChunk)", async () => {
+    const proc = makeFakeProc();
+    (spawn as unknown as ReturnType<typeof vi.fn>).mockReturnValue(proc);
+
+    const adapter = new CloudflaredTunnelAdapter({ localPort: 8080, spawnTimeoutMs: 500 });
+    const promise = adapter.attach();
+    queueMicrotask(() => {
+      proc.stderr.emit("data", Buffer.from("https://x.trycloudflare.com\n"));
+      // Subsequent chunks AFTER settle — must be ignored without throwing.
+      proc.stderr.emit("data", Buffer.from("https://y.trycloudflare.com\n"));
+      proc.stdout.emit("data", Buffer.from("more chunks\n"));
+    });
+    const result = await promise;
+    expect(result.tunnelUrl).toBe("https://x.trycloudflare.com");
+  });
+
+  it("ignores error event after settle (settled branch in error handler)", async () => {
+    const proc = makeFakeProc();
+    (spawn as unknown as ReturnType<typeof vi.fn>).mockReturnValue(proc);
+
+    const adapter = new CloudflaredTunnelAdapter({ localPort: 8080, spawnTimeoutMs: 500 });
+    const promise = adapter.attach();
+    queueMicrotask(() => {
+      proc.stderr.emit("data", Buffer.from("https://settle.trycloudflare.com\n"));
+      proc.emit("error", new Error("late error"));
+    });
+    const result = await promise;
+    expect(result.tunnelUrl).toBe("https://settle.trycloudflare.com");
+  });
+
+  it("ignores exit event after settle (settled branch in exit handler)", async () => {
+    const proc = makeFakeProc();
+    (spawn as unknown as ReturnType<typeof vi.fn>).mockReturnValue(proc);
+
+    const adapter = new CloudflaredTunnelAdapter({ localPort: 8080, spawnTimeoutMs: 500 });
+    const promise = adapter.attach();
+    queueMicrotask(() => {
+      proc.stderr.emit("data", Buffer.from("https://exit-after.trycloudflare.com\n"));
+      proc.emit("exit", 0);
+    });
+    const result = await promise;
+    expect(result.tunnelUrl).toBe("https://exit-after.trycloudflare.com");
+  });
+
   it("uses default binary path 'cloudflared' when not provided", async () => {
     const proc = makeFakeProc();
     (spawn as unknown as ReturnType<typeof vi.fn>).mockReturnValue(proc);
