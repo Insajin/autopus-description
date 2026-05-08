@@ -44,6 +44,7 @@ import {
 } from "./providers/batch-lane.js";
 import type { BatchError, StreamCapture } from "./batch-runtime.js";
 import { buildErrorLine } from "./batch-runtime.js";
+import type { ProjectBrief } from "./project-brief.js";
 
 export interface BatchLaneCtx {
   client: Anthropic;
@@ -60,6 +61,7 @@ export interface BatchLaneCtx {
   provider_sdk_version: string;
   poll_interval_ms?: number;
   max_wait_ms?: number;
+  project_brief?: ProjectBrief;
 }
 
 export interface BatchLaneResult {
@@ -135,7 +137,9 @@ export async function runBatchLane(
 ): Promise<BatchLaneResult> {
   const requests = ctx.frames.map((frame) => {
     const meta = frame.frame_meta;
-    const promptTree = buildNodeOnlyPrompt(meta);
+    const promptTree = buildNodeOnlyPrompt(meta, {
+      projectBrief: ctx.project_brief,
+    });
     const prompt = flattenPrompt(promptTree);
     return composeBatchRequest(frame.screen_id, prompt, undefined, {
       model_id: ctx.model_id,

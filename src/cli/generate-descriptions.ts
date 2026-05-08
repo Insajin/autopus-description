@@ -19,6 +19,14 @@ import { OpenAIResponsesAdapter } from "../providers/openai-provider.js";
 import type { LLMProvider } from "../types/llm-provider.js";
 import type { FrameInput } from "../routing.js";
 import { isDirectInvocation } from "../direct-invocation.js";
+import {
+  PROJECT_BRIEF_HELP,
+  handleProjectBriefInit,
+  parseProjectBriefArg,
+  projectBriefPathHasNull,
+  resolveProjectBrief,
+  type ProjectBriefArgs,
+} from "./project-brief-cli.js";
 
 const DEFAULT_OPENAI_MODEL = "gpt-5.5";
 // SPEC-FIGMA-005 REQ-30 enabler — sync default sonnet 4.6, escalate to opus 4.7.
@@ -37,6 +45,7 @@ Options:
   --provider=mock|anthropic|openai provider adapter (default mock)
                         anthropic uses ANTHROPIC_API_KEY; openai uses
                         OPENAI_API_KEY (Responses API, default gpt-5.5).
+${PROJECT_BRIEF_HELP}
   --model=ID            pinned LLM model id (default claude-sonnet-4-6
                         for anthropic, gpt-5.5 for openai)
   --batch               submit via Anthropic Message Batches API (50% cost,
@@ -48,7 +57,7 @@ Options:
   --help, -h            show this help and exit 0
 `;
 
-interface ParsedArgs {
+interface ParsedArgs extends ProjectBriefArgs {
   help: boolean;
   input?: string;
   output?: string;
@@ -92,6 +101,7 @@ function parseArgs(argv: string[]): ParsedArgs {
       if (v === "mock" || v === "anthropic" || v === "openai") out.provider = v;
       continue;
     }
+    if (parseProjectBriefArg(arg, out)) continue;
     if (arg.startsWith("--model=")) {
       out.model = arg.slice("--model=".length);
       continue;
@@ -203,16 +213,27 @@ export async function main(argv: string[]): Promise<number> {
     process.stdout.write(HELP);
     return 0;
   }
+  if (projectBriefPathHasNull(args)) {
+    process.stderr.write("error: null byte in path argument\n");
+    return 2;
+  }
+  if (await handleProjectBriefInit(args)) return 0;
   if (!args.input || !args.output) {
     process.stderr.write("error: missing arguments\n");
     process.stderr.write(HELP);
     return 2;
   }
   // SEC-M1: reject null-byte path injection before passing to fs.
-  if (args.input.includes("\0") || args.output.includes("\0")) {
+  if (
+    args.input.includes("\0") ||
+    args.output.includes("\0") ||
+    projectBriefPathHasNull(args)
+  ) {
     process.stderr.write("error: null byte in path argument\n");
     return 2;
   }
+  const projectBrief = await resolveProjectBrief(args);
+  if (projectBrief === 2) return 2;
   const inputDir = resolve(args.input);
   if (!existsSync(inputDir)) {
     process.stderr.write(`error: input directory not found: ${inputDir}\n`);
@@ -238,6 +259,7 @@ export async function main(argv: string[]): Promise<number> {
     audit_dir: args.audit_dir,
     model_id: args.model ?? defaultModelFor(args.provider, args.escalate_model),
     lane: args.lane,
+    project_brief: projectBrief,
   });
   process.stdout.write(result.stdout);
   if (result.stderr) process.stderr.write(result.stderr);

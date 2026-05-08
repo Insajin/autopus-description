@@ -25,6 +25,7 @@ import {
 } from "./batch-entry-coerce.js";
 import type { ResolvedRetry, StreamCapture, BatchError } from "./batch-runtime.js";
 import { withRetry, buildErrorLine } from "./batch-runtime.js";
+import type { ProjectBrief } from "./project-brief.js";
 
 export interface ProcessCtx {
   provider: LLMProvider;
@@ -44,6 +45,7 @@ export interface ProcessCtx {
   // file_id_for is consulted by the routing layer; we surface it in audit only.
   file_id_for?: (sha256: string) => string | undefined;
   validator_binary?: string;
+  project_brief?: ProjectBrief;
 }
 
 export interface FrameOutcome {
@@ -76,7 +78,7 @@ export async function processFrame(
           frame,
           ctx.provider,
           { incrementVisionCount: () => ctx.telemetry.incrementVisionCount() },
-          { providerOpts, mode: ctx.mode },
+          { providerOpts, mode: ctx.mode, projectBrief: ctx.project_brief },
         ),
       ctx.retry,
     );
