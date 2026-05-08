@@ -18,6 +18,7 @@ import { join } from "node:path";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
+import { isDirectInvocation } from "../direct-invocation.js";
 import { DaemonAuditWriter } from "./audit-writer.js";
 import { CapabilityProfileRegistry } from "./capability-profile-registry.js";
 import { DaemonWriteExtension } from "./daemon-write-extension.js";
@@ -189,7 +190,7 @@ export async function runMcpStdio(
   await server.connect(transport);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isDirectInvocation(import.meta.url)) {
   runMcpStdio().catch((err: unknown) => {
     const message = err instanceof Error ? err.message : String(err);
     process.stderr.write(`autopus-mcp-stdio: ${message}\n`);

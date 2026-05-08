@@ -1,6 +1,6 @@
 // SPEC-FIGMA-003 T6: Vision-augmented prompt builder.
 // Reuses the node-only prompt body and appends a Vision-specific instruction.
-// Image bytes are loaded synchronously — Node 20 ESM tolerates fs.readFileSync
+// Image bytes are loaded synchronously; the Node >=22 runtime tolerates fs.readFileSync
 // for small one-shot reads.
 
 import { existsSync, readFileSync } from "node:fs";

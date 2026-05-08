@@ -10,9 +10,9 @@ import { describe, expect, it } from "vitest";
 
 function makePassingValidator(): string {
   const dir = mkdtempSync(join(tmpdir(), "figma005-validator-pass-"));
-  const path = join(dir, "stub.sh");
-  writeFileSync(path, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
-  return `sh ${path}`;
+  const path = join(dir, "stub-validator.mjs");
+  writeFileSync(path, "process.exit(0);\n", "utf8");
+  return `node ${path}`;
 }
 
 import { runBatch } from "../../../src/batch-executor.js";

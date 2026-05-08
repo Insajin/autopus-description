@@ -2,9 +2,24 @@
 // Linked: REQ-03, REQ-20 | INV-009 (atomicity gate is exclusive to UI button).
 
 import { describe, it, expect } from "vitest";
-import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+
+function findAutopusApplyRequestLines(pluginDir: string): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(pluginDir, { withFileTypes: true })) {
+    if (!entry.isFile()) continue;
+    if (!/^autopus_.*\.(ts|html)$/.test(entry.name)) continue;
+    if (entry.name.endsWith(".test.ts")) continue;
+    const path = resolve(pluginDir, entry.name);
+    readFileSync(path, "utf8").split(/\r?\n/).forEach((line, idx) => {
+      if (line.includes("apply_request")) {
+        out.push(`${path}:${idx + 1}:${line}`);
+      }
+    });
+  }
+  return out;
+}
 
 describe("AC-S11: Plugin status panel renders Approve/Undo + zero chat UI elements", () => {
   it("plugin source has exactly one apply_request emission site anchored to a click handler on data-action=approve", () => {
@@ -19,15 +34,7 @@ describe("AC-S11: Plugin status panel renders Approve/Undo + zero chat UI elemen
       );
     }
 
-    const grep = spawnSync(
-      "bash",
-      [
-        "-lc",
-        `grep -nE "apply_request" ${pluginDir}/autopus_*.ts ${pluginDir}/autopus_*.html 2>/dev/null | grep -v ".test.ts" || true`,
-      ],
-      { encoding: "utf8" },
-    );
-    const lines = grep.stdout.split("\n").filter((l) => l.trim().length > 0);
+    const lines = findAutopusApplyRequestLines(pluginDir);
 
     // Expectations:
     //   * at least one production emission site

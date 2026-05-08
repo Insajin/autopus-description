@@ -24,7 +24,9 @@ describe("AC-WR-8: built bins begin with shebang and have execute bit", () => {
     const line1 = content.split("\n")[0];
     expect(line1).toBe(SHEBANG);
     const mode = statSync(BIN_STDIO).mode;
-    expect(mode & 0o111).not.toBe(0);
+    if (process.platform !== "win32") {
+      expect(mode & 0o111).not.toBe(0);
+    }
   });
 
   it("dist/src/daemon/cli.js line 1 byte-equals shebang and has execute bit", () => {
@@ -33,14 +35,18 @@ describe("AC-WR-8: built bins begin with shebang and have execute bit", () => {
     const line1 = content.split("\n")[0];
     expect(line1).toBe(SHEBANG);
     const mode = statSync(BIN_DAEMON).mode;
-    expect(mode & 0o111).not.toBe(0);
+    if (process.platform !== "win32") {
+      expect(mode & 0o111).not.toBe(0);
+    }
   });
 
   it("spawnSync of dist mcp-stdio-entry returns no ENOEXEC and produces valid JSON-RPC initialize result", () => {
     expect(distExists()).toBe(true);
     const initRequest =
       '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"0.0.0"}}}\n';
-    const result = spawnSync(BIN_STDIO, [], {
+    const command = process.platform === "win32" ? process.execPath : BIN_STDIO;
+    const args = process.platform === "win32" ? [BIN_STDIO] : [];
+    const result = spawnSync(command, args, {
       input: initRequest,
       timeout: 5_000,
       encoding: "utf8",

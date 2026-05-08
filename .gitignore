@@ -31,3 +31,17 @@ tests/integration/figma-007/.tmp/
 .autopus/daemon.pid
 .mcp.json
 node_modules/
+
+# Autopus durable context/spec fixtures required by tests
+!.autopus/
+!.autopus/project/
+!.autopus/project/*.md
+!.autopus/specs/
+!.autopus/specs/SPEC-FIGMA-008/
+!.autopus/specs/SPEC-FIGMA-008/threat-model.md
+!.autopus/specs/SPEC-FIGMA-008/opsec-runbook.md
+!.autopus/probes/
+.autopus/probes/*
+!.autopus/probes/transport-matrix.jsonl
+.autopus/audit.jsonl
+.autopus/write-audit.jsonl

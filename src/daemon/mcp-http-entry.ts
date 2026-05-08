@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 
+import { isDirectInvocation } from "../direct-invocation.js";
 import { DaemonAuditWriter } from "./audit-writer.js";
 import { CapabilityProfileRegistry } from "./capability-profile-registry.js";
 import {
@@ -285,7 +286,7 @@ export async function runMcpHttp(argv: readonly string[] = process.argv.slice(2)
   await new Promise<never>(() => undefined);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isDirectInvocation(import.meta.url)) {
   runMcpHttp().catch((err: unknown) => {
     const message = err instanceof Error ? err.message : String(err);
     process.stderr.write(`autopus-mcp-http: ${message}\n`);

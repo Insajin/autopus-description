@@ -33,7 +33,75 @@ export interface StrictBridgeOptions {
   validatorBinary?: string;
 }
 
-const DEFAULT_VALIDATOR = "node tools/validate-manifest/dist/cli.js";
+export const DEFAULT_VALIDATOR_COMMAND =
+  "node tools/validate-manifest/dist/index.js";
+
+type ValidatorProcess = ReturnType<typeof spawnSync>;
+
+function normalizeValidatorError(raw: unknown): AjvResult["errors"][number] | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as {
+    instancePath?: unknown;
+    json_pointer?: unknown;
+    message?: unknown;
+    schemaPath?: unknown;
+  };
+  const instancePath =
+    typeof row.instancePath === "string"
+      ? row.instancePath
+      : typeof row.json_pointer === "string"
+        ? row.json_pointer
+        : null;
+  if (instancePath === null) return null;
+  return {
+    instancePath,
+    message: typeof row.message === "string" ? row.message : "validator error",
+    ...(typeof row.schemaPath === "string" ? { schemaPath: row.schemaPath } : {}),
+  };
+}
+
+function parseLegacyStdout(stdout: string): AjvResult["errors"] {
+  const text = stdout.trim();
+  if (!text.startsWith("{")) return [];
+  try {
+    const obj = JSON.parse(text) as { errors?: unknown[] };
+    return (obj.errors ?? [])
+      .map(normalizeValidatorError)
+      .filter((e): e is AjvResult["errors"][number] => e !== null);
+  } catch {
+    return [];
+  }
+}
+
+function parseJsonlStderr(stderr: string): AjvResult["errors"] {
+  const parsed: AjvResult["errors"] = [];
+  for (const line of stderr.split(/\r?\n/)) {
+    const text = line.trim();
+    if (!text.startsWith("{")) continue;
+    try {
+      const normalized = normalizeValidatorError(JSON.parse(text));
+      if (normalized) parsed.push(normalized);
+    } catch {
+      continue;
+    }
+  }
+  return parsed;
+}
+
+function outputText(value: string | Buffer | null | undefined): string {
+  if (typeof value === "string") return value;
+  if (value instanceof Buffer) return value.toString("utf8");
+  return "";
+}
+
+function fallbackMessage(proc: ValidatorProcess): string {
+  return (
+    proc.error?.message ||
+    outputText(proc.stderr).trim() ||
+    outputText(proc.stdout).trim() ||
+    "validator exited non-zero"
+  );
+}
 
 /**
  * Run the AJV validator against a single ManifestEntry. The validator
@@ -52,39 +120,31 @@ export function runAjvValidate(
   const file = join(dir, "entry.json");
   const envelope = {
     schema_version: "0.2.0",
+    pilot_metadata: {
+      pm_reviewer_id: "strict-bridge",
+      pilot_date: "1970-01-01",
+      figma_file_ids: ["strict-bridge"],
+      total_token_cost: 0,
+    },
     frames: [entry],
   };
   writeFileSync(file, JSON.stringify(envelope), "utf-8");
-  const cmd = opts.validatorBinary ?? DEFAULT_VALIDATOR;
+  const cmd = opts.validatorBinary ?? DEFAULT_VALIDATOR_COMMAND;
   const [bin, ...rest] = cmd.split(/\s+/);
   const argv = [...rest, file];
   const proc = spawnSync(bin, argv, { encoding: "utf-8" });
   if (proc.status === 0) {
     return { ok: true, errors: [] };
   }
-  // Validator prints AJV errors as JSON on stdout when ajv check fails.
-  let parsed: AjvResult["errors"] = [];
-  try {
-    const stdout = (proc.stdout ?? "").trim();
-    if (stdout) {
-      const obj = JSON.parse(stdout) as {
-        errors?: AjvResult["errors"];
-      };
-      parsed = obj.errors ?? [];
-    }
-  } catch {
-    parsed = [
-      {
-        instancePath: "",
-        message: (proc.stderr ?? "").trim() || "validator exited non-zero",
-      },
-    ];
-  }
+  // The current validate-manifest tool emits JSONL errors on stderr and a
+  // RESULT summary on stdout. Keep legacy stdout JSON support for older stubs.
+  let parsed = parseJsonlStderr(outputText(proc.stderr));
+  if (parsed.length === 0) parsed = parseLegacyStdout(outputText(proc.stdout));
   if (parsed.length === 0) {
     parsed = [
       {
         instancePath: "",
-        message: (proc.stderr ?? "").trim() || "validator exited non-zero",
+        message: fallbackMessage(proc),
       },
     ];
   }

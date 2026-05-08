@@ -14,7 +14,7 @@ describe("AC-S10: sonnylazuardi vendor pin + license preservation", () => {
   it("vendor LICENSE first line equals 'The MIT License (MIT)'", () => {
     const licensePath = join(vendorDir, "LICENSE");
     expect(existsSync(licensePath)).toBe(true);
-    const firstLine = readFileSync(licensePath, "utf8").split("\n")[0];
+    const firstLine = readFileSync(licensePath, "utf8").split("\n")[0].trimEnd();
     expect(firstLine).toBe("The MIT License (MIT)");
   });
 
