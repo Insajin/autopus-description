@@ -4,6 +4,44 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added — SPEC-FIGMA-013 sync (2026-05-08)
+
+SPEC-FIGMA-013 status `approved` → `completed` sync. Adds `autopus-mcp-http`,
+a loopback Streamable HTTP/SSE MCP wire that exposes the same 9-tool / 6-resource
+read+write surface as `autopus-mcp-stdio` for web IDE, browser MCP host, and
+remote-agent local clients.
+
+- **HTTP MCP bin** (`src/daemon/mcp-http-entry.ts`, `package.json`,
+  `scripts/prepend-shebang.mjs`) — new `autopus-mcp-http` bin binds to
+  `127.0.0.1` by default, serves `/mcp`, prints one `http_listening` JSON line,
+  and exits cleanly on SIGTERM/SIGINT. Build now prepends/asserts shebang and
+  execute bit for the HTTP bin as well as the existing daemon/stdio bins.
+
+- **Per-session HTTP write isolation** (`src/daemon/mcp-http-session-manager.ts`)
+  — each HTTP MCP session gets its own SDK `Server`, `DaemonWriteExtension`, and
+  `WriteMcpResources`. `pending_id` values are session-scoped, so Client B cannot
+  apply Client A's dry-run output. Read resources remain process-global.
+
+- **Transport-level HTTP/SSE redaction guard** (`src/daemon/mcp-http-guards.ts`)
+  — JSON content/body/session validation plus response/SSE write wrapping so SDK
+  generated protocol errors and local handler payloads pass through `redact()`.
+  Oversized/invalid request paths are also covered by the SPEC-013 redaction
+  oracle.
+
+- **Surface reuse, no stdio drift** — HTTP imports the existing
+  `registerResourceHandlers`, `registerToolHandlers`, `createWriteToolContext`,
+  and `createWriteResourceContext` helpers. `READ_ONLY_TOOLS`, `WRITE_TOOLS`,
+  write resources, and the plugin-confirmation gate remain owned by the
+  SPEC-FIGMA-009/011 stdio modules.
+
+- **Acceptance verification** (`tests/integration/figma-013/`) — 9 AC-HTTP
+  oracle test files cover tool/resource order, capability audit, single attach,
+  bridge-null apply rejection, loopback binding, cross-session isolation,
+  shutdown, and `figd_*` zero-leak paths. Sync verification: `npm run build`
+  PASS; SPEC-013 AC tests PASS (9 files / 22 tests); SPEC-FIGMA-009/011
+  regression PASS (17 files / 63 tests); full `npm test` PASS (191 files /
+  1006 passed / 1 skipped).
+
 ### Added — SPEC-FIGMA-011 sync (2026-05-07)
 
 SPEC-FIGMA-011 status `implemented` → `completed` sync. Closes the BS-001
@@ -93,10 +131,10 @@ mutation, `tools.write` capability flag 추가는 모두 금지 (REQ-04).
   recipe 가 `node <abs-path>` workaround 를 대체. SPEC-FIGMA-009 의 외부
   client onboarding 절차 1차 사이트.
 
-### Out of Scope — deferred to successor SPECs
+### Out of Scope — deferred to successor SPECs at SPEC-FIGMA-011 sync time
 
-- **HTTP/SSE write transport** (web IDE / remote agent) — successor candidate
-  SPEC-FIGMA-013 (TBD).
+- **HTTP/SSE write transport** (web IDE / remote agent) — completed later by
+  SPEC-FIGMA-013 (2026-05-08).
 - **Tunnel × write 합성** (claude-cowork remote write) — precondition: AC-T10
   cowork stable signal 미닫힘.
 - **Multi-frame batch apply over stdio** — single-frame apply only.

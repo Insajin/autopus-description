@@ -8,7 +8,7 @@
 
 ## 1. 시스템 개요
 
-`@autopus/figma-read` 는 Figma 파일을 읽고, LLM으로 frame별 description을 생성하고, PM이 검수/승인/Figma write-back 까지 처리할 수 있는 4-슬라이스 파이프라인입니다. SPEC-FIGMA-001 ~ 005 (완료) + SPEC-FIGMA-006 (read-only MCP daemon, 완료) 으로 구성됩니다.
+`@autopus/figma-read` 는 Figma 파일을 읽고, LLM으로 frame별 description을 생성하고, PM이 검수/승인/Figma write-back 까지 처리할 수 있는 4-슬라이스 파이프라인입니다. SPEC-FIGMA-001 ~ 006, 009, 011, 013 (완료) 으로 구성됩니다.
 
 ```
 [Figma File] → [Read Pipeline] → [Description Generator] → [PM Review UI] → [Write Router] → [Figma]
@@ -17,6 +17,8 @@
 
 [Figma Plugin (vendor)] ⇄ WS bridge ⇄ [Autopus MCP Daemon] ⇄ MCP (stdio|http) ⇄ [AI client]
                                        SPEC-FIGMA-006 (read-only wedge)
+                                       SPEC-FIGMA-009/011 (stdio read+write)
+                                       SPEC-FIGMA-013 (loopback HTTP/SSE read+write)
 ```
 
 엔드 투 엔드 outcome: BS-001 — "디자인 → 핸드오프 문서화 인지 부하 80% 절감".
@@ -33,6 +35,7 @@
 | **Review & Write** (FIGMA-004) | PM 웹 UI 검수 + 6-route 어댑터 dispatch + idempotency + undo + Slack escalation | `apps/review-ui/`, `packages/write-router/`, `packages/escalation/` |
 | **MCP Daemon** (FIGMA-006) | Plugin selection-change → daemon → MCP resource 발행 (read-only wedge) + Phase 0 telemetry 4-counter + capability negotiation | `src/daemon/`, `vendor/cursor-talk-to-figma-mcp/`, `apps/review-ui/src/app/api/telemetry-summary/` |
 | **MCP Stdio Wire** (FIGMA-009 + FIGMA-011) | External MCP client (Codex CLI / Claude Code / Cursor) 를 위한 long-running stdio JSON-RPC entry — 6 resources + 9 tools (4 read + 5 write) + plugin-confirmation gate 보존 + bin shebang/exec | `src/daemon/mcp-stdio-{entry,handlers,write-handlers}.ts`, `scripts/prepend-shebang.mjs`, `tests/integration/figma-011/` |
+| **MCP HTTP Wire** (FIGMA-013) | External HTTP MCP client (web IDE / browser MCP host / remote agent) 를 위한 loopback Streamable HTTP/SSE entry — stdio와 byte-equal 6 resources + 9 tools, per-session pending_id isolation, response/SSE redaction guard | `src/daemon/mcp-http-{entry,session-manager,guards}.ts`, `tests/integration/figma-013/` |
 | **Validation** (cross-cut) | Anti-hallucination, post-hoc injection 검출, untrusted prompt 격리 | `src/validators/`, `src/prompts/` |
 
 ---
@@ -50,7 +53,9 @@
 │   src/pipeline.ts          src/read-pipeline.ts              │
 │   src/batch-runtime.ts     src/batch-executor.ts             │
 │   src/daemon/{cli,server,bridge,selection-queue,             │
-│               mcp-resources,mcp-tools,telemetry,             │
+│               mcp-resources,mcp-tools,mcp-http-entry,        │
+│               mcp-http-session-manager,mcp-http-guards,      │
+│               telemetry,                                     │
 │               audit-writer,capability-profile,               │
 │               untrusted-mcp-input}.ts                        │
 │   apps/review-ui/src/app/api/{load,apply,undo,feedback,      │
@@ -113,6 +118,7 @@ LLM provider는 swap-able interface(`src/types/llm-provider.ts`) — Anthropic C
 | `generate-descriptions` | CLI bin | `src/cli/generate-descriptions.ts` → `dist/src/cli/generate-descriptions.js` |
 | `autopus-daemon` | CLI bin (start/stop/status) | `src/daemon/cli.ts` → `dist/src/daemon/cli.js` |
 | `autopus-mcp-stdio` | CLI bin (long-running stdio MCP wire — SPEC-FIGMA-009) | `src/daemon/mcp-stdio-entry.ts` → `dist/src/daemon/mcp-stdio-entry.js` |
+| `autopus-mcp-http` | CLI bin (loopback Streamable HTTP/SSE MCP wire — SPEC-FIGMA-013) | `src/daemon/mcp-http-entry.ts` → `dist/src/daemon/mcp-http-entry.js` |
 | `validate-manifest` | CLI tool (AJV) | `tools/validate-manifest/` (child-process로 호출됨) |
 | Review UI dev server | Web | `apps/review-ui` → `next dev` |
 | API: `/api/load` | HTTP POST | `apps/review-ui/src/app/api/load/route.ts` |
@@ -159,6 +165,7 @@ LLM provider는 swap-able interface(`src/types/llm-provider.ts`) — Anthropic C
 - **Stdio write surface composition** (SPEC-FIGMA-011): `mcp-stdio-handlers.ts` 가 read-first / write-second byte-order deterministic merge — 4개 read-only tool 뒤에 5개 write tool (`plan_emit` / `dryRun` / `approve` / `apply` / `undo`) 이 frozen 순서로 advertise. `READ_ONLY_TOOLS` 상수 mutation 0, SPEC-FIGMA-009 INV-W4 byte-equal 보존. 모든 outbound `text` 가 `redact()` 통과 (REQ-06, INV-W2 zero-leak)
 - **Plugin gate as wire-level invariant** (SPEC-FIGMA-011 REQ-03): `apply` dispatch 가 `writeExtension.bridge !== null` 을 wire-level 에서 추가 검증; bridge=null 시 `appendAuditPartialDisconnect` 1개 row + JSON-RPC error — daemon-direct write 영구 제외, prompt-injection driven Figma mutation 차단
 - **Bin shebang + execute bit** (SPEC-FIGMA-011 REQ-08): TS 소스 line 1 `#!/usr/bin/env node` + post-`tsc` `scripts/prepend-shebang.mjs` 가 idempotent shebang assert + `chmod 0o755`. 외부 client 는 `command = "autopus-mcp-stdio"` / `"autopus-daemon"` 로 직접 spawn (ENOEXEC 회피, SPEC-FIGMA-009 의 `node <abs-path>` workaround 제거)
+- **HTTP/SSE write transport** (SPEC-FIGMA-013): `autopus-mcp-http` 가 `127.0.0.1` loopback `/mcp` 에서 stateful `StreamableHTTPServerTransport` 를 호스트. Session 별 `DaemonWriteExtension` 으로 `pending_id` 를 격리하고, read-only `McpResources` 는 process-global 로 공유. 모든 SDK-owned HTTP response / SSE `data:` bytes 는 `installRedactedResponseGuard` 를 통과한다.
 
 ---
 
@@ -167,7 +174,7 @@ LLM provider는 swap-able interface(`src/types/llm-provider.ts`) — Anthropic C
 - 단위 테스트: `tests/unit/`
 - 통합 테스트: `tests/integration/` (특히 `figma-004/` 의 12개 per-AC 파일이 oracle-grade assertion)
 - 커버리지 임계값(`vitest.config.ts`): lines 85%, branches 80%, functions 85%, statements 85%
-- 현재 측정치: 561 tests / 76 files (SPEC-FIGMA-005 반영). SPEC-FIGMA-006 추가로 daemon 단위 테스트 12개 + 통합 테스트 14 AC 시나리오 + review-ui telemetry-summary 1개. 커버리지는 vitest 하드 게이트(`vitest.config.ts` lines 85% / branches 80% / functions 85% / statements 85%)로 자동 강제.
+- 현재 측정치: `npm test` 기준 191 test files / 1006 passed / 1 skipped (2026-05-08 SPEC-FIGMA-013 sync). 커버리지는 vitest 하드 게이트(`vitest.config.ts` lines 85% / branches 80% / functions 85% / statements 85%)로 자동 강제.
 - 의존성 보안 게이트: `.github/workflows/dep-security.yml` + `scripts/check-dep-security.sh`
 
 ---
@@ -185,21 +192,21 @@ LLM provider는 swap-able interface(`src/types/llm-provider.ts`) — Anthropic C
 
 ## 9. 후속 작업
 
-SPEC-FIGMA-001~009 + SPEC-FIGMA-011은 `completed` 상태입니다.
+SPEC-FIGMA-001~009 + SPEC-FIGMA-011 + SPEC-FIGMA-013은 `completed` 상태입니다.
 다음 단계는 SPEC-FIGMA-006이 발행한 Phase 0 telemetry counter 4종을 토대로
 **30-frame end-to-end 도그푸딩 측정** 을 운영 단계에서 진행하는 것이며,
-이번 SPEC-FIGMA-011 의 wire-level write surface 가 외부 client 측정 경로의
-선행 조건입니다. SPEC-FIGMA-008 (MCP transport matrix · Claude.ai cowork
+SPEC-FIGMA-011 의 stdio wire-level write surface 와 SPEC-FIGMA-013 의 loopback
+HTTP/SSE write surface 가 외부 client 측정 경로의 선행 조건입니다.
+SPEC-FIGMA-008 (MCP transport matrix · Claude.ai cowork
 tunnel)는 optional 트랙으로 SPEC-FIGMA-007과 병행 가능하며, **Phase A
 (T1 capability-profile-registry + T8 redactTunnelUrl) 한정으로 partial 진척**
 (status `approved` 유지) — Phase B+ (tunnel adapter, bearer/TTL session,
 probe runner, threat model + opsec runbook)는 후속.
 
-**Deferred from SPEC-FIGMA-011** (각각 독립 invariant 검증 필요):
-- HTTP/SSE write transport (web IDE / remote agent) — 후속 SPEC-FIGMA-013 (TBD)
+**Deferred from SPEC-FIGMA-013** (각각 독립 invariant 검증 필요):
 - Tunnel × write 합성 (claude-cowork remote write) — AC-T10 cowork stable
   signal 미닫힘
-- Multi-frame batch apply over stdio
+- Multi-frame batch apply over stdio/http
 - Windows codex stdio matrix `unverified → verified` 승격
 
 SPEC-FIGMA-005 측정 metric (`aggregate_cache_hit_ratio`, `--batch` cost ratio,

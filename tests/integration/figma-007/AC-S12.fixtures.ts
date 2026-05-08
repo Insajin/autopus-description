@@ -16,6 +16,8 @@
 // regex-shaped strings (64 lowercase hex) that the AC-S12 test will
 // recognize and fail against (RED state, by design).
 
+// @AX:ANCHOR: [AUTO] AC-S12 oracle exports are byte-equal audit determinism fixtures.
+// @AX:REASON: [AUTO] Changing these constants changes the regression baseline consumed by AC-S12 tests.
 export const PLACEHOLDER_HEX_64 =
   "0000000000000000000000000000000000000000000000000000000000000000";
 
@@ -24,9 +26,9 @@ export const PLACEHOLDER_HEX_64 =
 // These byte-equal the daemon-emitter output for the canonical 30-frame
 // fixture processed sequentially. Drift in `buildAuditRecord`, `redact`, or
 // the apply-tool emitDaemonAudit prompt-text construction will fail this.
-export const EXPECTED_FIRST_PROMPT_SHA256 =
+export const EXPECTED_FIRST_PROMPT_SHA256: string =
   "77dacff19465b7f73e67f3f2d570430a64b272e3ae3c798fd9b266e03c1eb0e2";
-export const EXPECTED_LAST_PROMPT_SHA256 =
+export const EXPECTED_LAST_PROMPT_SHA256: string =
   "2d3e3b5bb476829f5264e9640c472f4c9940594c8c583b4a5205cb4d043d5b49";
 
 // The 30 distinct manifest_entry_hash values, indexed [0..29] by frame
