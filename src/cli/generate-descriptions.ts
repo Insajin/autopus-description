@@ -18,6 +18,7 @@ import { AnthropicClaudeAdapter } from "../providers/anthropic-provider.js";
 import { OpenAIResponsesAdapter } from "../providers/openai-provider.js";
 import type { LLMProvider } from "../types/llm-provider.js";
 import type { FrameInput } from "../routing.js";
+import { isDirectInvocation } from "../direct-invocation.js";
 
 const DEFAULT_OPENAI_MODEL = "gpt-5.5";
 // SPEC-FIGMA-005 REQ-30 enabler — sync default sonnet 4.6, escalate to opus 4.7.
@@ -244,8 +245,7 @@ export async function main(argv: string[]): Promise<number> {
 }
 
 // Direct execution entry point.
-const isMain = import.meta.url === `file://${process.argv[1]}`;
-if (isMain) {
+if (isDirectInvocation(import.meta.url)) {
   main(process.argv.slice(2)).then(
     (code) => {
       process.exitCode = code;

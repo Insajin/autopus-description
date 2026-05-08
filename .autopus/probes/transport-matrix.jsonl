@@ -1,0 +1,1 @@
+{"probe_target":"codex_windows_stdio","started_at":"2026-05-08T00:00:00.000Z","finished_at":"2026-05-08T00:00:00.000Z","status":"unverified","mcp_protocol_version":"1.13.1","capabilities_advertised":["resources.read","tools.call"],"error_text_redacted":""}

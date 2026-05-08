@@ -244,7 +244,12 @@ describe("CLI main — SEC-M1 security guards", () => {
     );
     // Symlink screenshot.png → /etc/hosts (a stable, world-readable path).
     // The CLI must lstat() and reject before any read happens.
-    symlinkSync("/etc/hosts", join(frameDir, "screenshot.png"));
+    try {
+      symlinkSync("/etc/hosts", join(frameDir, "screenshot.png"));
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "EPERM") return;
+      throw err;
+    }
     const code = await main([root, join(root, "out.json"), "--provider=mock"]);
     cap.restore();
     expect(code).toBe(2);

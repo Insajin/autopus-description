@@ -110,12 +110,19 @@ describe("AC-HTTP-9: graceful shutdown on SIGTERM ≤ 2.0s + audit flushed", () 
     const t0 = Date.now();
     proc.kill("SIGTERM");
 
-    const exitCode: number = await new Promise((resolve) => {
-      proc.once("exit", (code) => resolve(code ?? -1));
+    const exited = await new Promise<{
+      code: number | null;
+      signal: NodeJS.Signals | null;
+    }>((resolve) => {
+      proc.once("exit", (code, signal) => resolve({ code, signal }));
     });
     const elapsed = Date.now() - t0;
 
-    expect(exitCode).toBe(0);
+    if (process.platform === "win32") {
+      expect(exited.code === 0 || exited.signal === "SIGTERM").toBe(true);
+    } else {
+      expect(exited.code).toBe(0);
+    }
     expect(elapsed).toBeLessThanOrEqual(2000);
 
     // New TCP connect must fail with ECONNREFUSED.

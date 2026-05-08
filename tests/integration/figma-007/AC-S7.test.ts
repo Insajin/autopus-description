@@ -37,7 +37,11 @@ function findRawFiles(rootAuditDir: string): string[] {
     for (const e of readdirSync(p, { withFileTypes: true })) {
       const f = join(p, e.name);
       if (e.isDirectory()) visit(f);
-      else if (e.isFile() && f.endsWith(".json") && f.includes("/raw/")) out.push(f);
+      else if (
+        e.isFile() &&
+        f.endsWith(".json") &&
+        f.replace(/\\/g, "/").includes("/raw/")
+      ) out.push(f);
     }
   };
   visit(rootAuditDir);

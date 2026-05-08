@@ -10,6 +10,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
+import { isDirectInvocation } from "../direct-invocation.js";
 
 export interface RunCliOptions {
   cwd: string;
@@ -175,7 +176,7 @@ function checkCoworkProbeGate(cwd: string): { allow: boolean; stderr: string } {
 }
 
 // Direct CLI entry point (npm bin).
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isDirectInvocation(import.meta.url)) {
   const argv = process.argv.slice(2);
   runDaemonCli(argv, { cwd: process.cwd() }).then((r) => {
     if (r.stdout) process.stdout.write(r.stdout);

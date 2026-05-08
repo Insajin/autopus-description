@@ -6,7 +6,8 @@
   "type": "module",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "tools/validate-manifest"
   ],
   "bin": {
     "figma-read": "./dist/src/cli.js",
@@ -17,7 +18,7 @@
   },
   "main": "./dist/src/cli.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json && node scripts/prepend-shebang.mjs",
+    "build": "npm run build --workspace @autopus/validate-manifest && tsc -p tsconfig.json && node scripts/prepend-shebang.mjs",
     "test": "vitest run --reporter=default",
     "test:watch": "vitest",
     "lint": "tsc -p tsconfig.json --noEmit"
