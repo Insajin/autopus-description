@@ -20,6 +20,7 @@ import {
   type LLMResponse,
   type ProviderOpts,
 } from "./types/llm-provider.js";
+import type { ProjectBrief } from "./project-brief.js";
 
 // Strict less-than per spec.md §4. Boundary 0.7 does NOT trigger Vision.
 export const VISION_CUTOFF = 0.7;
@@ -44,6 +45,7 @@ export interface RoutingOptions {
   // without exercising Vision). Default behaviour ("auto") honors the
   // VISION_CUTOFF check.
   mode?: RoutingMode;
+  projectBrief?: ProjectBrief;
 }
 
 // Optional hook a provider can implement to override predicted input tokens
@@ -85,7 +87,9 @@ export async function routeAndGenerate(
   opts: RoutingOptions,
 ): Promise<RouteResult> {
   const { screen_id } = frame;
-  const nodePrompt = buildNodeOnlyPrompt(frame.frame_meta);
+  const nodePrompt = buildNodeOnlyPrompt(frame.frame_meta, {
+    projectBrief: opts.projectBrief,
+  });
   const flattenedNode = flattenPrompt(nodePrompt);
 
   enforceInputCap(
@@ -107,7 +111,9 @@ export async function routeAndGenerate(
   }
 
   telemetry.incrementVisionCount();
-  const visionPrompt = buildVisionPrompt(frame.frame_meta, frame.screenshot_path);
+  const visionPrompt = buildVisionPrompt(frame.frame_meta, frame.screenshot_path, {
+    projectBrief: opts.projectBrief,
+  });
   const flattenedVision = flattenPrompt(visionPrompt);
 
   enforceInputCap(

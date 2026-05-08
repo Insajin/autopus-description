@@ -27,6 +27,7 @@ import {
 import { processFrame, type ProcessCtx } from "./batch-process-frame.js";
 import { runBatchLane } from "./batch-lane-runner.js";
 import { FileIdCache } from "./providers/files-cache.js";
+import type { ProjectBrief } from "./project-brief.js";
 
 export interface RetryOpts {
   base_ms?: number;
@@ -61,6 +62,7 @@ export interface BatchOpts {
   // Test injection point: client for batch lane API calls. When omitted the
   // executor attempts to read it off the provider (AnthropicClaudeAdapter).
   batch_client?: unknown;
+  project_brief?: ProjectBrief;
 }
 
 export type { BatchError } from "./batch-runtime.js";
@@ -151,6 +153,7 @@ export async function runBatch(opts: BatchOpts): Promise<BatchResult> {
     cache_control_region: opts.cache_control_region,
     structured_output_schema: opts.structured_output_schema,
     validator_binary: opts.validator_binary,
+    project_brief: opts.project_brief,
   };
 
   const lane: Lane = opts.lane ?? "realtime";
@@ -177,6 +180,7 @@ export async function runBatch(opts: BatchOpts): Promise<BatchResult> {
       structured_output_schema: opts.structured_output_schema,
       validator_binary: opts.validator_binary,
       provider_sdk_version: opts.provider_sdk_version ?? "unknown",
+      project_brief: opts.project_brief,
     });
     entries = lr.entries;
     errors = lr.errors;
