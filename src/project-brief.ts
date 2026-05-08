@@ -5,9 +5,13 @@ export interface FeaturePolicy {
   purpose?: string;
   entry_points?: string[];
   user_rules?: string[];
+  resolved_decisions?: string[];
+  state_transitions?: string[];
   states?: string[];
   edge_cases?: string[];
+  api_contracts?: string[];
   data_io?: string[];
+  qa_acceptance?: string[];
   dev_notes?: string[];
 }
 
@@ -33,12 +37,13 @@ export const PROJECT_BRIEF_QUESTIONS = `# Autopus project brief questions
 1. 이 제품은 누구를 위해 어떤 문제를 해결하나요?
 2. 이번 Figma 범위에서 반드시 설명해야 하는 사용자 플로우는 무엇인가요?
 3. 사용자 역할, 권한, 접근 제한 정책은 무엇인가요?
-4. 기능별 정책은 무엇인가요? 예: 검색 범위, 필터 조합, 정렬, 페이지네이션, 상세 진입, 오류 처리.
-5. 각 기능에서 개발자가 알아야 하는 상태는 무엇인가요? 예: loading, empty, error, disabled, permission denied.
-6. API, 이벤트, 파라미터, 저장 상태, 캐시 정책은 무엇인가요?
-7. 성공 기준과 QA 확인 기준은 무엇인가요?
-8. 도메인 용어와 화면에 보이는 약어는 어떤 의미인가요?
-9. 이번 작업에서 추론하면 안 되는 범위나 아직 결정되지 않은 정책은 무엇인가요?
+4. 기능별 확정 정책은 무엇인가요? 예: 검색 최소 글자 수, 필터 reset 범위, 탭 전환 시 page reset, 상세 진입 방식.
+5. 개발자가 구현 중 헷갈릴 수 있는 결정 포인트와 확정 답변은 무엇인가요?
+6. 각 기능에서 상태 전이는 어떻게 되나요? 예: trigger, loading, empty, populated, error, disabled, permission denied.
+7. API, 이벤트, 파라미터, 저장 상태, 캐시, 갱신 주기, 권한 정책은 무엇인가요?
+8. 성공 기준과 QA 확인 기준은 무엇인가요?
+9. 도메인 용어와 화면에 보이는 약어는 어떤 의미인가요?
+10. 이번 작업에서 추론하면 안 되는 범위나 아직 결정되지 않은 정책은 무엇인가요?
 `;
 
 export function projectBriefTemplateJson(): string {
@@ -58,9 +63,13 @@ export function projectBriefTemplateJson(): string {
         purpose: "",
         entry_points: [],
         user_rules: [],
+        resolved_decisions: [],
+        state_transitions: [],
         states: [],
         edge_cases: [],
+        api_contracts: [],
         data_io: [],
+        qa_acceptance: [],
         dev_notes: [],
       },
     ],
@@ -100,9 +109,13 @@ export function normalizeProjectBrief(input: ProjectBrief): ProjectBrief {
         purpose: text(f.purpose),
         entry_points: strings(f.entry_points),
         user_rules: strings(f.user_rules),
+        resolved_decisions: strings(f.resolved_decisions),
+        state_transitions: strings(f.state_transitions),
         states: strings(f.states),
         edge_cases: strings(f.edge_cases),
+        api_contracts: strings(f.api_contracts),
         data_io: strings(f.data_io),
+        qa_acceptance: strings(f.qa_acceptance),
         dev_notes: strings(f.dev_notes),
       })),
     non_goals: strings(input.non_goals),
