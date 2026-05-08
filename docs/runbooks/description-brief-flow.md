@@ -42,13 +42,18 @@ into a manifest.
 - Role, permission, and access-control policies.
 - Feature-level rules, such as search scope, filter composition, sorting,
   pagination, detail navigation, and reset behavior.
+- Interaction rules, such as click, hover, focus, keyboard operation, dropdown
+  close, outside click, focus restore, and scroll restoration.
+- Motion guidelines, such as side-panel slide, dropdown fade, loading skeleton,
+  duration/easing, and reduced-motion behavior.
 - Resolved implementation decisions that developers would otherwise ask about:
   default values, submit triggers, page reset, persisted state, refresh cadence,
   navigation surface, permission behavior, and non-goals.
-- State-transition rules written as trigger -> UI/data expectation.
+- State-transition rules written as trigger -> UI/data/motion expectation.
 - UI and data states: loading, empty, error, disabled, permission denied, and
   populated.
-- API, event, parameter, persistence, cache, and analytics contracts.
+- Data coordination points, event intent, required values, persistence
+  expectations, cache/staleness, analytics intent, and permission contracts.
 - Domain terms and abbreviations.
 - Non-goals and unresolved questions.
 
@@ -58,15 +63,27 @@ Each generated frame entry should explain:
 
 - `intent`: the frame's role in the product flow.
 - `user_value`: why the user needs this frame.
-- `success_criteria`: observable behavior and feature policy details.
+- `success_criteria`: observable behavior, interaction, motion, and feature
+  policy details.
 - `states`: UI, data, permission, and error states with trigger and expected
-  UI/data effect.
+  UI/data/motion effect.
 - `edge_cases`: QA branches, implementation risks, permission/error handling,
   stale data, long text/overflow, multi-filter interactions, and unresolved
   decisions marked with `[CANNOT_INFER]`.
-- `component_refs`: expected design-system or code component surfaces.
-- `data_io`: APIs, inputs, outputs, events, filters, parameters, state, and
-  cache behavior.
+- `component_refs`: expected design-system surfaces or product component roles.
+  Avoid naming exact code modules unless the project already supplies them.
+- `data_io`: data coordination points, required values, events, filters,
+  parameters, state, cache/staleness, analytics intent, and permission behavior.
+
+## Tone Boundary
+
+- Write enough policy that developers know what behavior to build and QA knows
+  what to test.
+- Do not cross into implementation ownership by inventing exact endpoint names,
+  enum names, code component names, architecture, storage technology, or library
+  choices.
+- When a technical name is not already supplied, phrase it as a coordination
+  point such as "리포트 목록 조회 조건", "상세 열림 이벤트", or "원문 접근 권한 값".
 
 ## Git Policy
 
