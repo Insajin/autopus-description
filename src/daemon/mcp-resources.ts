@@ -58,7 +58,7 @@ export class McpResources {
       case "autopus://stale_frames":
         return [...this.stale];
       default:
-        throw new Error(`Unknown resource URI: ${uri}`);
+        throw new Error("Unknown resource URI");
     }
   }
 

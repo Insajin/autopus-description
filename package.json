@@ -12,7 +12,8 @@
     "figma-read": "./dist/src/cli.js",
     "generate-descriptions": "./dist/src/cli/generate-descriptions.js",
     "autopus-daemon": "./dist/src/daemon/cli.js",
-    "autopus-mcp-stdio": "./dist/src/daemon/mcp-stdio-entry.js"
+    "autopus-mcp-stdio": "./dist/src/daemon/mcp-stdio-entry.js",
+    "autopus-mcp-http": "./dist/src/daemon/mcp-http-entry.js"
   },
   "main": "./dist/src/cli.js",
   "scripts": {

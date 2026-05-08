@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync, statSync, chmodSync, existsSync } from "no
 const SHEBANG = "#!/usr/bin/env node";
 const TARGETS = [
   "dist/src/daemon/mcp-stdio-entry.js",
+  "dist/src/daemon/mcp-http-entry.js",
   "dist/src/daemon/cli.js",
 ];
 
