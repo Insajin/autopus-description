@@ -1,7 +1,7 @@
 // SPEC-FIGMA-003 Phase 3 coverage: src/cli/generate-descriptions.ts (T12 CLI).
 // Imports main() directly so vitest v8 coverage instruments execution.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { mkdtempSync, mkdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -48,6 +48,7 @@ describe("CLI main — help and missing-args paths", () => {
     expect(out).toContain("Usage: generate-descriptions <input-dir> <output-manifest>");
     expect(out).toContain("--parallelism=N");
     expect(out).toContain("--audit-dir=PATH");
+    expect(out).toContain("--project-brief=PATH");
   });
 
   it("-h alias also prints usage and exits 0", async () => {
@@ -164,6 +165,51 @@ describe("CLI main — argument parsing exercised via end-to-end run", () => {
     const code = await main([input, "--foo=bar", output]);
     cap.restore();
     expect(code).toBe(0);
+  });
+
+  it("--init-project-brief writes the project question template and exits 0", async () => {
+    const root = mkdtempSync(join(tmpdir(), "cli-brief-init-"));
+    const briefPath = join(root, "project-brief.json");
+    const code = await main([`--init-project-brief=${briefPath}`]);
+    cap.restore();
+    expect(code).toBe(0);
+    expect(cap.stdout.join("")).toContain("wrote project brief template");
+    const text = readFileSync(briefPath, "utf8");
+    expect(text).toContain("Autopus project brief questions");
+    expect(text).toContain("\"feature_policies\"");
+  });
+
+  it("--require-project-brief blocks generation and prints the question flow", async () => {
+    const { input, output } = makeTinyFixture();
+    const code = await main([input, output, "--require-project-brief"]);
+    cap.restore();
+    expect(code).toBe(2);
+    const err = cap.stderr.join("");
+    expect(err).toContain("project brief required");
+    expect(err).toContain("기능별 정책");
+  });
+
+  it("--project-brief feeds trusted project policy context into generation", async () => {
+    const { input, output } = makeTinyFixture();
+    const briefPath = join(input, "brief.json");
+    writeFileSync(
+      briefPath,
+      JSON.stringify({
+        project_name: "Sample Project",
+        product_summary: "리서치 리포트 검색 및 상세 탐색",
+        feature_policies: [
+          {
+            feature: "Report Search",
+            user_rules: ["검색어는 제목, 내용, 키워드 범위를 지원한다"],
+            data_io: ["query", "scope", "filters"],
+          },
+        ],
+      }),
+    );
+    const code = await main([input, output, "--project-brief=" + briefPath]);
+    cap.restore();
+    expect(code).toBe(0);
+    expect(cap.stdout.join("")).toContain("RESULT pass=1");
   });
 });
 

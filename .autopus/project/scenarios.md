@@ -18,16 +18,25 @@ Success indicators:
 
 ## Scenario 2: Description Generation
 
-1. Operator runs `generate-descriptions <input-dir> <output-manifest>`.
-2. Provider is selected with `--provider=mock|anthropic|openai`.
-3. Routing chooses node-only or vision-assisted generation.
-4. Manifest is written and audit output is captured.
+1. Operator runs `generate-descriptions --init-project-brief=<path>` before the
+   first real generation run.
+2. Stakeholder fills the project brief with product purpose, user flows,
+   feature policies, state handling, data contracts, permissions, non-goals,
+   and open questions.
+3. Operator runs `generate-descriptions <input-dir> <output-manifest>
+   --project-brief=<path>`.
+4. Provider is selected with `--provider=mock|anthropic|openai`.
+5. Routing chooses node-only or vision-assisted generation.
+6. Manifest is written and audit output is captured.
 
 Success indicators:
 
+- `--require-project-brief` blocks generation and prints the question flow when
+  no project context is provided.
 - Mock provider produces fixture-stable output.
 - Anthropic/OpenAI providers require their API key environment variables.
-- Confidence, persona tags, token usage, and write target fields validate.
+- Confidence, persona tags, token usage, write target fields, feature policies,
+  state handling, edge cases, component refs, and data I/O fields validate.
 - Batch and realtime lanes produce contract-equivalent manifests where expected.
 
 ## Scenario 3: PM Review UI
@@ -85,4 +94,3 @@ Success indicators:
 - `.autopus/daemon-state.json` excludes secrets.
 - Recent selections update `autopus://active_selection`.
 - Stale frame tracking changes only when source hashes drift.
-
