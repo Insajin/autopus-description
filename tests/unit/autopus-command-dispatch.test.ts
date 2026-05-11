@@ -10,7 +10,7 @@ describe("autopus plugin command dispatch — area handoff", () => {
     const figma: FigmaPluginLike = {
       createAreaHandoff: vi.fn(async () => ({
         id: "doc-1",
-        node_ids: ["doc-1", "badge-1", "line-1"],
+        node_ids: ["doc-1", "badge-1", "doc-badge-1"],
       })),
       createText: vi.fn(async () => ({ id: "text-1" })),
     };
@@ -36,7 +36,7 @@ describe("autopus plugin command dispatch — area handoff", () => {
       },
     });
 
-    expect(result).toEqual({ ok: true, node_ids: ["doc-1", "badge-1", "line-1"] });
+    expect(result).toEqual({ ok: true, node_ids: ["doc-1", "badge-1", "doc-badge-1"] });
     expect(figma.createAreaHandoff).toHaveBeenCalledWith(
       expect.objectContaining({
         frameId: "1:1",
@@ -121,10 +121,15 @@ describe("autopus plugin command dispatch — area handoff", () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(result.node_ids?.length).toBeGreaterThanOrEqual(4);
+    expect(result.node_ids?.length).toBeGreaterThanOrEqual(6);
     expect((figma as unknown as { createFrame: ReturnType<typeof vi.fn> }).createFrame).toHaveBeenCalled();
     expect((figma as unknown as { createEllipse: ReturnType<typeof vi.fn> }).createEllipse).toHaveBeenCalled();
-    expect((figma as unknown as { createLine: ReturnType<typeof vi.fn> }).createLine).toHaveBeenCalled();
+    expect((figma as unknown as { createLine: ReturnType<typeof vi.fn> }).createLine).not.toHaveBeenCalled();
+    expect(
+      page.children
+        .flatMap((node) => (node as { children?: Array<{ name: string }> }).children ?? [])
+        .some((node) => node.name === "Autopus document badge 1"),
+    ).toBe(true);
   });
 
   it("moves the area handoff document when right-of-frame placement collides", async () => {

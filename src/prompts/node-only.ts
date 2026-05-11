@@ -82,6 +82,8 @@ const HANDOFF_RULES = `## HANDOFF REQUIREMENTS (trusted)
 - data_io must name data coordination points, required values, event intent, filters, page reset rules, persisted state expectations, cache/staleness, analytics intent, and permission contracts when inferable. Avoid inventing exact endpoint or enum names.
 - area_annotations must divide the frame into numbered UI regions in reading/workflow order. Use stable area_id values like "1" or "2-1"; each item must explain target_area, behavior, interaction, motion, policy, state, QA note, and data_refs when relevant. Do not invent pixel coordinates or code ownership.
 - data_requirements must list the data needed by the numbered regions as product coordination points. Use data_id values that area_annotations can reference. Do not prescribe endpoint paths, DB table names, enum identifiers, storage technology, or implementation architecture unless the trusted project brief supplied them.
+- Numbered region descriptions must be useful without canvas connector lines. Use badge-oriented wording such as "배지 1 | 검색/필터 영역" so the description document itself carries the numbering.
+- Figma handoff text must remain user-editable text. Do not request vectors, screenshots, flattened images, outlined text, or connector-line-only explanations.
 - If a frame is out of scope or from a different flow, say so explicitly in intent and success_criteria so developers do not implement the wrong feature from it.
 - Avoid generic phrases such as "화면을 확인한다", "정보를 보여준다", or "사용자가 볼 수 있다" unless followed by exact implementation policy.`;
 

@@ -82,6 +82,9 @@ describe("project brief prompt context", () => {
     expect(prompt.user).toContain("area_annotations");
     expect(prompt.user).toContain("data_requirements");
     expect(prompt.user).toContain("numbered UI regions");
+    expect(prompt.user).toContain("without canvas connector lines");
+    expect(prompt.user).toContain("user-editable text");
+    expect(prompt.user).toContain("배지 1");
     expect(prompt.user).toContain("reset scope");
     expect(prompt.user).toContain("reduced-motion");
     expect(prompt.user).toContain("Report Search");
