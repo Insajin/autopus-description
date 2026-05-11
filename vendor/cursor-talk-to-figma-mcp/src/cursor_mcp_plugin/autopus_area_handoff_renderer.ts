@@ -12,6 +12,9 @@ interface CanvasNode {
   name: string;
   x: number;
   y: number;
+  parent?: CanvasNode | null;
+  children?: CanvasNode[];
+  visible?: boolean;
   fills?: unknown[];
   strokes?: unknown[];
   strokeWeight?: number;
@@ -25,7 +28,7 @@ interface CanvasNode {
 }
 
 export interface AreaHandoffRuntime {
-  currentPage: { appendChild(node: CanvasNode): void };
+  currentPage: { children?: CanvasNode[]; appendChild(node: CanvasNode): void };
   getNodeByIdAsync(id: string): Promise<CanvasNode | null>;
   createFrame(): CanvasNode;
   createText(): CanvasNode;
@@ -46,6 +49,8 @@ const RED = { type: "SOLID", color: { r: 1, g: 0.231, b: 0.188 } };
 const MAGENTA = { type: "SOLID", color: { r: 1, g: 0.169, b: 0.839 } };
 const WHITE = { type: "SOLID", color: { r: 1, g: 1, b: 1 } };
 const GRAY = { type: "SOLID", color: { r: 0.86, g: 0.86, b: 0.86 } };
+const PLACEMENT_GAP = 96;
+const COLLISION_MARGIN = 24;
 
 function boxOf(node: CanvasNode): Box {
   return node.absoluteBoundingBox ?? {
@@ -54,6 +59,69 @@ function boxOf(node: CanvasNode): Box {
     width: node.width ?? 800,
     height: node.height ?? 600,
   };
+}
+
+function overlaps(a: Box, b: Box, margin = COLLISION_MARGIN): boolean {
+  return !(
+    a.x + a.width + margin <= b.x ||
+    b.x + b.width + margin <= a.x ||
+    a.y + a.height + margin <= b.y ||
+    b.y + b.height + margin <= a.y
+  );
+}
+
+function isAncestor(candidate: CanvasNode, node: CanvasNode): boolean {
+  let cursor = node.parent;
+  while (cursor) {
+    if (cursor.id === candidate.id) return true;
+    cursor = cursor.parent;
+  }
+  return false;
+}
+
+function pushUnique(nodes: CanvasNode[], seen: Set<string>, node: CanvasNode): void {
+  if (seen.has(node.id)) return;
+  seen.add(node.id);
+  nodes.push(node);
+}
+
+function collisionNodes(figma: AreaHandoffRuntime, source: CanvasNode): CanvasNode[] {
+  const nodes: CanvasNode[] = [];
+  const seen = new Set<string>();
+  for (const node of source.parent?.children ?? []) pushUnique(nodes, seen, node);
+  for (const node of figma.currentPage.children ?? []) pushUnique(nodes, seen, node);
+  return nodes.filter((node) => {
+    if (node.id === source.id || node.visible === false || isAncestor(node, source)) return false;
+    const box = node.absoluteBoundingBox ?? (node.width && node.height ? boxOf(node) : null);
+    return !!box;
+  });
+}
+
+function candidateBoxes(sourceBox: Box, width: number, height: number): Box[] {
+  return [
+    { x: sourceBox.x + sourceBox.width + PLACEMENT_GAP, y: sourceBox.y, width, height },
+    { x: sourceBox.x, y: sourceBox.y + sourceBox.height + PLACEMENT_GAP, width, height },
+    { x: sourceBox.x - width - PLACEMENT_GAP, y: sourceBox.y, width, height },
+    { x: sourceBox.x, y: sourceBox.y - height - PLACEMENT_GAP, width, height },
+  ];
+}
+
+function chooseDocumentBox(
+  figma: AreaHandoffRuntime,
+  source: CanvasNode,
+  sourceBox: Box,
+  width: number,
+  height: number,
+): Box {
+  const blockers = collisionNodes(figma, source).map(boxOf);
+  for (const candidate of candidateBoxes(sourceBox, width, height)) {
+    if (!blockers.some((blocker) => overlaps(candidate, blocker))) return candidate;
+  }
+  const maxRight = blockers.reduce(
+    (right, box) => Math.max(right, box.x + box.width),
+    sourceBox.x + sourceBox.width,
+  );
+  return { x: maxRight + PLACEMENT_GAP, y: sourceBox.y, width, height };
 }
 
 async function addText(
@@ -121,10 +189,11 @@ export async function createAreaHandoffCanvas(
   const sourceBox = boxOf(source);
   const width = Number(args.visualPolicy?.documentWidth ?? 720);
   const height = Math.max(300, 150 + args.areaCallouts.length * 104);
+  const docBox = chooseDocumentBox(figma, source, sourceBox, width, height);
   const doc = figma.createFrame();
   doc.name = "Autopus Area Handoff";
-  doc.x = sourceBox.x + sourceBox.width + 96;
-  doc.y = sourceBox.y;
+  doc.x = docBox.x;
+  doc.y = docBox.y;
   doc.fills = [WHITE];
   doc.strokes = [GRAY];
   doc.strokeWeight = 1;
