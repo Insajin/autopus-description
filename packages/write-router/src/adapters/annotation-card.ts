@@ -10,6 +10,7 @@ import type {
   UndoDescriptor,
 } from "../types.js";
 import { ERROR_CODES, WriteRouterError } from "../types.js";
+import { renderAnnotationText } from "../annotation-text.js";
 
 interface AnnotationCardClient {
   createText(args: {
@@ -38,12 +39,6 @@ function asClient(figma: unknown): AnnotationCardClient {
     );
   }
   return candidate as AnnotationCardClient;
-}
-
-function renderAnnotationText(entry: ManifestEntry): string {
-  // Intent is the load-bearing field for AC-S2 ("로그인 게이트" must appear).
-  // Title + screen_id provide PM-readable provenance on the canvas.
-  return `${entry.title} (${entry.screen_id})\n${entry.intent}`;
 }
 
 export async function applyAnnotationCard(

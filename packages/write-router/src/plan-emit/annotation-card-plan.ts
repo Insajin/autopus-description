@@ -7,11 +7,8 @@
 // the executor-side `applyAnnotationCard` exactly (NFR-04 behavior parity).
 
 import type { ManifestEntry } from "../types.js";
+import { renderAnnotationText } from "../annotation-text.js";
 import type { PluginCommand } from "./types.js";
-
-function renderAnnotationText(entry: ManifestEntry): string {
-  return `${entry.title} (${entry.screen_id})\n${entry.intent}`;
-}
 
 // @AX:NOTE [AUTO] AC-S8/REQ-14 — fixed 3-step decomposition (create-node, set-text, attach-link); changing the count or order alters the partial-disconnect rollback observation surface. The bridge is contracted to drop after step 2 in AC-S8.
 export function planAnnotationCard(

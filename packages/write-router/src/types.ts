@@ -16,6 +16,32 @@ export interface TokenUsage {
   output_tokens: number;
 }
 
+export interface AreaAnnotation {
+  area_id: string;
+  title: string;
+  target_area: string;
+  description: string;
+  interaction?: string;
+  motion?: string;
+  policy?: string;
+  states?: string[];
+  data_refs?: string[];
+  qa_notes?: string[];
+  placement_hint?: string;
+}
+
+export interface DataRequirement {
+  data_id: string;
+  name: string;
+  purpose: string;
+  required_values: string[];
+  source?: string;
+  refresh_policy?: string;
+  permission?: string;
+  empty_state?: string;
+  notes?: string[];
+}
+
 export interface ManifestEntry {
   screen_id: string;
   frame_id: string;
@@ -27,6 +53,8 @@ export interface ManifestEntry {
   edge_cases: string[];
   component_refs: string[];
   data_io: string[];
+  area_annotations?: AreaAnnotation[];
+  data_requirements?: DataRequirement[];
   design_tokens: string[];
   variants: string[];
   navigation: string[];

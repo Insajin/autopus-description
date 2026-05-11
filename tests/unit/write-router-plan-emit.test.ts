@@ -119,13 +119,25 @@ describe("WriteTarget → PluginCommand op mapping (REQ-09, AC-S6)", () => {
 
   it("annotation_card emits set_annotation with frameId and rendered text", async () => {
     const router = new WriteRouter();
-    const entry = makeEntry("annotation_card");
+    const entry = {
+      ...makeEntry("annotation_card"),
+      area_annotations: [
+        {
+          area_id: "1",
+          title: "필터 영역",
+          target_area: "목록 상단 필터",
+          description: "조건 변경 후 목록 기준을 갱신한다",
+        },
+      ],
+    };
     const r = (await router.apply(entry, { mode: "plan-emit" })) as PlanEmitResult;
     const cmd = r.plugin_commands[0] as Extract<PluginCommand, { op: "set_annotation" }>;
     expect(cmd.op).toBe("set_annotation");
     expect(cmd.args.frameId).toBe(entry.frame_id);
     expect(cmd.args.text).toContain(entry.title);
     expect(cmd.args.text).toContain(entry.intent);
+    expect(cmd.args.text).toContain("[영역별 설명]");
+    expect(cmd.args.text).toContain("1. 필터 영역");
   });
 
   it("comment resolves fileKey from PlanEmitContext.fileKey override", async () => {
