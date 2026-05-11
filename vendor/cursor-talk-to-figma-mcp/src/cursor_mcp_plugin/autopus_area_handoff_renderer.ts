@@ -33,7 +33,6 @@ export interface AreaHandoffRuntime {
   createFrame(): CanvasNode;
   createText(): CanvasNode;
   createEllipse(): CanvasNode;
-  createLine(): CanvasNode;
   loadFontAsync?(font: { family: string; style: string }): Promise<void>;
 }
 
@@ -46,7 +45,6 @@ export interface AreaHandoffArgs {
 }
 
 const RED = { type: "SOLID", color: { r: 1, g: 0.231, b: 0.188 } };
-const MAGENTA = { type: "SOLID", color: { r: 1, g: 0.169, b: 0.839 } };
 const WHITE = { type: "SOLID", color: { r: 1, g: 1, b: 1 } };
 const GRAY = { type: "SOLID", color: { r: 0.86, g: 0.86, b: 0.86 } };
 const PLACEMENT_GAP = 96;
@@ -143,18 +141,6 @@ async function addText(
   return node;
 }
 
-function addLine(figma: AreaHandoffRuntime, x1: number, y1: number, x2: number, y2: number): CanvasNode {
-  const line = figma.createLine();
-  line.name = "Autopus callout connector";
-  line.x = x1;
-  line.y = y1;
-  line.strokes = [MAGENTA];
-  line.strokeWeight = 2;
-  line.resize?.(Math.max(1, x2 - x1), Math.max(1, y2 - y1));
-  figma.currentPage.appendChild(line);
-  return line;
-}
-
 async function addBadge(
   figma: AreaHandoffRuntime,
   label: string,
@@ -180,6 +166,31 @@ async function addBadge(
   return [badge, text];
 }
 
+async function addDocumentBadge(
+  figma: AreaHandoffRuntime,
+  parent: CanvasNode,
+  label: string,
+  y: number,
+): Promise<CanvasNode[]> {
+  const badge = figma.createEllipse();
+  badge.name = `Autopus document badge ${label}`;
+  badge.x = 24;
+  badge.y = y;
+  badge.fills = [RED];
+  badge.resize?.(28, 28);
+  parent.appendChild?.(badge);
+  const text = figma.createText();
+  text.name = `Autopus document badge label ${label}`;
+  text.x = label.length > 1 ? 29 : 32;
+  text.y = y + 6;
+  text.fontSize = label.length > 1 ? 9 : 11;
+  text.fills = [WHITE];
+  if (figma.loadFontAsync) await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+  text.characters = label;
+  parent.appendChild?.(text);
+  return [badge, text];
+}
+
 export async function createAreaHandoffCanvas(
   figma: AreaHandoffRuntime,
   args: AreaHandoffArgs,
@@ -188,7 +199,7 @@ export async function createAreaHandoffCanvas(
   if (!source) throw new Error(`source frame not found: ${args.frameId}`);
   const sourceBox = boxOf(source);
   const width = Number(args.visualPolicy?.documentWidth ?? 720);
-  const height = Math.max(300, 150 + args.areaCallouts.length * 104);
+  const height = Math.max(340, 168 + args.areaCallouts.length * 104);
   const docBox = chooseDocumentBox(figma, source, sourceBox, width, height);
   const doc = figma.createFrame();
   doc.name = "Autopus Area Handoff";
@@ -200,12 +211,17 @@ export async function createAreaHandoffCanvas(
   doc.resize?.(width, height);
   figma.currentPage.appendChild(doc);
   const nodeIds = [doc.id];
-  nodeIds.push((await addText(figma, doc, args.text, 24, 24, 13)).id);
+  nodeIds.push((await addText(figma, doc, args.text, 68, 24, 13)).id);
   for (const [index, area] of args.areaCallouts.entries()) {
     const y = sourceBox.y + 40 + index * 48;
     const [badge, badgeText] = await addBadge(figma, area.badgeLabel, sourceBox.x + 16, y);
-    const line = addLine(figma, sourceBox.x + 44, y + 14, doc.x, doc.y + 88 + index * 104);
-    nodeIds.push(badge.id, badgeText.id, line.id);
+    const [docBadge, docBadgeText] = await addDocumentBadge(
+      figma,
+      doc,
+      area.badgeLabel,
+      88 + index * 104,
+    );
+    nodeIds.push(badge.id, badgeText.id, docBadge.id, docBadgeText.id);
   }
   return { id: doc.id, node_ids: nodeIds };
 }
