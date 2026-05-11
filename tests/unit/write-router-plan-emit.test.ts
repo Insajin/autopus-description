@@ -138,6 +138,11 @@ describe("WriteTarget → PluginCommand op mapping (REQ-09, AC-S6)", () => {
     expect(cmd.args.text).toContain(entry.intent);
     expect(cmd.args.text).toContain("[영역별 설명]");
     expect(cmd.args.text).toContain("1. 필터 영역");
+    expect(cmd.args.layout).toBe("area_handoff");
+    expect(cmd.args.documentPosition).toBe("right_of_frame");
+    expect(cmd.args.areaCallouts).toEqual([
+      expect.objectContaining({ areaId: "1", badgeLabel: "1" }),
+    ]);
   });
 
   it("comment resolves fileKey from PlanEmitContext.fileKey override", async () => {
