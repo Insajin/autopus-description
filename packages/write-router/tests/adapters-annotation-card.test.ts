@@ -53,6 +53,41 @@ describe("annotation_card adapter (REQ-04(a) / REQ-08 / INV-002)", () => {
     expect(result.fallback_used).toBe(false);
   });
 
+  it("renders numbered region notes and product-level data list when supplied", async () => {
+    const client = makeMockClient("node-9001");
+    await applyAnnotationCard(
+      makeEntry({
+        area_annotations: [
+          {
+            area_id: "1",
+            title: "검색 영역",
+            target_area: "상단 검색 입력창",
+            description: "입력한 조건으로 목록을 갱신한다",
+            interaction: "Enter와 검색 아이콘은 동일한 실행으로 본다",
+            data_refs: ["DATA-1"],
+          },
+        ],
+        data_requirements: [
+          {
+            data_id: "DATA-1",
+            name: "검색 조건",
+            purpose: "목록 갱신 기준을 유지한다",
+            required_values: ["검색어", "필터 조건"],
+          },
+        ],
+      }),
+      { figma: client },
+    );
+
+    const text = client.createText.mock.calls[0][0].text;
+    expect(text).toContain("[영역별 설명]");
+    expect(text).toContain("1. 검색 영역");
+    expect(text).toContain("상단 검색 입력창");
+    expect(text).toContain("[필요 데이터 리스트]");
+    expect(text).toContain("DATA-1. 검색 조건");
+    expect(text).toContain("[구현 경계]");
+  });
+
   it("apply returns delete-node undo descriptor with the returned nodeId", async () => {
     const client = makeMockClient("node-9001");
     const result = await applyAnnotationCard(makeEntry(), { figma: client });

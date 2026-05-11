@@ -42,6 +42,8 @@ into a manifest.
 - Role, permission, and access-control policies.
 - Feature-level rules, such as search scope, filter composition, sorting,
   pagination, detail navigation, and reset behavior.
+- Area annotation rules, such as which UI regions need numbered callouts and
+  how to split repeated controls, dropdowns, modals, banners, and lists.
 - Interaction rules, such as click, hover, focus, keyboard operation, dropdown
   close, outside click, focus restore, and scroll restoration.
 - Motion guidelines, such as side-panel slide, dropdown fade, loading skeleton,
@@ -54,6 +56,9 @@ into a manifest.
   populated.
 - Data coordination points, event intent, required values, persistence
   expectations, cache/staleness, analytics intent, and permission contracts.
+- Data requirement lists: value groups, display conditions, refresh policy,
+  permissions, and empty-value behavior. Exact endpoint, database, enum, and
+  storage names should appear only when they are already confirmed.
 - Domain terms and abbreviations.
 - Non-goals and unresolved questions.
 
@@ -74,6 +79,12 @@ Each generated frame entry should explain:
   Avoid naming exact code modules unless the project already supplies them.
 - `data_io`: data coordination points, required values, events, filters,
   parameters, state, cache/staleness, analytics intent, and permission behavior.
+- `area_annotations`: numbered UI-region notes for the side-of-frame document.
+  Each note should include area id, region label, product behavior, interaction,
+  motion, policy, states, QA checks, and data references when relevant.
+- `data_requirements`: product-level data list referenced by the numbered
+  regions. This should explain what data is needed and why without taking over
+  endpoint, DB, enum, storage, or architecture design.
 
 ## Tone Boundary
 

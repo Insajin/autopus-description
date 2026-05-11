@@ -2,6 +2,8 @@
 // Provides default shell + safe string/array narrowing for unknown LLM output.
 
 import type {
+  AreaAnnotation,
+  DataRequirement,
   ManifestEntry,
   PersonaTag,
   WriteTarget,
@@ -15,6 +17,8 @@ interface ParsedLLMBody {
   states?: unknown;
   edge_cases?: unknown;
   data_io?: unknown;
+  area_annotations?: unknown;
+  data_requirements?: unknown;
   intent_mismatch?: unknown;
   confidence?: unknown;
 }
@@ -26,6 +30,70 @@ function safeString(v: unknown, fallback = ""): string {
 function safeStringArray(v: unknown): string[] {
   if (Array.isArray(v)) return v.filter((x): x is string => typeof x === "string");
   return [];
+}
+
+function record(v: unknown): Record<string, unknown> | null {
+  return v && typeof v === "object" && !Array.isArray(v)
+    ? (v as Record<string, unknown>)
+    : null;
+}
+
+function optionalString(obj: Record<string, unknown>, key: string): string | undefined {
+  const value = safeString(obj[key]).trim();
+  return value.length > 0 ? value : undefined;
+}
+
+function safeAreaAnnotations(v: unknown): AreaAnnotation[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const out: AreaAnnotation[] = [];
+  for (const item of v) {
+    const obj = record(item);
+    if (!obj) continue;
+    const area_id = safeString(obj.area_id).trim();
+    const title = safeString(obj.title).trim();
+    const target_area = safeString(obj.target_area).trim();
+    const description = safeString(obj.description).trim();
+    if (!area_id || !title || !target_area || !description) continue;
+    out.push({
+      area_id,
+      title,
+      target_area,
+      description,
+      interaction: optionalString(obj, "interaction"),
+      motion: optionalString(obj, "motion"),
+      policy: optionalString(obj, "policy"),
+      states: safeStringArray(obj.states),
+      data_refs: safeStringArray(obj.data_refs),
+      qa_notes: safeStringArray(obj.qa_notes),
+      placement_hint: optionalString(obj, "placement_hint"),
+    });
+  }
+  return out.length > 0 ? out : undefined;
+}
+
+function safeDataRequirements(v: unknown): DataRequirement[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const out: DataRequirement[] = [];
+  for (const item of v) {
+    const obj = record(item);
+    if (!obj) continue;
+    const data_id = safeString(obj.data_id).trim();
+    const name = safeString(obj.name).trim();
+    const purpose = safeString(obj.purpose).trim();
+    if (!data_id || !name || !purpose) continue;
+    out.push({
+      data_id,
+      name,
+      purpose,
+      required_values: safeStringArray(obj.required_values),
+      source: optionalString(obj, "source"),
+      refresh_policy: optionalString(obj, "refresh_policy"),
+      permission: optionalString(obj, "permission"),
+      empty_state: optionalString(obj, "empty_state"),
+      notes: safeStringArray(obj.notes),
+    });
+  }
+  return out.length > 0 ? out : undefined;
 }
 
 // Some tests inject `data_io`/`edge_cases` as a single string. The schema
@@ -77,6 +145,8 @@ export function mergeLlmBody(shell: ManifestEntry, text: string): ManifestEntry 
   }
   const edge = arrayOrPassthrough(parsed.edge_cases);
   const dio = arrayOrPassthrough(parsed.data_io);
+  const areaAnnotations = safeAreaAnnotations(parsed.area_annotations);
+  const dataRequirements = safeDataRequirements(parsed.data_requirements);
   return {
     ...shell,
     intent: safeString(parsed.intent, shell.intent),
@@ -85,6 +155,8 @@ export function mergeLlmBody(shell: ManifestEntry, text: string): ManifestEntry 
     states: safeStringArray(parsed.states),
     edge_cases: edge as unknown as string[],
     data_io: dio as unknown as string[],
+    ...(areaAnnotations ? { area_annotations: areaAnnotations } : {}),
+    ...(dataRequirements ? { data_requirements: dataRequirements } : {}),
     intent_mismatch:
       typeof parsed.intent_mismatch === "boolean"
         ? parsed.intent_mismatch

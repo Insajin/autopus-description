@@ -70,12 +70,134 @@
     "component_refs": {
       "type": "array",
       "items": { "type": "string", "minLength": 1 },
-      "description": "References to design system components or code components used by the frame. Implementation entry point. [persona_tags: dev]"
+      "description": "References to design-system surfaces or product component roles. Avoid exact code module names unless supplied by the project brief. [persona_tags: designer, dev]"
     },
     "data_io": {
       "type": "array",
       "items": { "type": "string", "minLength": 1 },
-      "description": "Data inputs and outputs (API calls, props, events). Implementation entry point. [persona_tags: dev]"
+      "description": "Product-level data coordination points, required values, events, filters, reset rules, cache/staleness, analytics intent, and permission behavior. Avoid exact API, DB, enum, or module names unless supplied by the project brief. [persona_tags: dev, qa]"
+    },
+    "area_annotations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["area_id", "title", "target_area", "description"],
+        "properties": {
+          "area_id": {
+            "type": "string",
+            "pattern": "^[0-9]+(-[0-9]+)*$",
+            "description": "Number shown beside the referenced UI region, e.g. 1 or 2-1. [persona_tags: pm, designer, dev, qa]"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Short label for the numbered region. [persona_tags: pm, designer, dev, qa]"
+          },
+          "target_area": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable UI region being annotated, not a code component name. [persona_tags: designer, dev, qa]"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Product behavior and policy for this region. [persona_tags: pm, designer, dev, qa]"
+          },
+          "interaction": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Expected user interaction behavior at product level. [persona_tags: designer, dev, qa]"
+          },
+          "motion": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Motion or transition expectation without prescribing implementation libraries. [persona_tags: designer, dev, qa]"
+          },
+          "policy": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Business or UX rule for the region. [persona_tags: pm, qa]"
+          },
+          "states": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Region-level states and triggers. [persona_tags: qa, dev]"
+          },
+          "data_refs": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "description": "References to data_requirements.data_id values. [persona_tags: dev, qa]"
+          },
+          "qa_notes": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Region-level QA checks. [persona_tags: qa]"
+          },
+          "placement_hint": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Approximate canvas placement hint for the numbered callout. [persona_tags: designer]"
+          }
+        }
+      },
+      "description": "Numbered UI-region annotations for side-of-frame handoff documentation. Optional and additive. [persona_tags: pm, designer, dev, qa]"
+    },
+    "data_requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["data_id", "name", "purpose", "required_values"],
+        "properties": {
+          "data_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable product-level identifier referenced by area_annotations.data_refs. [persona_tags: dev, qa]"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Data requirement name. [persona_tags: pm, dev, qa]"
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Why the screen or region needs this data. [persona_tags: pm, dev, qa]"
+          },
+          "required_values": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Required values or field groups at product level. [persona_tags: dev, qa]"
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Coordination source such as user input, permission, policy, or external content. Not an endpoint/table name unless provided. [persona_tags: dev, qa]"
+          },
+          "refresh_policy": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Freshness, cache, or refresh expectation. [persona_tags: dev, qa]"
+          },
+          "permission": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Access or visibility policy. [persona_tags: pm, dev, qa]"
+          },
+          "empty_state": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Expected behavior when required data is unavailable. [persona_tags: pm, qa]"
+          },
+          "notes": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Additional product-level coordination notes. [persona_tags: pm, dev, qa]"
+          }
+        }
+      },
+      "description": "Data list needed to implement or QA the annotated regions, written as product coordination points rather than implementation design. Optional and additive. [persona_tags: pm, dev, qa]"
     },
     "design_tokens": {
       "type": "array",

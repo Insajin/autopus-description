@@ -16,6 +16,8 @@ no field removal, rename, or type narrowing.
 - `pilot_metadata.prompt_version` (optional string) — prompt template version label per REQ-30.
 - `pilot_metadata.prompt_git_sha` (optional string, hex 40) — active prompt template git SHA per REQ-30.
 - `frame-description.review_status` (optional enum `approved | pending_review`) — post-hoc prompt-injection detector classification per SPEC-FIGMA-003 REQ-14 / AC-S14.
+- `frame-description.area_annotations` (optional array) — numbered UI-region notes for side-of-frame handoff cards, including target area, product behavior, interaction, motion, policy, QA notes, and data references.
+- `frame-description.data_requirements` (optional array) — product-level data list referenced by numbered regions. This records data coordination needs without prescribing endpoint, enum, DB table, component, or storage design.
 
 ### Relaxed (constraint loosening — backwards-compatible for producers, forward-compatible for consumers)
 

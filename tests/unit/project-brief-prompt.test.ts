@@ -12,11 +12,13 @@ describe("project brief prompt context", () => {
     const template = projectBriefTemplateJson();
     expect(template).toContain("Autopus project brief questions");
     expect(template).toContain("기능별 확정 정책");
+    expect(template).toContain("\"area_annotation_rules\"");
     expect(template).toContain("\"interaction_rules\"");
     expect(template).toContain("\"motion_guidelines\"");
     expect(template).toContain("\"resolved_decisions\"");
     expect(template).toContain("\"state_transitions\"");
     expect(template).toContain("\"api_contracts\"");
+    expect(template).toContain("\"data_requirements\"");
     expect(template).toContain("\"qa_acceptance\"");
     expect(template).toContain("\"feature_policies\"");
   });
@@ -28,6 +30,7 @@ describe("project brief prompt context", () => {
       feature_policies: [
         {
           feature: "Report Search",
+          area_annotation_rules: ["검색 입력, 필터, 결과 목록을 번호로 분리한다"],
           interaction_rules: ["Enter와 검색 아이콘은 같은 검색 실행으로 취급한다"],
           motion_guidelines: ["검색 결과 갱신 중 목록 영역에 skeleton을 보여준다"],
           resolved_decisions: ["검색은 Enter 또는 검색 아이콘으로만 실행한다"],
@@ -35,16 +38,19 @@ describe("project brief prompt context", () => {
           user_rules: ["검색 범위는 제목, 내용, 키워드를 포함한다"],
           api_contracts: ["GET /reports"],
           data_io: ["query", "filters"],
+          data_requirements: ["검색어, 필터 조건, 페이지 상태"],
           qa_acceptance: ["검색 실행 시 page=1"],
         },
       ],
     });
     expect(rendered).toContain("project_name=Sample Research Workspace");
     expect(rendered).toContain("Report Search");
+    expect(rendered).toContain("area_annotation_rules");
     expect(rendered).toContain("interaction_rules");
     expect(rendered).toContain("motion_guidelines");
     expect(rendered).toContain("resolved_decisions");
     expect(rendered).toContain("api_contracts");
+    expect(rendered).toContain("data_requirements");
     expect(hasProjectBriefContent({ project_name: "Sample Research Workspace" })).toBe(true);
   });
 
@@ -73,6 +79,9 @@ describe("project brief prompt context", () => {
     expect(prompt.system).toContain("Do not produce visual-only frame summaries");
     expect(prompt.system).toContain("Stay implementation-neutral");
     expect(prompt.user).toContain("trigger -> UI/data/motion expectation");
+    expect(prompt.user).toContain("area_annotations");
+    expect(prompt.user).toContain("data_requirements");
+    expect(prompt.user).toContain("numbered UI regions");
     expect(prompt.user).toContain("reset scope");
     expect(prompt.user).toContain("reduced-motion");
     expect(prompt.user).toContain("Report Search");
