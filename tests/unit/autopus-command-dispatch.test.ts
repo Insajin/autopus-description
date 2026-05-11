@@ -126,4 +126,71 @@ describe("autopus plugin command dispatch — area handoff", () => {
     expect((figma as unknown as { createEllipse: ReturnType<typeof vi.fn> }).createEllipse).toHaveBeenCalled();
     expect((figma as unknown as { createLine: ReturnType<typeof vi.fn> }).createLine).toHaveBeenCalled();
   });
+
+  it("moves the area handoff document when right-of-frame placement collides", async () => {
+    let id = 0;
+    const makeNode = (prefix: string) => ({
+      id: `${prefix}-${++id}`,
+      name: prefix,
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      children: [] as unknown[],
+      parent: null as unknown,
+      appendChild(child: unknown) {
+        this.children.push(child);
+      },
+      resize(width: number, height: number) {
+        this.width = width;
+        this.height = height;
+      },
+    });
+    const page = makeNode("page");
+    const parent = makeNode("section");
+    const source = {
+      ...makeNode("source"),
+      parent,
+      absoluteBoundingBox: { x: 100, y: 200, width: 640, height: 480 },
+    };
+    const blocker = {
+      ...makeNode("blocker"),
+      parent,
+      absoluteBoundingBox: { x: 836, y: 200, width: 720, height: 462 },
+    };
+    parent.children.push(source, blocker);
+    const figma = {
+      currentPage: page,
+      getNodeByIdAsync: vi.fn(async () => source),
+      createFrame: vi.fn(() => makeNode("doc")),
+      createText: vi.fn(() => makeNode("text")),
+      createEllipse: vi.fn(() => makeNode("badge")),
+      createLine: vi.fn(() => makeNode("line")),
+      loadFontAsync: vi.fn(async () => undefined),
+    } as unknown as FigmaPluginLike;
+
+    const result = await dispatchPluginCommand(figma, {
+      op: "set_annotation",
+      args: {
+        frameId: "1:1",
+        text: "문서 본문",
+        step: "create-node",
+        layout: "area_handoff",
+        areaCallouts: [
+          {
+            areaId: "1",
+            badgeLabel: "1",
+            title: "필터",
+            targetArea: "상단 필터",
+            description: "조건을 바꾼다",
+          },
+        ],
+      },
+    });
+
+    const doc = page.children[0] as { x: number; y: number };
+    expect(result.ok).toBe(true);
+    expect(doc.x).toBe(100);
+    expect(doc.y).toBe(776);
+  });
 });
