@@ -85,6 +85,11 @@ Each generated frame entry should explain:
 - `data_requirements`: product-level data list referenced by the numbered
   regions. This should explain what data is needed and why without taking over
   endpoint, DB, enum, storage, or architecture design.
+- `annotation_card` write-back uses the same text as a structured right-side
+  document. When `area_annotations` are present, the plugin command payload also
+  carries `layout=area_handoff`, callout badges, connector hints, and document
+  placement metadata so a compatible Figma plugin can draw the numbered badge
+  and connector layer around the source frame.
 
 ## Tone Boundary
 

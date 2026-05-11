@@ -14,6 +14,10 @@
 // AUTOPUS_PIN.md and the `case` arms here MUST advance together.
 
 import { autopusRedact, autopusRedactObject } from "./autopus_redact.js";
+import {
+  createAreaHandoffCanvas,
+  supportsAreaHandoffRuntime,
+} from "./autopus_area_handoff_renderer.js";
 
 export interface PluginCommand {
   op: string;
@@ -26,10 +30,35 @@ export interface CommandResult {
   error?: string;
 }
 
+export interface AreaHandoffCallout {
+  areaId: string;
+  badgeLabel: string;
+  title: string;
+  targetArea: string;
+  description: string;
+  placementHint?: string;
+  dataRefs?: string[];
+  documentAnchor?: string;
+}
+
 // Minimal Figma plugin runtime surface used by the dispatcher. The real
 // `figma` global supplies these methods; in tests we inject a stub.
 export interface FigmaPluginLike {
-  createText?(args: { frameId: string; text: string }): { id: string } | Promise<{ id: string }>;
+  createText?(args: {
+    frameId: string;
+    text: string;
+    layout?: string;
+    areaCallouts?: AreaHandoffCallout[];
+    documentPosition?: string;
+    visualPolicy?: Record<string, unknown>;
+  }): { id: string } | Promise<{ id: string }>;
+  createAreaHandoff?(args: {
+    frameId: string;
+    text: string;
+    areaCallouts: AreaHandoffCallout[];
+    documentPosition?: string;
+    visualPolicy?: Record<string, unknown>;
+  }): { id: string; node_ids?: string[] } | Promise<{ id: string; node_ids?: string[] }>;
   setPluginData?(args: { nodeId: string; key: string; value: string }): void | Promise<void>;
   setFrameName?(args: { nodeId: string; name: string }): void | Promise<void>;
   postComment?(args: { fileKey: string; frameId: string; text: string }): { commentId: string } | Promise<{ commentId: string }>;
@@ -64,14 +93,83 @@ function asString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
 }
 
+function asAreaCallouts(value: unknown): AreaHandoffCallout[] {
+  if (!Array.isArray(value)) return [];
+  const out: AreaHandoffCallout[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const raw = item as Record<string, unknown>;
+    const areaId = asString(raw.areaId);
+    const badgeLabel = asString(raw.badgeLabel, areaId);
+    const title = asString(raw.title);
+    const targetArea = asString(raw.targetArea);
+    const description = asString(raw.description);
+    if (!areaId || !title || !targetArea || !description) continue;
+    out.push({
+      areaId,
+      badgeLabel,
+      title,
+      targetArea,
+      description,
+      placementHint: asString(raw.placementHint) || undefined,
+      dataRefs: Array.isArray(raw.dataRefs)
+        ? raw.dataRefs.filter((v): v is string => typeof v === "string")
+        : [],
+      documentAnchor: asString(raw.documentAnchor) || undefined,
+    });
+  }
+  return out;
+}
+
 async function dispatchSetAnnotation(
   figma: FigmaPluginLike,
   args: Record<string, unknown>,
 ): Promise<CommandResult> {
-  if (!figma.createText) return { ok: true, node_ids: [] };
+  const step = asString(args.step);
+  if (step && step !== "create-node") return { ok: true, node_ids: [] };
   const text = autopusRedact(asString(args.text));
+  const areaCallouts = asAreaCallouts(args.areaCallouts);
+  if (args.layout === "area_handoff" && areaCallouts.length > 0 && figma.createAreaHandoff) {
+    const node = await Promise.resolve(
+      figma.createAreaHandoff({
+        frameId: asString(args.frameId),
+        text,
+        areaCallouts,
+        documentPosition: asString(args.documentPosition) || undefined,
+        visualPolicy:
+          args.visualPolicy && typeof args.visualPolicy === "object"
+            ? (args.visualPolicy as Record<string, unknown>)
+            : undefined,
+      }),
+    );
+    return { ok: true, node_ids: node.node_ids ?? [node.id] };
+  }
+  if (args.layout === "area_handoff" && areaCallouts.length > 0 && supportsAreaHandoffRuntime(figma)) {
+    const node = await createAreaHandoffCanvas(figma, {
+      frameId: asString(args.frameId),
+      text,
+      areaCallouts,
+      documentPosition: asString(args.documentPosition) || undefined,
+      visualPolicy:
+        args.visualPolicy && typeof args.visualPolicy === "object"
+          ? (args.visualPolicy as Record<string, unknown>)
+          : undefined,
+    });
+    return { ok: true, node_ids: node.node_ids };
+  }
+  if (!figma.createText) return { ok: true, node_ids: [] };
   const node = await Promise.resolve(
-    figma.createText({ frameId: asString(args.frameId), text }),
+    figma.createText({
+      frameId: asString(args.frameId),
+      text,
+      layout: asString(args.layout) || undefined,
+      areaCallouts,
+      documentPosition: asString(args.documentPosition) || undefined,
+      visualPolicy:
+        args.visualPolicy && typeof args.visualPolicy === "object"
+          ? (args.visualPolicy as Record<string, unknown>)
+          : undefined,
+    }),
   );
   return { ok: true, node_ids: [node.id] };
 }

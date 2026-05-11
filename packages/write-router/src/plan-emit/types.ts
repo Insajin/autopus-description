@@ -13,15 +13,17 @@
 // asserted by AC-S1.
 
 import type { ManifestEntry, UndoDescriptor, WriteTarget } from "../types.js";
+import type { AreaCalloutPayload, AnnotationVisualPayload } from "../annotation-text.js";
 
 // Args shapes are documented contracts but typed as Record<string, unknown> at
 // the union level so test fixtures and runtime payloads can include extra keys
 // (e.g. node_id from the plugin side). The discriminator is `op`; AC-S1 only
 // asserts the 2-key {op, args} set equality, not args field-by-field.
-export interface SetAnnotationArgs extends Record<string, unknown> {
+export interface SetAnnotationArgs extends AnnotationVisualPayload, Record<string, unknown> {
   frameId?: string;
   text?: string;
   position?: { x: number; y: number };
+  areaCallouts?: AreaCalloutPayload[];
 }
 export interface UpsertDescriptionsPageArgs extends Record<string, unknown> {
   pageName?: string;

@@ -11,13 +11,13 @@ import {
   BEARER_PATTERN_SOURCE,
   ABSOLUTE_PATH_PATTERNS_SOURCE,
   REDACTED,
-} from "../../../../../src/redact-patterns.js";
+} from "../../../../src/redact-patterns.js";
 
 const FIGD_RE = new RegExp(FIGD_PATTERN_SOURCE, "g");
 const XOXB_RE = new RegExp(XOXB_PATTERN_SOURCE, "g");
 const BEARER_RE = new RegExp(BEARER_PATTERN_SOURCE, "g");
 const ABSOLUTE_PATH_REGEXES: RegExp[] = ABSOLUTE_PATH_PATTERNS_SOURCE.map(
-  (src) => new RegExp(`${src}[^/\\\\\\s]*`, "g"),
+  (src: string) => new RegExp(`${src}[^/\\\\\\s]*`, "g"),
 );
 
 export function autopusRedact(input: string): string {

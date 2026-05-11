@@ -10,13 +10,18 @@ import type {
   UndoDescriptor,
 } from "../types.js";
 import { ERROR_CODES, WriteRouterError } from "../types.js";
-import { renderAnnotationText } from "../annotation-text.js";
+import {
+  buildAnnotationCreateArgs,
+  type AreaCalloutPayload,
+  type AnnotationVisualPayload,
+} from "../annotation-text.js";
 
 interface AnnotationCardClient {
-  createText(args: {
+  createText(args: AnnotationVisualPayload & {
     frameId: string;
     text: string;
     position?: { x: number; y: number };
+    areaCallouts?: AreaCalloutPayload[];
   }): Promise<{ nodeId: string }>;
   deleteNode(args: { node_id: string }): Promise<void>;
 }
@@ -46,10 +51,7 @@ export async function applyAnnotationCard(
   ctx: AdapterContext,
 ): Promise<AdapterApplyResult> {
   const client = asClient(ctx.figma);
-  const { nodeId } = await client.createText({
-    frameId: entry.frame_id,
-    text: renderAnnotationText(entry),
-  });
+  const { nodeId } = await client.createText(buildAnnotationCreateArgs(entry));
   const undo_descriptor: UndoDescriptor = {
     type: "delete-node",
     node_id: nodeId,

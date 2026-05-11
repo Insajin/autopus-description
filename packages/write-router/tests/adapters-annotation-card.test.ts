@@ -86,6 +86,15 @@ describe("annotation_card adapter (REQ-04(a) / REQ-08 / INV-002)", () => {
     expect(text).toContain("[필요 데이터 리스트]");
     expect(text).toContain("DATA-1. 검색 조건");
     expect(text).toContain("[구현 경계]");
+    expect(client.createText.mock.calls[0][0].layout).toBe("area_handoff");
+    expect(client.createText.mock.calls[0][0].documentPosition).toBe("right_of_frame");
+    expect(client.createText.mock.calls[0][0].areaCallouts).toEqual([
+      expect.objectContaining({
+        areaId: "1",
+        badgeLabel: "1",
+        documentAnchor: "area-1",
+      }),
+    ]);
   });
 
   it("apply returns delete-node undo descriptor with the returned nodeId", async () => {

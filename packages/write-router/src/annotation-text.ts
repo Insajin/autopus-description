@@ -1,5 +1,27 @@
 import type { AreaAnnotation, DataRequirement, ManifestEntry } from "./types.js";
 
+export interface AreaCalloutPayload {
+  areaId: string;
+  badgeLabel: string;
+  title: string;
+  targetArea: string;
+  description: string;
+  placementHint?: string;
+  dataRefs: string[];
+  documentAnchor: string;
+}
+
+export interface AnnotationVisualPayload {
+  layout?: "area_handoff";
+  documentPosition?: "right_of_frame";
+  areaCallouts?: AreaCalloutPayload[];
+  visualPolicy?: {
+    badgeColor: string;
+    connectorColor: string;
+    documentWidth: number;
+  };
+}
+
 function hasText(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
@@ -76,4 +98,39 @@ export function renderAnnotationText(entry: ManifestEntry): string {
     "- endpoint, DB, enum, 모듈명, 저장 방식은 확정 자료가 있을 때만 따릅니다.",
   );
   return lines.join("\n");
+}
+
+export function buildAnnotationVisualPayload(entry: ManifestEntry): AnnotationVisualPayload {
+  const areas = entry.area_annotations ?? [];
+  if (areas.length === 0) return {};
+  return {
+    layout: "area_handoff",
+    documentPosition: "right_of_frame",
+    areaCallouts: areas.map((area) => ({
+      areaId: area.area_id,
+      badgeLabel: area.area_id,
+      title: area.title,
+      targetArea: area.target_area,
+      description: area.description,
+      placementHint: area.placement_hint,
+      dataRefs: area.data_refs ?? [],
+      documentAnchor: `area-${area.area_id}`,
+    })),
+    visualPolicy: {
+      badgeColor: "#ff3b30",
+      connectorColor: "#ff2bd6",
+      documentWidth: 720,
+    },
+  };
+}
+
+export function buildAnnotationCreateArgs(entry: ManifestEntry): AnnotationVisualPayload & {
+  frameId: string;
+  text: string;
+} {
+  return {
+    frameId: entry.frame_id,
+    text: renderAnnotationText(entry),
+    ...buildAnnotationVisualPayload(entry),
+  };
 }
