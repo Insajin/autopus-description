@@ -67,7 +67,12 @@
       "TaskUpdate",
       "TeamCreate",
       "SendMessage",
-      "ToolSearch"
+      "ToolSearch",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(node *)",
+      "Bash(pnpm *)",
+      "Bash(yarn *)"
     ]
   }
 }

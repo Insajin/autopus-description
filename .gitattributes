@@ -1,2 +1,28 @@
 vendor/** linguist-vendored=true
 vendor/** linguist-generated=false
+
+# Line-ending policy — repo stores LF; checkout normalizes per OS.
+* text=auto eol=lf
+
+# Shell scripts must always be LF (Linux/macOS execution).
+*.sh text eol=lf
+
+# Windows-native scripts keep CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Common binaries — no conversion.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.tgz binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary

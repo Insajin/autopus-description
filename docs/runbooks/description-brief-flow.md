@@ -75,6 +75,59 @@ Each generated frame entry should explain:
 - `data_io`: data coordination points, required values, events, filters,
   parameters, state, cache/staleness, analytics intent, and permission behavior.
 
+## Figma Description Card Standard
+
+Use `.agents/skills/figma-description/SKILL.md` whenever descriptions are written
+back into Figma. The expected Figma surface is not a short caption. It is a
+numbered planning description that lets PM, design, development, and QA match a
+screen function, state, or interaction target to the detailed rule set.
+
+The badge unit is not a frame. A frame is only the screen container. Add badges
+to the functional targets inside the frame: search inputs, dropdowns, filters,
+reset buttons, tabs, list rows, pagination, recommendation items, detail-panel
+actions, source viewers, download controls, and meaningful state regions.
+
+Required write-back rules:
+
+- Add visible numbered badges inside each target frame near the actual function
+  or state target, named `[BADGE] FNN-MM <TARGET_ID>`.
+- Do not create exactly one badge per frame unless the frame has exactly one
+  meaningful functional target.
+- Add the same numbered badge inside the matching badge description block.
+- Place cards beside the frame or section, not over the production UI.
+- Name the card board `[DESC] <flow name> Cards`.
+- Verify by metadata and screenshot that functional badge count and badge
+  description block count match.
+
+Required description order:
+
+1. Target and product role.
+2. Entry and exposure condition.
+3. Default state and fixed values.
+4. Input and selection rules, including validation and reset behavior.
+5. Button, link, input, dropdown, tab, and toggle interactions.
+6. State transitions before and after user action.
+7. Exception branches as `Case 1`, `Case 2`, etc.
+8. Data, event, cache, refresh, and permission coordination points.
+9. QA acceptance checks.
+
+Style rules:
+
+- Follow hierarchy, grouping, numbering, highlighting, and case separation.
+- Specify gestures such as click, Enter, Esc, outside click, hover, and focus
+  restoration instead of vague phrases like "on select".
+- Define link type and landing target: internal link, deep link, external link,
+  side panel, modal, same-screen refresh, or document viewer.
+- Define hidden UI exposure conditions.
+- Define content ordering, min/max count, truncation, fallback, and empty/error
+  cases.
+- Keep unresolved policies as `[CANNOT_INFER]` or `open_questions`; do not
+  invent endpoint names, storage technology, or final business rules.
+- Write enough behavior, state, and data coordination detail that an engineer
+  can design the product logic. Do not cross into code ownership by inventing
+  API endpoint names, database schemas, component names, enum names, libraries,
+  or implementation architecture.
+
 ## Tone Boundary
 
 - Write enough policy that developers know what behavior to build and QA knows
