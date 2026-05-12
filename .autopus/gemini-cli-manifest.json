@@ -1,0 +1,367 @@
+{
+  "version": "1.0.0",
+  "platform": "gemini-cli",
+  "generated_at": "2026-05-08T15:52:21+09:00",
+  "files": {
+    ".gemini\\agents\\autopus\\annotator.md": {
+      "checksum": "783c84fcf9fc6e079f800334e1a2e6312eba2b5482b8171862a9d93c418fa529",
+      "policy": "always"
+    },
+    ".gemini\\agents\\autopus\\architect.md": {
+      "checksum": "df841e6e319780291e90095f1bb8740faef3bb96ae03924b2ecb2cac97f762a6",
+      "policy": "always"
+    },
+    ".gemini\\agents\\autopus\\debugger.md": {
+      "checksum": "20640588ac146598c323147704ff0591921b20d06f4c12a207b81bfc5075a350",
+      "policy": "always"
+    },
+    ".gemini\\agents\\autopus\\deep-worker.md": {
+      "checksum": "fb50c4cf8578961a11f57f227ff33a733e521e75d846cb022b40ecba4935bea3",
+      "policy": "always"
+    },
+    ".gemini\\agents\\autopus\\devops.md": {
+      "checksum": "8fa6256d7e466db09fbc8b62cdd1fa167114310d30bda655f3263d069e33760b",
+      "policy": "always"
+    },
+    ".gemini\\agents\\autopus\\executor.md": {
+      "checksum": "90c2face4cc6e741aab4df8e4c93b24cf13830b397d3d9540c70b13662172add",
+      "policy": "always"
+    },
+    ".gemini\\agents\\autopus\\explorer.md": {
+      "checksum": "9646363da3826cc2a4d71776e3ccf853762d7b5976d3a438c7aa98599c69f445",
+      "policy": "always"
+    },
+    ".gemini\\agents\\autopus\\frontend-specialist.md": {
+      "checksum": "0b3793edb16e1f0960d3a7c97a765bdfde6839199aa70bb8dfb53820dcb48ae9",
+      "policy": "always"
+    },
+    ".gemini\\agents\\autopus\\perf-engineer.md": {
+      "checksum": "60542538956f3b4eafea0b522c1c70f35d2d006cd5c7fd5215fe9c7d58cbb12e",
+      "policy": "always"
+    },
+    ".gemini\\agents\\autopus\\planner.md": {
+      "checksum": "2977804dfd1aed14f6bc8141673489db29785b217e1b1a39895bd1389e9cb506",
+      "policy": "always"
+    },
+    ".gemini\\agents\\autopus\\reviewer.md": {
+      "checksum": "650bcf2a4c899dc6e9860bfb473a288c61b2337aa6f61f2f635319cfd3ee979a",
+      "policy": "always"
+    },
+    ".gemini\\agents\\autopus\\security-auditor.md": {
+      "checksum": "abae87c30621d718d6a40466f1ad60da0a75ba4266adf4a37ccbd8f63ba67b0b",
+      "policy": "always"
+    },
+    ".gemini\\agents\\autopus\\spec-writer.md": {
+      "checksum": "cf49ffd3391af4138054d54de516f8d0ea01d33280254423944390c72a47350f",
+      "policy": "always"
+    },
+    ".gemini\\agents\\autopus\\tester.md": {
+      "checksum": "532b2a7c2a7375b4952454ef84f0055c6d541f602483830ee016334a02cd5b58",
+      "policy": "always"
+    },
+    ".gemini\\agents\\autopus\\ux-validator.md": {
+      "checksum": "bbb8e4a6d450f63a7f77cabdb74ddf5606331e23edba844bd3da46f514f3d8e4",
+      "policy": "always"
+    },
+    ".gemini\\agents\\autopus\\validator.md": {
+      "checksum": "fac4ddf83028b31a0f9501b5dc30b04c315664ca4a3fb0145d8a7124650ca221",
+      "policy": "always"
+    },
+    ".gemini\\commands\\auto\\canary.toml": {
+      "checksum": "3d3dd0c2f903f8d71982d97b6166125990a6eab0387414cb43f5574cac29eeb2",
+      "policy": "always"
+    },
+    ".gemini\\commands\\auto\\fix.toml": {
+      "checksum": "e67232c6cbc693d99c1e488bde03dbc31c639db9affcd83a18fb904ccf00b36c",
+      "policy": "always"
+    },
+    ".gemini\\commands\\auto\\go.toml": {
+      "checksum": "3cf5926bfb2b62b10c6b7463f96b86f6d52cc936255a0c130dd0b74f6bc977d1",
+      "policy": "always"
+    },
+    ".gemini\\commands\\auto\\idea.toml": {
+      "checksum": "fe8cb316bf4cc5ce454601d514bc8bb72544aae674578f784bf00ff92a15feba",
+      "policy": "always"
+    },
+    ".gemini\\commands\\auto\\plan.toml": {
+      "checksum": "a6598ab6bab2fd623f6949eac1d63ce4c0cd7324d10ad8b1f9e0815a1aa4b380",
+      "policy": "always"
+    },
+    ".gemini\\commands\\auto\\qa.toml": {
+      "checksum": "878d718b79124e23e37eba380fe742ecc700d20285f4ed8b290abf814d541fff",
+      "policy": "always"
+    },
+    ".gemini\\commands\\auto\\review.toml": {
+      "checksum": "b6874a49fdfc78731e38314cc857bee63dcb25dce35f9bb0ae66fad0720c0a55",
+      "policy": "always"
+    },
+    ".gemini\\commands\\auto\\sync.toml": {
+      "checksum": "099e80e173b66d76a5a93b8c20d892435e5b822664f06c76690a8ff4a9a0f724",
+      "policy": "always"
+    },
+    ".gemini\\rules\\autopus\\branding.md": {
+      "checksum": "f7162fdd9787ada00e3b5dc3552b3394907783b2af32d1008018ce340f9ef178",
+      "policy": "always"
+    },
+    ".gemini\\rules\\autopus\\context7-docs.md": {
+      "checksum": "51249445bb272008b1e12ad6f55f2555686d8970b1174c4f6b61b228e2ebe11a",
+      "policy": "always"
+    },
+    ".gemini\\rules\\autopus\\doc-storage.md": {
+      "checksum": "0586b78ab2ded87d0fcb4794bf3b343677a76748a6e697615d857acc7b352107",
+      "policy": "always"
+    },
+    ".gemini\\rules\\autopus\\file-size-limit.md": {
+      "checksum": "5dbdfa0c0589f1c699c2378c240023b90c1ab4d2131849e7a9b00cb20936ca20",
+      "policy": "always"
+    },
+    ".gemini\\rules\\autopus\\language-policy.md": {
+      "checksum": "95e0a94aa4f412c07eb722e31a786f97f39867e48536e50aca71179db092f5f7",
+      "policy": "always"
+    },
+    ".gemini\\rules\\autopus\\lore-commit.md": {
+      "checksum": "37af2ed87eb316f535a442d98251c514c3f76fcc973a54150e15377dde93ed29",
+      "policy": "always"
+    },
+    ".gemini\\rules\\autopus\\objective-reasoning.md": {
+      "checksum": "1f74ba9bb942d17374b8d33366a986ca5974eb08be9bc88fe08b0dc64ae09016",
+      "policy": "always"
+    },
+    ".gemini\\rules\\autopus\\subagent-delegation.md": {
+      "checksum": "0809daef6997c03184b1b156b1f0009dbb13301403445efa024810ea4a484514",
+      "policy": "always"
+    },
+    ".gemini\\rules\\autopus\\techstack-freshness.md": {
+      "checksum": "c420682d9e185444d86bfd431abea205800f93d86a2b119181d82b6e42b17fd2",
+      "policy": "always"
+    },
+    ".gemini\\rules\\autopus\\worktree-safety.md": {
+      "checksum": "c41494eea229aa98f803d29956812ea61b1d7d2565d47ec27b2ef64f7ec02138",
+      "policy": "always"
+    },
+    ".gemini\\settings.json": {
+      "checksum": "e25edec3669dded0cb1b534630096dacecb5da5f9ef4b90f3e9c3168ce88e292",
+      "policy": "merge"
+    },
+    ".gemini\\skills\\auto\\SKILL.md": {
+      "checksum": "23d4f7cf8643073dfeb4984a789991addb8f881564d2e1290f931601693f63df",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\adaptive-quality\\SKILL.md": {
+      "checksum": "599a9fae6a008e65791c0fa2a0f4689ec8c9ddbd79d0e94562814957fc2fb257",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\agent-pipeline\\SKILL.md": {
+      "checksum": "ab2b1f636f5f42b5c99b0b6f9129afb0ab98cce7c8c504a28b115fb698b4a979",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\agent-presets\\SKILL.md": {
+      "checksum": "1713bc8b8e005be69e1e0e55830a5c9795a1f0d0628c6a3c08386bc297e9fe39",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\agent-teams\\SKILL.md": {
+      "checksum": "272066a5099413bf13c5cd3567abcd9b75aa24ad47f9b77cf1e1ee0e2edc3131",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\api-design\\SKILL.md": {
+      "checksum": "ce232b2a9e3d0aa75be77d1ee48495d45a947e61c5906ae2023c7cef1e73e508",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\ast-refactoring\\SKILL.md": {
+      "checksum": "72db242e8738b2c807d39baf0ecd0fc088882a2ecf5e7ed6ea002c353b7668bb",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\auto-canary\\SKILL.md": {
+      "checksum": "0fd25c7c642e6c87809d12b01c84e8dba1bd0365df596bd5f2651fab394f4c46",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\auto-fix\\SKILL.md": {
+      "checksum": "530f5b6b6973b29bfdbc26ccf1751840c35800932e20acc5a7c9da4c0f8a4874",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\auto-go\\SKILL.md": {
+      "checksum": "4d308d59b3d8bbd9b93d80189e29c895797e80d7e11e74890ab349f743a58bbc",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\auto-idea\\SKILL.md": {
+      "checksum": "8e750cd8ac8dde918510a01856dc0115a10cc34d4d0a6e3e4bc3e219ca7d37c8",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\auto-plan\\SKILL.md": {
+      "checksum": "313314b048e8f8b8d94585b76dc8870bf8e5ad9df42f0f3549a78468835526ac",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\auto-qa\\SKILL.md": {
+      "checksum": "26589935ab492a2365fb7cc5adb3fc57f63792bf4c9928a50a7accf5358ccdfd",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\auto-review\\SKILL.md": {
+      "checksum": "3849f25c5b3eab4b56ecf39916687b5057a6296a03c7b489ca6e99fffb855671",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\auto-sync\\SKILL.md": {
+      "checksum": "16dbd536ba38bc63cbb1c563b53e7efe0da443d4653b6fad82fb64c79fa0ebf3",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\ax-annotation\\SKILL.md": {
+      "checksum": "b459ed6456110f7e4f9355c1dcaa0d8ac171337561f8b76fcf5d28fe1b51c6ce",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\brainstorming\\SKILL.md": {
+      "checksum": "3665f443eaa1710750d5af91da7e5083641f994bb9acf671cbb812bc2d964687",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\browser-automation\\SKILL.md": {
+      "checksum": "591c4005ff5dccc5052cac16cb777fe724343120517dc875ca70212ce9132281",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\ci-cd\\SKILL.md": {
+      "checksum": "33c065d82a9dab544a9d7237c13d849d0211309a9b97da5d42b6a6877a3b4ed9",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\competitive-analysis\\SKILL.md": {
+      "checksum": "47221d48603a01f1ca8fa5b3ee13d32a6b02703a2b1a5b39de41ba6fa4764507",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\context-search\\SKILL.md": {
+      "checksum": "4d5c1797438e7a0136cab5abfeb0e997950be9b93c8d1bb76816636d9d0e15af",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\database\\SKILL.md": {
+      "checksum": "6987baa7ecda18c7d6b133e9bc0bc1d1515fb6d3d23925ee1d93e1b1f11941c6",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\ddd\\SKILL.md": {
+      "checksum": "78d70df8ff92929ac89cedbf930dcf5d16e03e4d9a3ed4de07221a68f8e3df14",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\debugging\\SKILL.md": {
+      "checksum": "b60c69798771198895295c4ab0f00f599838c40e5129a55e289fd1f30b624db8",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\docker\\SKILL.md": {
+      "checksum": "50bde848d5b1ce47aa65c89cba4e1eb64cb89cd3414ad6a4506347e3b705ba63",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\double-diamond\\SKILL.md": {
+      "checksum": "87d088f96262ab2e6ad0c78b5803d1c3c52afc89a04c8c9d3c80f490086891df",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\entropy-scan\\SKILL.md": {
+      "checksum": "b72f31a4f9b7b32e56c3fe17154a6687218d131bd2b165a04d9ba9a6f3cacede",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\experiment\\SKILL.md": {
+      "checksum": "d5a90d6ee87a5c2de1709eb45db8f1d26ed694bfa07d2e431267a7c1821bc2c9",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\frontend-skill\\SKILL.md": {
+      "checksum": "3445b75a10dcff49184bb6edbb63ed7a1aac3491f48f0ee9a3263bacd3fb8d70",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\frontend-verify\\SKILL.md": {
+      "checksum": "9fb023adeb3286c0fa9e95d256993a9e198d896a955383bbdd18b2383f1b2826",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\git-worktrees\\SKILL.md": {
+      "checksum": "451c11d4ca08e20a77b7b9cf56b148dd53fcea00cbfa3066af9a9a59d81b64c7",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\hash-anchored-edit\\SKILL.md": {
+      "checksum": "3fd1ab06a676296e2f9b5175d851d894fd16699af00f70a3b51060d8605a7827",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\idea\\SKILL.md": {
+      "checksum": "d18e011ba182c27928d2bb0b77988eab846c3767cd9b0ea27bdb977ac75ac666",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\lore-commit\\SKILL.md": {
+      "checksum": "834d88689898ccb0b143fed0daf3e167c796082f039afe23353ea87a0f56c7c6",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\metrics\\SKILL.md": {
+      "checksum": "096acf66351e03820874029a9a1c8f3b61e9d6c69d80ed937352aea01fc44156",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\migration\\SKILL.md": {
+      "checksum": "63e82a420545b0362953a43bf9114921368fc568bfa517839a078193691879ad",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\monitor-patterns\\SKILL.md": {
+      "checksum": "0b131d5b3a9548864d49327198474cc9d465d080ee69185892bbc8a58860be71",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\performance\\SKILL.md": {
+      "checksum": "bafd6d7658ff6ca3c442d752237bb788ba5a9e0651ed6b9da4475bdd625c0c1e",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\planning\\SKILL.md": {
+      "checksum": "866fb589d88fc0ca653328b99d73fba4c26f2d232f04239927029097626cca36",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\playwright-cli\\SKILL.md": {
+      "checksum": "7de80bce28461083dcb06920f4b3953987aca5146d3ed0e1c9075704ad5281ac",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\prd\\SKILL.md": {
+      "checksum": "68cd588b4f24ea1202c9f9855619a4bd555b5caffa6661d5db6eafe77fcfc153",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\product-discovery\\SKILL.md": {
+      "checksum": "414e8cfb3c2f2e97a6041c8650dc6306a090c7e8a4d3ab273472466aea673dfd",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\refactoring\\SKILL.md": {
+      "checksum": "d38dad219627fd3c00c30bf6917a6ee75d130a086804d369a1c3d05ad6c6167f",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\review\\SKILL.md": {
+      "checksum": "3c4752c1f906474073b121eec10d9792aa123bbfd1ab19242cfb74fea8ff8c54",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\security-audit\\SKILL.md": {
+      "checksum": "724780b3ba7a4df8577ff62933b361d30a72e78fd6a75859909e123919aee8b9",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\spec-review\\SKILL.md": {
+      "checksum": "b1c0bebc3ab7a1ec6b7677016c0f262231c1dcfcba30bc33d260fb42180aa8cf",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\subagent-dev\\SKILL.md": {
+      "checksum": "f6e460cc4780944fa0deca011c907beeac82ffde9aeb80ae6a9cdf9dfa992e46",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\tdd\\SKILL.md": {
+      "checksum": "9f92f2019b3702797a2d7b927829aa33dae12af74c8c0bfcd0b65865d3386926",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\testing-strategy\\SKILL.md": {
+      "checksum": "01505a7399f26973badc66b42e515dafb063609ded83d40d62746e0bfbdf9fe1",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\using-autopus\\SKILL.md": {
+      "checksum": "ce07c12e56a659330c98772c39349184689acda622f52916ab88057463ee0f44",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\verification\\SKILL.md": {
+      "checksum": "992b2361331ca7a5bd879aa192339b9549e1ab4f03bbeb6a30a6a4f6d2dc6765",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\worktree-isolation\\SKILL.md": {
+      "checksum": "d0a280318db83e6752442b3cacc317ad4b1ec00d8f1222ecf04eca2eb5d0ed28",
+      "policy": "always"
+    },
+    ".gemini\\skills\\autopus\\writing-skills\\SKILL.md": {
+      "checksum": "32f57e2fd701affc2f42ec2cccd4a2ae10635dc891c797dad7b79a9bb40cc9d1",
+      "policy": "always"
+    },
+    ".gemini\\statusline.sh": {
+      "checksum": "7759f869aa72ba907551faa0fd5c29db7817e0fba1c7a36c452e88559c940851",
+      "policy": "always"
+    },
+    "GEMINI.md": {
+      "checksum": "1ce07d1953368132ebb50c953e3b26fc182165dc05951c12025f64fed07d24f8",
+      "policy": "marker"
+    }
+  }
+}

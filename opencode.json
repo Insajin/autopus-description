@@ -12,7 +12,8 @@
     ".opencode/rules/autopus/project-identity.md",
     ".opencode/rules/autopus/spec-quality.md",
     ".opencode/rules/autopus/subagent-delegation.md",
-    ".opencode/rules/autopus/worktree-safety.md"
+    ".opencode/rules/autopus/worktree-safety.md",
+    ".opencode/rules/autopus/techstack-freshness.md"
   ],
   "plugin": [
     ".opencode/plugins/autopus-hooks.js"
