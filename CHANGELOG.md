@@ -2,6 +2,168 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.0] — 2026-05-26
+
+Designer write surface unification. `autopus-mcp-stdio` now exposes the vendor
+`cursor-talk-to-figma-mcp` toolset (MIT, vendored under `vendor/`) through a
+single MCP, so designers using Claude Desktop on Windows can run the full
+design-creation loop (create frames, set fills, adjust auto-layout, build
+diagrams) without registering a separate MCP server.
+
+### Added — SPEC-FIGMA-017 (designer write surface)
+
+- `src/daemon/figma-relay.ts` (230 LOC) — Node port of vendor's Bun socket
+  relay. Binds `127.0.0.1:3055` by default, channel-broadcast protocol mirrors
+  vendor byte-for-byte. All outbound payloads pass through `redact()` (INV-W2).
+- `src/daemon/figma-plugin-client.ts` (191 LOC) — autopus-side client that
+  joins a channel and forwards `sendCommand(name, params)` to the rebranded
+  Autopus Figma plugin with per-request UUID tracking and 30s timeout.
+- `src/daemon/mcp-vendor-read-handlers.ts` (13 read tools) — `get_document_info`,
+  `get_selection`, `get_node_info(s)`, `read_my_design`, `get_styles`,
+  `get_local_components`, `get_reactions`, `get_annotations`,
+  `get_instance_overrides`, `scan_text_nodes`, `scan_nodes_by_types`,
+  `export_node_as_image`.
+- `src/daemon/mcp-vendor-write-handlers.ts` (28 write tools) — `create_*`,
+  `set_fill_color`, `set_stroke_color`, `set_corner_radius`, `set_text_content`,
+  `set_multiple_text_contents`, `move_node`, `resize_node`, `clone_node`,
+  `delete_node`, `delete_multiple_nodes`, `set_layout_mode`, `set_padding`,
+  `set_axis_align`, `set_layout_sizing`, `set_item_spacing`, annotation/instance
+  ops, connector ops, `set_focus`, `set_selections`, `join_channel`.
+- Strategy B (direct adoption) — vendor tool names kept verbatim; zero MCP
+  surface collisions with autopus 26-tool baseline.
+
+### Added — Figma plugin unification build
+
+- `scripts/build-figma-plugin.mjs` — generates `dist/plugin/` from vendor source.
+  Vendor `code.js` (4122 LOC) is preserved verbatim for `git subtree pull`
+  freshness (REQ-07); autopus description-workflow command handlers
+  (`set_plugin_data`, `set_frame_name`, `restore_frame_name`,
+  `upsert_descriptions_page_node`, `clear_plugin_data`, `noop`) are appended at
+  build time. `manifest.json` is rebranded to `name: "Autopus Figma"`.
+- `npm run build` now invokes the plugin build step automatically.
+- Publish file allowlist (`package.json` `files`) extended with `dist/plugin/`
+  and `scripts/build-figma-plugin.mjs`.
+
+### Changed — MCP wiring dispatch loop
+
+- `src/daemon/mcp-stdio-handlers.ts` — 9 optional context dispatch blocks
+  refactored into a single loop iterating over an ordered context array. Same
+  external behavior; lower LOC; covers vendor read + vendor write contexts
+  introduced by this release.
+- `CreateMcpStdioServerInput` accepts `figmaPluginClient?: FigmaPluginClient`;
+  vendor tool dispatch activates only when a client is wired (mirrors the
+  existing `figmaAdapter` / `descriptionGenerator` / `briefWorkspaceRoot` /
+  `p2Context` opt-in pattern).
+- Server version bump: 0.2.0 → 0.3.0.
+
+### Documentation
+
+- `.autopus/specs/SPEC-FIGMA-017/spec.md` — full unification SPEC with Phase 1
+  decisions (Strategy B, Path X) and 6-phase plan.
+- `docs/guides/designer-figma-mcp-guide.md` v2 — rewritten for Claude Desktop
+  on Windows. Covers `claude_desktop_config.json` setup, Figma plugin install
+  from Org marketplace, channel join sequence, 4 workflow prompts, FAQ, and
+  troubleshooting.
+- `docs/runbooks/figma-org-publish.md` — 8-step checklist for publishing the
+  Autopus Figma plugin to Figma Organization private marketplace.
+
+### Tests
+
+- `tests/unit/daemon-mcp-vendor-tools.test.ts` — 9 cases covering vendor tool
+  ListTools, plugin forwarding, INV-PLUGIN-CONSENT (PLUGIN_NOT_CONNECTED),
+  error propagation, baseline coexistence.
+- `tests/unit/daemon-figma-relay.test.ts` — 5 cases covering relay protocol
+  (start, malformed JSON rejection, join validation, broadcast exclusion of
+  sender, full client roundtrip with fake plugin peer).
+- Total MCP suite: 55 → 69 tests (all passing).
+
+### Dependencies
+
+- Added `ws@^8.21.0` (runtime) + `@types/ws@^8.18.1` (dev) for the Node relay.
+
+## [0.2.0] — 2026-05-26
+
+First public release as `@autopus/figma-mcp` (renamed from internal
+`@autopus/figma-read`). Licensed under MIT.
+
+### Added — SPEC-FIGMA-014 (P0 MCP surface expansion)
+
+The `autopus-mcp-stdio` server can now surface description generation, Figma
+read, and manifest validation as MCP tools instead of CLI-only commands. All
+five new tools activate only when their backing dependency is wired at startup
+(`figmaAdapter` + `manifestValidator` for reads, `descriptionGenerator` for
+generation). The SPEC-FIGMA-009 baseline (4 read + 5 write) stays byte-equal
+for callers that wire none of the extras (INV-W4a / INV-W4b).
+
+- `src/daemon/mcp-extra-read-handlers.ts` — 4 figma read tools
+  (`figma_list_frames`, `figma_get_frame_meta`, `figma_export_image`,
+  `figma_get_prototype_graph`) + `validate_manifest`.
+- `src/daemon/mcp-extra-write-handlers.ts` — `generate_description` write tool
+  + `AdapterBackedDescriptionGenerator` reference implementation pairing a
+  Figma read adapter with an LLM provider.
+- 11 new vitest cases under `tests/unit/daemon-mcp-stdio-extra-tools.test.ts`.
+
+### Added — SPEC-FIGMA-015 (P1 project brief MCP surface)
+
+Project brief workflow (init / get / validate / update) is now reachable from
+the MCP client, so PMs and designers do not need to drop to the
+`generate-descriptions` CLI to set up a run.
+
+- `src/daemon/mcp-brief-handlers.ts` + `src/daemon/brief-path-guard.ts` — 4
+  tools (`init_project_brief`, `update_project_brief`, `get_project_brief`,
+  `validate_project_brief`) with INV-BRIEF-PATH confinement to
+  `<workspaceRoot>/.autopus/runs/`. Null-byte, `..`, and absolute-path escapes
+  are rejected at the boundary.
+- 13 new vitest cases under `tests/unit/daemon-mcp-brief-tools.test.ts`.
+
+REQ-03 (filter args on baseline read tools) is **deferred to SPEC-FIGMA-017**;
+the current read-tool dispatch returns fenced prompts rather than resource
+data, so filtering belongs in a new `query_*` tool family that does not
+collide with the frozen `EMPTY_INPUT_SCHEMA` baseline.
+
+### Added — SPEC-FIGMA-016 (P2 operational MCP surface)
+
+Production-quality affordances for batch processing, mode override, preview,
+and operational visibility.
+
+- `src/daemon/mcp-p2-handlers.ts` + `src/daemon/mcp-p2-state.ts` — 6 tools
+  (`submit_batch_lane`, `get_batch_status`, `force_generation_mode`,
+  `get_generation_mode`, `preview_description`, `get_daemon_status`).
+- Batch handles persisted under `.autopus/batch/<batch_id>.json`
+  (INV-BATCH-DURABILITY). Generation mode override is session-scoped
+  (INV-MODE-SESSION).
+- `get_daemon_status` passes tunnel URLs through `redactTunnelUrl` so the
+  cloudflared subdomain and tokens never reach the MCP wire
+  (INV-TUNNEL-REDACT).
+- 16 new vitest cases under `tests/unit/daemon-mcp-p2-tools.test.ts`.
+
+### Changed — MCP server identity bumped to 0.2.0
+
+- `src/daemon/mcp-stdio-entry.ts`: `SERVER_VERSION = "0.2.0"`, instructions
+  string updated to call out the optional extras.
+- `src/daemon/mcp-stdio-handlers.ts`: ListTools now concatenates baseline →
+  extra reads → brief reads → P2 reads → SPEC-FIGMA-011 writes → extra writes
+  → brief writes → P2 writes. Each optional block omits cleanly when its
+  context is undefined.
+
+### Documentation
+
+- `docs/runbooks/figma-014-mcp-expansion.md` — wiring example, full ListTools
+  ordering across all activations, invariants, deferred work.
+- `.autopus/specs/SPEC-FIGMA-014/spec.md`,
+  `.autopus/specs/SPEC-FIGMA-015/spec.md`,
+  `.autopus/specs/SPEC-FIGMA-016/spec.md` — SPEC documents tracked under the
+  same negation pattern as SPEC-FIGMA-008.
+
+### Repository
+
+- License: MIT (Copyright 2026 Bitgapnam). Third-party MIT code under
+  `vendor/cursor-talk-to-figma-mcp/` retained under its original copyright.
+- `package.json`: `private` removed, `publishConfig` set to public + provenance,
+  `files` allowlist, repository / bugs / homepage / keywords populated.
+- `.github/workflows/release.yml`: tag-driven `npm publish` with provenance
+  attestation; pre-publish gates run lint + build + test.
+
 ## [Unreleased]
 
 ### Added — SPEC-FIGMA-013 sync (2026-05-08)
