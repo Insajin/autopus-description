@@ -42,6 +42,8 @@ into a manifest.
 - Role, permission, and access-control policies.
 - Feature-level rules, such as search scope, filter composition, sorting,
   pagination, detail navigation, and reset behavior.
+- Area annotation rules, such as which UI regions need numbered callouts and
+  how to split repeated controls, dropdowns, modals, banners, and lists.
 - Interaction rules, such as click, hover, focus, keyboard operation, dropdown
   close, outside click, focus restore, and scroll restoration.
 - Motion guidelines, such as side-panel slide, dropdown fade, loading skeleton,
@@ -54,6 +56,9 @@ into a manifest.
   populated.
 - Data coordination points, event intent, required values, persistence
   expectations, cache/staleness, analytics intent, and permission contracts.
+- Data requirement lists: value groups, display conditions, refresh policy,
+  permissions, and empty-value behavior. Exact endpoint, database, enum, and
+  storage names should appear only when they are already confirmed.
 - Domain terms and abbreviations.
 - Non-goals and unresolved questions.
 
@@ -74,59 +79,17 @@ Each generated frame entry should explain:
   Avoid naming exact code modules unless the project already supplies them.
 - `data_io`: data coordination points, required values, events, filters,
   parameters, state, cache/staleness, analytics intent, and permission behavior.
-
-## Figma Description Card Standard
-
-Use `.agents/skills/figma-description/SKILL.md` whenever descriptions are written
-back into Figma. The expected Figma surface is not a short caption. It is a
-numbered planning description that lets PM, design, development, and QA match a
-screen function, state, or interaction target to the detailed rule set.
-
-The badge unit is not a frame. A frame is only the screen container. Add badges
-to the functional targets inside the frame: search inputs, dropdowns, filters,
-reset buttons, tabs, list rows, pagination, recommendation items, detail-panel
-actions, source viewers, download controls, and meaningful state regions.
-
-Required write-back rules:
-
-- Add visible numbered badges inside each target frame near the actual function
-  or state target, named `[BADGE] FNN-MM <TARGET_ID>`.
-- Do not create exactly one badge per frame unless the frame has exactly one
-  meaningful functional target.
-- Add the same numbered badge inside the matching badge description block.
-- Place cards beside the frame or section, not over the production UI.
-- Name the card board `[DESC] <flow name> Cards`.
-- Verify by metadata and screenshot that functional badge count and badge
-  description block count match.
-
-Required description order:
-
-1. Target and product role.
-2. Entry and exposure condition.
-3. Default state and fixed values.
-4. Input and selection rules, including validation and reset behavior.
-5. Button, link, input, dropdown, tab, and toggle interactions.
-6. State transitions before and after user action.
-7. Exception branches as `Case 1`, `Case 2`, etc.
-8. Data, event, cache, refresh, and permission coordination points.
-9. QA acceptance checks.
-
-Style rules:
-
-- Follow hierarchy, grouping, numbering, highlighting, and case separation.
-- Specify gestures such as click, Enter, Esc, outside click, hover, and focus
-  restoration instead of vague phrases like "on select".
-- Define link type and landing target: internal link, deep link, external link,
-  side panel, modal, same-screen refresh, or document viewer.
-- Define hidden UI exposure conditions.
-- Define content ordering, min/max count, truncation, fallback, and empty/error
-  cases.
-- Keep unresolved policies as `[CANNOT_INFER]` or `open_questions`; do not
-  invent endpoint names, storage technology, or final business rules.
-- Write enough behavior, state, and data coordination detail that an engineer
-  can design the product logic. Do not cross into code ownership by inventing
-  API endpoint names, database schemas, component names, enum names, libraries,
-  or implementation architecture.
+- `area_annotations`: numbered UI-region notes for the side-of-frame document.
+  Each note should include area id, region label, product behavior, interaction,
+  motion, policy, states, QA checks, and data references when relevant.
+- `data_requirements`: product-level data list referenced by the numbered
+  regions. This should explain what data is needed and why without taking over
+  endpoint, DB, enum, storage, or architecture design.
+- `annotation_card` write-back uses the same text as a structured right-side
+  document. When `area_annotations` are present, the plugin command payload also
+  carries `layout=area_handoff`, callout badges, connector hints, and document
+  placement metadata so a compatible Figma plugin can draw the numbered badge
+  and connector layer around the source frame.
 
 ## Tone Boundary
 

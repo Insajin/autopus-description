@@ -13,7 +13,7 @@ import {
   type PromptOpts,
 } from "./node-only.js";
 
-const VISION_INSTRUCTION = `An image of the frame is attached. Use it to disambiguate visual intent, user flow, states, controls, hierarchy, and policy-relevant details when the node tree is insufficient. If the image and node tree disagree, set "intent_mismatch": true and explain the mismatch in the "intent" field.`;
+const VISION_INSTRUCTION = `An image of the frame is attached. Use it to disambiguate visual intent, numbered annotation regions, user flow, states, controls, hierarchy, and policy-relevant details when the node tree is insufficient. If the image and node tree disagree, set "intent_mismatch": true and explain the mismatch in the "intent" field.`;
 
 export interface BuiltVisionPrompt extends BuiltPrompt {
   image_bytes: Buffer;

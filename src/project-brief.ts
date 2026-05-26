@@ -5,6 +5,7 @@ export interface FeaturePolicy {
   purpose?: string;
   entry_points?: string[];
   user_rules?: string[];
+  area_annotation_rules?: string[];
   interaction_rules?: string[];
   motion_guidelines?: string[];
   resolved_decisions?: string[];
@@ -13,6 +14,7 @@ export interface FeaturePolicy {
   edge_cases?: string[];
   api_contracts?: string[];
   data_io?: string[];
+  data_requirements?: string[];
   qa_acceptance?: string[];
   dev_notes?: string[];
 }
@@ -40,14 +42,16 @@ export const PROJECT_BRIEF_QUESTIONS = `# Autopus project brief questions
 2. 이번 Figma 범위에서 반드시 설명해야 하는 사용자 플로우는 무엇인가요?
 3. 사용자 역할, 권한, 접근 제한 정책은 무엇인가요?
 4. 기능별 확정 정책은 무엇인가요? 예: 검색 최소 글자 수, 필터 reset 범위, 탭 전환 시 page reset, 상세 진입 방식.
-5. 주요 인터랙션은 어떻게 동작해야 하나요? 예: 클릭, hover, focus, keyboard, dropdown close, outside click, scroll restore.
-6. 모션과 전환은 어떻게 정의하나요? 예: side panel slide, dropdown fade, loading skeleton, duration/easing, reduce-motion.
-7. 개발자가 구현 중 헷갈릴 수 있는 결정 포인트와 확정 답변은 무엇인가요?
-8. 각 기능에서 상태 전이는 어떻게 되나요? 예: trigger, loading, empty, populated, error, disabled, permission denied.
-9. 데이터 협의 포인트는 무엇인가요? 예: 필요한 값, 이벤트, 파라미터, 저장 상태, 캐시, 갱신 주기, 권한 정책.
-10. 성공 기준과 QA 확인 기준은 무엇인가요?
-11. 도메인 용어와 화면에 보이는 약어는 어떤 의미인가요?
-12. 이번 작업에서 추론하면 안 되는 범위나 아직 결정되지 않은 정책은 무엇인가요?
+5. 화면 옆에 번호로 설명할 주요 영역은 어떤 기준으로 나누나요? 예: 입력 영역, 목록, 필터, 드롭다운, 모달, 배너.
+6. 주요 인터랙션은 어떻게 동작해야 하나요? 예: 클릭, hover, focus, keyboard, dropdown close, outside click, scroll restore.
+7. 모션과 전환은 어떻게 정의하나요? 예: side panel slide, dropdown fade, loading skeleton, duration/easing, reduce-motion.
+8. 개발자가 구현 중 헷갈릴 수 있는 결정 포인트와 확정 답변은 무엇인가요?
+9. 각 기능에서 상태 전이는 어떻게 되나요? 예: trigger, loading, empty, populated, error, disabled, permission denied.
+10. 필요한 데이터 리스트는 무엇인가요? 예: 값 묶음, 표시 조건, 갱신 기준, 권한, 빈 값 처리. endpoint/DB/enum 이름은 확정된 경우만 적어 주세요.
+11. 데이터 협의 포인트는 무엇인가요? 예: 필요한 값, 이벤트, 파라미터, 저장 상태, 캐시, 갱신 주기, 권한 정책.
+12. 성공 기준과 QA 확인 기준은 무엇인가요?
+13. 도메인 용어와 화면에 보이는 약어는 어떤 의미인가요?
+14. 이번 작업에서 추론하면 안 되는 범위나 아직 결정되지 않은 정책은 무엇인가요?
 `;
 
 export function projectBriefTemplateJson(): string {
@@ -67,6 +71,7 @@ export function projectBriefTemplateJson(): string {
         purpose: "",
         entry_points: [],
         user_rules: [],
+        area_annotation_rules: [],
         interaction_rules: [],
         motion_guidelines: [],
         resolved_decisions: [],
@@ -75,6 +80,7 @@ export function projectBriefTemplateJson(): string {
         edge_cases: [],
         api_contracts: [],
         data_io: [],
+        data_requirements: [],
         qa_acceptance: [],
         dev_notes: [],
       },
@@ -115,6 +121,7 @@ export function normalizeProjectBrief(input: ProjectBrief): ProjectBrief {
         purpose: text(f.purpose),
         entry_points: strings(f.entry_points),
         user_rules: strings(f.user_rules),
+        area_annotation_rules: strings(f.area_annotation_rules),
         interaction_rules: strings(f.interaction_rules),
         motion_guidelines: strings(f.motion_guidelines),
         resolved_decisions: strings(f.resolved_decisions),
@@ -123,6 +130,7 @@ export function normalizeProjectBrief(input: ProjectBrief): ProjectBrief {
         edge_cases: strings(f.edge_cases),
         api_contracts: strings(f.api_contracts),
         data_io: strings(f.data_io),
+        data_requirements: strings(f.data_requirements),
         qa_acceptance: strings(f.qa_acceptance),
         dev_notes: strings(f.dev_notes),
       })),

@@ -186,7 +186,7 @@ describe("CLI main — argument parsing exercised via end-to-end run", () => {
     expect(code).toBe(2);
     const err = cap.stderr.join("");
     expect(err).toContain("project brief required");
-    expect(err).toContain("기능별 정책");
+    expect(err).toContain("기능별 확정 정책");
   });
 
   it("--project-brief feeds trusted project policy context into generation", async () => {
@@ -196,7 +196,7 @@ describe("CLI main — argument parsing exercised via end-to-end run", () => {
       briefPath,
       JSON.stringify({
         project_name: "Sample Project",
-        product_summary: "리서치 리포트 검색 및 상세 탐색",
+        product_summary: "리서치 콘텐츠 검색 및 상세 탐색",
         feature_policies: [
           {
             feature: "Report Search",

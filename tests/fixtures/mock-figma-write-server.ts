@@ -19,7 +19,15 @@ export interface MockFigmaWriteServerOptions {
 }
 
 interface CallLog {
-  createText: Array<{ frameId: string; text: string; position?: { x: number; y: number } }>;
+  createText: Array<{
+    frameId: string;
+    text: string;
+    position?: { x: number; y: number };
+    layout?: string;
+    areaCallouts?: unknown[];
+    documentPosition?: string;
+    visualPolicy?: unknown;
+  }>;
   deleteNode: Array<{ node_id: string }>;
   getOrCreatePage: Array<{ pageName: string; fileKey?: string }>;
   createTextOnPage: Array<{ pageId: string; text: string }>;
@@ -37,7 +45,15 @@ export interface MockFigmaWriteServer {
   readFrameName(): string;
 
   // Figma write surface (the WriteRouter / adapters consume these).
-  createText(args: { frameId: string; text: string; position?: { x: number; y: number } }): Promise<{ nodeId: string }>;
+  createText(args: {
+    frameId: string;
+    text: string;
+    position?: { x: number; y: number };
+    layout?: string;
+    areaCallouts?: unknown[];
+    documentPosition?: string;
+    visualPolicy?: unknown;
+  }): Promise<{ nodeId: string }>;
   deleteNode(args: { node_id: string } | string): Promise<void>;
   getOrCreatePage(args: { pageName: string; fileKey?: string }): Promise<{ pageId: string }>;
   createTextOnPage(args: { pageId: string; text: string }): Promise<{ nodeId: string }>;
@@ -106,7 +122,15 @@ class MockServer implements MockFigmaWriteServer {
     }
   }
 
-  async createText(args: { frameId: string; text: string; position?: { x: number; y: number } }) {
+  async createText(args: {
+    frameId: string;
+    text: string;
+    position?: { x: number; y: number };
+    layout?: string;
+    areaCallouts?: unknown[];
+    documentPosition?: string;
+    visualPolicy?: unknown;
+  }) {
     this.maybeInjectMcpFailure("createText", args);
     this.calls.createText.push(args);
     const nodeId = this.opts.createTextReturnsNodeId ?? nextNodeId();
