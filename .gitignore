@@ -41,6 +41,14 @@ node_modules/
 !.autopus/specs/SPEC-FIGMA-008/
 !.autopus/specs/SPEC-FIGMA-008/threat-model.md
 !.autopus/specs/SPEC-FIGMA-008/opsec-runbook.md
+!.autopus/specs/SPEC-FIGMA-014/
+!.autopus/specs/SPEC-FIGMA-014/spec.md
+!.autopus/specs/SPEC-FIGMA-015/
+!.autopus/specs/SPEC-FIGMA-015/spec.md
+!.autopus/specs/SPEC-FIGMA-016/
+!.autopus/specs/SPEC-FIGMA-016/spec.md
+!.autopus/specs/SPEC-FIGMA-017/
+!.autopus/specs/SPEC-FIGMA-017/spec.md
 !.autopus/probes/
 .autopus/probes/*
 !.autopus/probes/transport-matrix.jsonl
