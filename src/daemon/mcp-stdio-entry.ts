@@ -31,15 +31,49 @@ import {
   createWriteResourceContext,
   createWriteToolContext,
 } from "./mcp-stdio-write-handlers.js";
+import {
+  createExtraReadToolContext,
+  type ExtraReadToolContext,
+  type ManifestValidator,
+} from "./mcp-extra-read-handlers.js";
+import {
+  createExtraWriteToolContext,
+  type ExtraWriteToolContext,
+  type DescriptionGenerator,
+} from "./mcp-extra-write-handlers.js";
+import {
+  createBriefReadContext,
+  createBriefWriteContext,
+  type BriefReadContext,
+  type BriefWriteContext,
+} from "./mcp-brief-handlers.js";
+import {
+  createP2ReadContext,
+  createP2WriteContext,
+  type P2ContextOptions,
+  type P2ReadContext,
+  type P2WriteContext,
+} from "./mcp-p2-handlers.js";
+import {
+  createVendorReadContext,
+  type VendorReadContext,
+} from "./mcp-vendor-read-handlers.js";
+import {
+  createVendorWriteContext,
+  type VendorWriteContext,
+} from "./mcp-vendor-write-handlers.js";
+import type { FigmaPluginClient } from "./figma-plugin-client.js";
 import type { WriteMcpResources } from "./write-mcp-resources.js";
+import type { FigmaReadAdapter } from "../../types/figma-read-adapter.js";
 
 // @AX:NOTE: [AUTO] magic constant — MCP server identity advertised in
 // `initialize` response; clients (Codex CLI, Claude Code) match on this name.
 const SERVER_NAME = "autopus-mcp-stdio";
 // @AX:NOTE: [AUTO] magic constant — wire-protocol-visible server version.
-const SERVER_VERSION = "0.1.0";
+// SPEC-FIGMA-014 bumps to 0.2.0 to signal the additive extra-tool surface.
+const SERVER_VERSION = "0.2.0";
 const DEFAULT_INSTRUCTIONS =
-  "Read+write MCP wire surface for the Autopus daemon (6 resources, 9 tools).";
+  "Read+write MCP wire surface for the Autopus daemon (6 resources, 9 baseline tools, optional figma_/validate/generate extras).";
 
 export interface EmitClientProfileAttachedInput {
   readonly audit: DaemonAuditWriter;
@@ -78,6 +112,24 @@ export interface CreateMcpStdioServerInput {
   readonly writeExtension?: DaemonWriteExtension;
   readonly writeResources?: WriteMcpResources;
   readonly auditLogPath?: string;
+  // SPEC-FIGMA-014 — optional extra tool surfaces. Pass `figmaAdapter` +
+  // `manifestValidator` to enable figma_*/validate_manifest reads; pass
+  // `descriptionGenerator` to enable generate_description writes.
+  readonly figmaAdapter?: FigmaReadAdapter;
+  readonly manifestValidator?: ManifestValidator;
+  readonly descriptionGenerator?: DescriptionGenerator;
+  // SPEC-FIGMA-015 — optional project-brief surface. Pass `workspaceRoot` to
+  // enable get_/validate_/init_/update_project_brief tools (4 entries, 2 read
+  // + 2 write).
+  readonly briefWorkspaceRoot?: string;
+  // SPEC-FIGMA-016 — optional P2 operational surface. Pass `p2Context` to
+  // enable batch/mode/preview/status tools (6 entries, 4 read + 2 write).
+  readonly p2Context?: P2ContextOptions;
+  // SPEC-FIGMA-017 — optional vendor design-creation surface. Pass an active
+  // FigmaPluginClient to enable 46 vendor tools (13 read + 28 write + 5
+  // [NEW] reclassification candidates) that forward to the rebranded
+  // Autopus Figma plugin over the relay.
+  readonly figmaPluginClient?: FigmaPluginClient;
 }
 
 /* @AX:ANCHOR: [AUTO] fan-in=4 — wires the SDK Server, registers resource/tool
@@ -110,11 +162,63 @@ export function createMcpStdioServer(
       ? createWriteResourceContext(input.writeResources)
       : undefined;
 
+  // SPEC-FIGMA-014 — both adapter and validator must be present to enable the
+  // extra read surface (figma_* tools require an adapter; validate_manifest
+  // requires the validator). Either-or activation is rejected here to keep the
+  // wire contract well-defined.
+  const extraReadToolContext: ExtraReadToolContext | undefined =
+    input.figmaAdapter && input.manifestValidator
+      ? createExtraReadToolContext({
+          adapter: input.figmaAdapter,
+          validator: input.manifestValidator,
+        })
+      : undefined;
+  const extraWriteToolContext: ExtraWriteToolContext | undefined =
+    input.descriptionGenerator
+      ? createExtraWriteToolContext({
+          generator: input.descriptionGenerator,
+        })
+      : undefined;
+
+  const briefReadContext: BriefReadContext | undefined = input.briefWorkspaceRoot
+    ? createBriefReadContext({ workspaceRoot: input.briefWorkspaceRoot })
+    : undefined;
+  const briefWriteContext: BriefWriteContext | undefined =
+    input.briefWorkspaceRoot
+      ? createBriefWriteContext({ workspaceRoot: input.briefWorkspaceRoot })
+      : undefined;
+
+  const p2ReadContext: P2ReadContext | undefined = input.p2Context
+    ? createP2ReadContext(input.p2Context)
+    : undefined;
+  const p2WriteContext: P2WriteContext | undefined = input.p2Context
+    ? createP2WriteContext(input.p2Context)
+    : undefined;
+
+  const vendorReadContext: VendorReadContext | undefined =
+    input.figmaPluginClient
+      ? createVendorReadContext({ client: input.figmaPluginClient })
+      : undefined;
+  const vendorWriteContext: VendorWriteContext | undefined =
+    input.figmaPluginClient
+      ? createVendorWriteContext({ client: input.figmaPluginClient })
+      : undefined;
+
   registerResourceHandlers(server, {
     mcp: input.mcp,
     writeResourceContext,
   });
-  registerToolHandlers(server, { writeToolContext });
+  registerToolHandlers(server, {
+    writeToolContext,
+    extraReadToolContext,
+    extraWriteToolContext,
+    briefReadContext,
+    briefWriteContext,
+    p2ReadContext,
+    p2WriteContext,
+    vendorReadContext,
+    vendorWriteContext,
+  });
 
   server.oninitialized = () => {
     const info = server.getClientVersion();

@@ -20,6 +20,18 @@ import type {
   WriteToolDispatchContext,
   WriteResourceReadContext,
 } from "./mcp-stdio-write-handlers.js";
+import type { ExtraReadToolContext } from "./mcp-extra-read-handlers.js";
+import type { ExtraWriteToolContext } from "./mcp-extra-write-handlers.js";
+import type {
+  BriefReadContext,
+  BriefWriteContext,
+} from "./mcp-brief-handlers.js";
+import type {
+  P2ReadContext,
+  P2WriteContext,
+} from "./mcp-p2-handlers.js";
+import type { VendorReadContext } from "./mcp-vendor-read-handlers.js";
+import type { VendorWriteContext } from "./mcp-vendor-write-handlers.js";
 
 export interface ToolDescriptor {
   readonly name: string;
@@ -75,6 +87,21 @@ export interface HandlerWiring {
   readonly mcp: McpResources;
   readonly writeToolContext?: WriteToolDispatchContext;
   readonly writeResourceContext?: WriteResourceReadContext;
+  // SPEC-FIGMA-014 — optional extra read/write tool surfaces. When omitted the
+  // wire surface stays byte-equal with SPEC-FIGMA-009 / SPEC-FIGMA-011.
+  readonly extraReadToolContext?: ExtraReadToolContext;
+  readonly extraWriteToolContext?: ExtraWriteToolContext;
+  // SPEC-FIGMA-015 — optional project brief read/write surfaces.
+  readonly briefReadContext?: BriefReadContext;
+  readonly briefWriteContext?: BriefWriteContext;
+  // SPEC-FIGMA-016 — optional P2 operational read/write surfaces (batch,
+  // mode, preview, status).
+  readonly p2ReadContext?: P2ReadContext;
+  readonly p2WriteContext?: P2WriteContext;
+  // SPEC-FIGMA-017 — optional vendor design-creation surfaces (46 tools
+  // forwarded through FigmaPluginClient to the rebranded Autopus Figma plugin).
+  readonly vendorReadContext?: VendorReadContext;
+  readonly vendorWriteContext?: VendorWriteContext;
 }
 
 function toToolWire(t: ToolDescriptor): {
@@ -137,13 +164,66 @@ export function registerResourceHandlers(
 
 export function registerToolHandlers(
   server: Server,
-  wiring?: Pick<HandlerWiring, "writeToolContext">,
+  wiring?: Pick<
+    HandlerWiring,
+    | "writeToolContext"
+    | "extraReadToolContext"
+    | "extraWriteToolContext"
+    | "briefReadContext"
+    | "briefWriteContext"
+    | "p2ReadContext"
+    | "p2WriteContext"
+    | "vendorReadContext"
+    | "vendorWriteContext"
+  >,
 ): void {
   const writeCtx = wiring?.writeToolContext;
+  const extraReadCtx = wiring?.extraReadToolContext;
+  const extraWriteCtx = wiring?.extraWriteToolContext;
+  const briefReadCtx = wiring?.briefReadContext;
+  const briefWriteCtx = wiring?.briefWriteContext;
+  const p2ReadCtx = wiring?.p2ReadContext;
+  const p2WriteCtx = wiring?.p2WriteContext;
+  const vendorReadCtx = wiring?.vendorReadContext;
+  const vendorWriteCtx = wiring?.vendorWriteContext;
   server.setRequestHandler(ListToolsRequestSchema, async () => {
+    /* SPEC-FIGMA-014 REQ-04 + SPEC-FIGMA-015 REQ-06 — fixed order: baseline
+     * reads, extra reads, brief reads, SPEC-FIGMA-011 writes, extra writes,
+     * brief writes. Each optional block is appended only when its context is
+     * wired so SPEC-FIGMA-009 INV-W4a baseline stays byte-equal in callers
+     * that wire none of the extras. */
     const reads = READ_ONLY_TOOLS.map(toToolWire);
+    const extraReads = extraReadCtx ? extraReadCtx.tools.map(toToolWire) : [];
+    const briefReads = briefReadCtx ? briefReadCtx.tools.map(toToolWire) : [];
+    const p2Reads = p2ReadCtx ? p2ReadCtx.tools.map(toToolWire) : [];
+    const vendorReads = vendorReadCtx
+      ? vendorReadCtx.tools.map(toToolWire)
+      : [];
     const writes = writeCtx ? writeCtx.tools.map(toToolWire) : [];
-    return { tools: [...reads, ...writes] };
+    const extraWrites = extraWriteCtx
+      ? extraWriteCtx.tools.map(toToolWire)
+      : [];
+    const briefWrites = briefWriteCtx
+      ? briefWriteCtx.tools.map(toToolWire)
+      : [];
+    const p2Writes = p2WriteCtx ? p2WriteCtx.tools.map(toToolWire) : [];
+    const vendorWrites = vendorWriteCtx
+      ? vendorWriteCtx.tools.map(toToolWire)
+      : [];
+    return {
+      tools: [
+        ...reads,
+        ...extraReads,
+        ...briefReads,
+        ...p2Reads,
+        ...vendorReads,
+        ...writes,
+        ...extraWrites,
+        ...briefWrites,
+        ...p2Writes,
+        ...vendorWrites,
+      ],
+    };
   });
 
   server.setRequestHandler(CallToolRequestSchema, async (req) => {
@@ -157,9 +237,26 @@ export function registerToolHandlers(
        * read tool-call response path. */
       return { content: [{ type: "text", text: redact(result.constructed_prompt) }] };
     }
-    if (writeCtx) {
-      const r = await writeCtx.dispatch(name, args);
-      return r as unknown as { content: Array<{ type: "text"; text: string }>; isError?: boolean };
+    const contexts = [
+      extraReadCtx,
+      briefReadCtx,
+      p2ReadCtx,
+      vendorReadCtx,
+      writeCtx,
+      extraWriteCtx,
+      briefWriteCtx,
+      p2WriteCtx,
+      vendorWriteCtx,
+    ];
+    for (const ctx of contexts) {
+      if (!ctx) continue;
+      const names = new Set(ctx.tools.map((t) => t.name));
+      if (!names.has(name)) continue;
+      const r = await ctx.dispatch(name, args);
+      return r as unknown as {
+        content: Array<{ type: "text"; text: string }>;
+        isError?: boolean;
+      };
     }
     return {
       content: [{ type: "text", text: redact("unknown tool") }],
