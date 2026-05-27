@@ -62,7 +62,8 @@ import {
   createVendorWriteContext,
   type VendorWriteContext,
 } from "./mcp-vendor-write-handlers.js";
-import type { FigmaPluginClient } from "./figma-plugin-client.js";
+import { FigmaPluginClient } from "./figma-plugin-client.js";
+import { FigmaRelay } from "./figma-relay.js";
 import type { WriteMcpResources } from "./write-mcp-resources.js";
 import type { FigmaReadAdapter } from "../../types/figma-read-adapter.js";
 
@@ -254,6 +255,38 @@ export async function runMcpStdio(
   const writeExtension = new DaemonWriteExtension();
   const writeResources = writeExtension.resources;
 
+  /* SPEC-FIGMA-017 — boot the Figma relay and plugin client so the 46 vendor
+   * design tools (create_frame, set_fill_color, ...) can reach the Autopus
+   * Figma plugin without the caller having to wire FigmaPluginClient
+   * manually. Channel defaults to "autopus" so single-user single-session
+   * setups (the 99% case) need zero configuration; multi-session callers
+   * override with FIGMA_CHANNEL. The relay binds 127.0.0.1 only. */
+  const figmaChannel = process.env.FIGMA_CHANNEL ?? "autopus";
+  const relay = new FigmaRelay({ port: 3055 });
+  let figmaPluginClient: FigmaPluginClient | undefined;
+  try {
+    await relay.start();
+    figmaPluginClient = new FigmaPluginClient({
+      url: "ws://127.0.0.1:3055",
+      channel: figmaChannel,
+      timeoutMs: 30_000,
+    });
+    // Non-blocking connect — the plugin may not be open yet. Vendor tool
+    // calls will return PLUGIN_NOT_CONNECTED until both sides are joined.
+    figmaPluginClient.connect().catch((err: unknown) => {
+      const message = err instanceof Error ? err.message : String(err);
+      process.stderr.write(
+        `autopus-mcp-stdio: figma plugin client connect deferred: ${message}\n`,
+      );
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    process.stderr.write(
+      `autopus-mcp-stdio: figma relay start failed: ${message}\n`,
+    );
+    figmaPluginClient = undefined;
+  }
+
   const server = createMcpStdioServer({
     mcp,
     registry,
@@ -261,6 +294,7 @@ export async function runMcpStdio(
     writeExtension,
     writeResources,
     auditLogPath,
+    figmaPluginClient,
   });
   const transport = new StdioServerTransport();
 
@@ -272,6 +306,16 @@ export async function runMcpStdio(
       await server.close();
     } catch {
       // Swallow close errors during shutdown — process exit follows.
+    }
+    try {
+      if (figmaPluginClient) await figmaPluginClient.close();
+    } catch {
+      /* swallow */
+    }
+    try {
+      await relay.stop();
+    } catch {
+      /* swallow */
     }
   };
 

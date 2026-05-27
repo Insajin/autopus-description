@@ -2,6 +2,42 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.2] — 2026-05-27
+
+### Fixed — Plugin ↔ daemon connection wiring
+
+`runMcpStdio()` was missing the auto-bootstrap for `FigmaRelay` and
+`FigmaPluginClient`, so the 46 vendor design tools (create_frame,
+set_fill_color, etc.) had no path from MCP client → daemon → Figma plugin.
+End-to-end smoke testing on 0.3.1 showed that:
+
+- `ListTools` exposed only 9 baseline tools (no vendor surface)
+- port 3055 was never opened, so the rebranded Autopus Figma plugin had
+  nothing to connect to
+
+### Changed
+
+- `src/daemon/mcp-stdio-entry.ts`: `runMcpStdio()` now reads
+  `FIGMA_CHANNEL` env (default `"autopus"`), starts `FigmaRelay` on
+  127.0.0.1:3055, and wires a `FigmaPluginClient` joined to that channel.
+  `vendorReadContext` / `vendorWriteContext` activate automatically so
+  the published binary exposes 50 tools (9 baseline + 41 vendor) out of
+  the box. Shutdown closes the client and stops the relay.
+- `scripts/build-figma-plugin.mjs`: injects a WebSocket bridge script
+  into the plugin's `ui.html`. The bridge auto-connects to
+  `ws://localhost:3055`, joins the default channel `autopus` (overridable
+  via `?channel=name` URL param), forwards relay broadcasts to `code.js`
+  as `execute-command` messages, and replays `command-result` /
+  `command-error` back over the wire. Reconnects on disconnect.
+
+### Verification
+
+End-to-end smoke after rebuild + re-publish (0.3.2):
+- `autopus-mcp-stdio` boot opens TCP :3055 within ~2s
+- `tools/list` returns 50 tools
+- WebSocket bridge in `dist/plugin/ui.html` round-trips the join handshake
+  against the live relay in `tests/unit/daemon-figma-relay.test.ts`
+
 ## [0.3.1] — 2026-05-27
 
 ### Fixed
