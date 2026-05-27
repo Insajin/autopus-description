@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.1] — 2026-05-27
+
+### Fixed
+
+- `package.json` `files` allowlist was missing `dist/packages/`, so the
+  published 0.3.0 tarball lacked the compiled workspace packages (e.g.,
+  `dist/packages/write-router/src/idempotency.js`). Running
+  `autopus-mcp-stdio` from a global install would crash on startup with
+  `ERR_MODULE_NOT_FOUND` because `daemon-write-extension.js` imports
+  from `../../packages/write-router/src/`. Added `dist/packages/` to
+  the allowlist; verified via npm pack dry-run that the workspace
+  artifacts are now included.
+
+### Affects
+
+Any user who installed `@autopus/figma-mcp@0.3.0` from npm. Upgrade to
+0.3.1 to get a working binary.
+
 ## [0.3.0] — 2026-05-26
 
 Designer write surface unification. `autopus-mcp-stdio` now exposes the vendor
