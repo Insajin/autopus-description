@@ -96,7 +96,7 @@ describe("autopus plugin command dispatch — area handoff", () => {
       getNodeByIdAsync: vi.fn(async () => source),
       createFrame: vi.fn(() => makeNode("doc")),
       createText: vi.fn(() => makeNode("text")),
-      createEllipse: vi.fn(() => makeNode("badge")),
+      createRectangle: vi.fn(() => makeNode("badge")),
       createLine: vi.fn(() => makeNode("line")),
       loadFontAsync: vi.fn(async () => undefined),
     } as unknown as FigmaPluginLike;
@@ -123,7 +123,7 @@ describe("autopus plugin command dispatch — area handoff", () => {
     expect(result.ok).toBe(true);
     expect(result.node_ids?.length).toBeGreaterThanOrEqual(6);
     expect((figma as unknown as { createFrame: ReturnType<typeof vi.fn> }).createFrame).toHaveBeenCalled();
-    expect((figma as unknown as { createEllipse: ReturnType<typeof vi.fn> }).createEllipse).toHaveBeenCalled();
+    expect((figma as unknown as { createRectangle: ReturnType<typeof vi.fn> }).createRectangle).toHaveBeenCalled();
     expect((figma as unknown as { createLine: ReturnType<typeof vi.fn> }).createLine).not.toHaveBeenCalled();
     expect(
       page.children
@@ -169,7 +169,7 @@ describe("autopus plugin command dispatch — area handoff", () => {
       getNodeByIdAsync: vi.fn(async () => source),
       createFrame: vi.fn(() => makeNode("doc")),
       createText: vi.fn(() => makeNode("text")),
-      createEllipse: vi.fn(() => makeNode("badge")),
+      createRectangle: vi.fn(() => makeNode("badge")),
       createLine: vi.fn(() => makeNode("line")),
       loadFontAsync: vi.fn(async () => undefined),
     } as unknown as FigmaPluginLike;

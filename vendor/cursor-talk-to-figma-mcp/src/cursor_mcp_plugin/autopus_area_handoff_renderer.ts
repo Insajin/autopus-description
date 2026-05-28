@@ -18,8 +18,10 @@ interface CanvasNode {
   fills?: unknown[];
   strokes?: unknown[];
   strokeWeight?: number;
+  cornerRadius?: number;
   characters?: string;
   fontSize?: number;
+  fontName?: { family: string; style: string };
   appendChild?: (node: CanvasNode) => void;
   resize?: (width: number, height: number) => void;
   absoluteBoundingBox?: Box;
@@ -32,7 +34,7 @@ export interface AreaHandoffRuntime {
   getNodeByIdAsync(id: string): Promise<CanvasNode | null>;
   createFrame(): CanvasNode;
   createText(): CanvasNode;
-  createEllipse(): CanvasNode;
+  createRectangle(): CanvasNode;
   loadFontAsync?(font: { family: string; style: string }): Promise<void>;
 }
 
@@ -44,11 +46,23 @@ export interface AreaHandoffArgs {
   visualPolicy?: Record<string, unknown>;
 }
 
-const RED = { type: "SOLID", color: { r: 1, g: 0.231, b: 0.188 } };
+// Badge style follows NICE AlphaOne design system (Figma node 1307:161221):
+// rounded rectangle, #FF6200 fill, Noto Sans KR Bold 10/14, white label.
+const ORANGE = { type: "SOLID", color: { r: 1, g: 0.384, b: 0 } };
 const WHITE = { type: "SOLID", color: { r: 1, g: 1, b: 1 } };
 const GRAY = { type: "SOLID", color: { r: 0.86, g: 0.86, b: 0.86 } };
+const BADGE_HEIGHT = 22;
+const BADGE_PADDING_X = 8;
+const BADGE_CORNER_RADIUS = 4;
+const BADGE_FONT = { family: "Noto Sans KR", style: "Bold" };
+const BADGE_FONT_SIZE = 10;
 const PLACEMENT_GAP = 96;
 const COLLISION_MARGIN = 24;
+
+function badgeWidthForLabel(label: string): number {
+  // Approximate: 10px Noto Sans KR Bold ≈ 7px per char, plus horizontal padding.
+  return Math.max(BADGE_HEIGHT, label.length * 7 + BADGE_PADDING_X * 2);
+}
 
 function boxOf(node: CanvasNode): Box {
   return node.absoluteBoundingBox ?? {
@@ -147,20 +161,23 @@ async function addBadge(
   x: number,
   y: number,
 ): Promise<CanvasNode[]> {
-  const badge = figma.createEllipse();
+  const width = badgeWidthForLabel(label);
+  const badge = figma.createRectangle();
   badge.name = `Autopus callout badge ${label}`;
   badge.x = x;
   badge.y = y;
-  badge.fills = [RED];
-  badge.resize?.(28, 28);
+  badge.fills = [ORANGE];
+  badge.cornerRadius = BADGE_CORNER_RADIUS;
+  badge.resize?.(width, BADGE_HEIGHT);
   figma.currentPage.appendChild(badge);
+  if (figma.loadFontAsync) await figma.loadFontAsync(BADGE_FONT);
   const text = figma.createText();
   text.name = `Autopus callout badge label ${label}`;
-  text.x = x + 8;
-  text.y = y + 6;
-  text.fontSize = 11;
+  text.x = x + BADGE_PADDING_X;
+  text.y = y + (BADGE_HEIGHT - 14) / 2;
+  text.fontSize = BADGE_FONT_SIZE;
+  text.fontName = BADGE_FONT;
   text.fills = [WHITE];
-  if (figma.loadFontAsync) await figma.loadFontAsync({ family: "Inter", style: "Regular" });
   text.characters = label;
   figma.currentPage.appendChild(text);
   return [badge, text];
@@ -172,20 +189,23 @@ async function addDocumentBadge(
   label: string,
   y: number,
 ): Promise<CanvasNode[]> {
-  const badge = figma.createEllipse();
+  const width = badgeWidthForLabel(label);
+  const badge = figma.createRectangle();
   badge.name = `Autopus document badge ${label}`;
   badge.x = 24;
   badge.y = y;
-  badge.fills = [RED];
-  badge.resize?.(28, 28);
+  badge.fills = [ORANGE];
+  badge.cornerRadius = BADGE_CORNER_RADIUS;
+  badge.resize?.(width, BADGE_HEIGHT);
   parent.appendChild?.(badge);
+  if (figma.loadFontAsync) await figma.loadFontAsync(BADGE_FONT);
   const text = figma.createText();
   text.name = `Autopus document badge label ${label}`;
-  text.x = label.length > 1 ? 29 : 32;
-  text.y = y + 6;
-  text.fontSize = label.length > 1 ? 9 : 11;
+  text.x = 24 + BADGE_PADDING_X;
+  text.y = y + (BADGE_HEIGHT - 14) / 2;
+  text.fontSize = BADGE_FONT_SIZE;
+  text.fontName = BADGE_FONT;
   text.fills = [WHITE];
-  if (figma.loadFontAsync) await figma.loadFontAsync({ family: "Inter", style: "Regular" });
   text.characters = label;
   parent.appendChild?.(text);
   return [badge, text];

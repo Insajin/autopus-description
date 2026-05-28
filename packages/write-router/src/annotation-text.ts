@@ -117,8 +117,8 @@ export function buildAnnotationVisualPayload(entry: ManifestEntry): AnnotationVi
       documentAnchor: `area-${area.area_id}`,
     })),
     visualPolicy: {
-      badgeColor: "#ff3b30",
-      connectorColor: "#ff2bd6",
+      badgeColor: "#FF6200",
+      connectorColor: "#FF6200",
       documentWidth: 720,
     },
   };
