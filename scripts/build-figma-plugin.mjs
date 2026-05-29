@@ -107,27 +107,58 @@ const AUTOPUS_PATCH = `
   const vendorHandleCommand = handleCommand;
   handleCommand = async function (command, params) {
     switch (command) {
+      case 'set_text_content': {
+        // Robust override of the vendor handler, which calls
+        // figma.loadFontAsync(node.fontName) up front — that throws
+        // "Cannot unwrap symbol" when fontName is figma.mixed (a Symbol).
+        // Mixed nodes are common here (cards built via the official plugin
+        // carry SemiBold headers + Regular body). Load every font present,
+        // collapse to the first-char font, then replace characters. Callers
+        // restore visual hierarchy afterwards via set_range_font.
+        const node = await figma.getNodeByIdAsync(params.nodeId);
+        if (!node) throw new Error('node_not_found');
+        if (node.type !== 'TEXT') throw new Error('not_a_text_node');
+        const len = node.characters.length;
+        if (node.fontName === figma.mixed) {
+          if (len > 0) {
+            for (const f of node.getRangeAllFontNames(0, len)) {
+              await figma.loadFontAsync(f);
+            }
+            const first = node.getRangeFontName(0, 1);
+            await figma.loadFontAsync(first);
+            node.fontName = first;
+          } else {
+            const fallback = { family: 'Inter', style: 'Regular' };
+            await figma.loadFontAsync(fallback);
+            node.fontName = fallback;
+          }
+        } else {
+          await figma.loadFontAsync(node.fontName);
+        }
+        node.characters = String(params.text == null ? '' : params.text);
+        return { id: node.id, name: node.name, characters: node.characters };
+      }
       case 'set_plugin_data': {
-        const node = figma.getNodeById(params.nodeId);
+        const node = await figma.getNodeByIdAsync(params.nodeId);
         if (!node) throw new Error('node_not_found');
         node.setPluginData(params.key || 'autopus', String(params.value || ''));
         return { ok: true, nodeId: params.nodeId };
       }
       case 'clear_plugin_data': {
-        const node = figma.getNodeById(params.node_id);
+        const node = await figma.getNodeByIdAsync(params.node_id);
         if (!node) throw new Error('node_not_found');
         node.setPluginData(params.key || 'autopus', '');
         return { ok: true };
       }
       case 'set_frame_name': {
-        const node = figma.getNodeById(params.nodeId);
+        const node = await figma.getNodeByIdAsync(params.nodeId);
         if (!node) throw new Error('node_not_found');
         if (node.type !== 'FRAME') throw new Error('not_a_frame');
         node.name = String(params.name || node.name);
         return { ok: true };
       }
       case 'restore_frame_name': {
-        const node = figma.getNodeById(params.node_id);
+        const node = await figma.getNodeByIdAsync(params.node_id);
         if (!node) throw new Error('node_not_found');
         node.name = String(params.original_name || node.name);
         return { ok: true };
@@ -151,7 +182,7 @@ const AUTOPUS_PATCH = `
       case 'set_range_font': {
         // Apply font style/size to character ranges of a text node.
         // Preserves visual hierarchy after set_text_content replaces all characters.
-        const node = figma.getNodeById(params.nodeId);
+        const node = await figma.getNodeByIdAsync(params.nodeId);
         if (!node) throw new Error('node_not_found');
         if (node.type !== 'TEXT') throw new Error('not_a_text_node');
 
@@ -188,6 +219,18 @@ const AUTOPUS_PATCH = `
           }
           const key = baseFamily + '|' + style;
           if (!toLoad.has(key)) toLoad.set(key, { family: baseFamily, style });
+        }
+
+        // Figma requires every font CURRENTLY present in the node to be loaded
+        // before any range edit — even ranges we are about to overwrite. Collect
+        // existing fonts so a mixed node (Regular body + SemiBold headers) does
+        // not fail with "unloaded font" on the first setRangeFontName call.
+        if (charLen > 0) {
+          const existing = node.getRangeAllFontNames(0, charLen);
+          for (const f of existing) {
+            const key = f.family + '|' + f.style;
+            if (!toLoad.has(key)) toLoad.set(key, { family: f.family, style: f.style });
+          }
         }
 
         // Load all required fonts before any setRange call (avoids partial apply).
