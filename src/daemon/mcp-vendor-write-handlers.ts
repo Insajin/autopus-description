@@ -137,6 +137,20 @@ const CREATE_CONNECTIONS = schema(
 );
 const JOIN_CHANNEL = schema({ channel: { type: "string" } }, ["channel"]);
 
+// set_range_font: apply font style/size to character ranges of a text node.
+// ranges = [{start:number, end:number, fontStyle?:string, fontSize?:number}]
+// fontFamily is optional — omitted means "keep node's current family".
+const SET_RANGE_FONT = schema(
+  {
+    nodeId: { type: "string" },
+    // Array of {start, end, fontStyle?, fontSize?} range descriptors.
+    ranges: { type: "array" },
+    // Optional override; if omitted the plugin infers from the node.
+    fontFamily: { type: "string" },
+  },
+  ["nodeId", "ranges"],
+);
+
 export const VENDOR_WRITE_TOOLS: readonly ToolDescriptor[] = Object.freeze([
   Object.freeze({ name: "create_rectangle", description: "Create a rectangle in Figma.", inputSchema: CREATE_RECT }),
   Object.freeze({ name: "create_frame", description: "Create a frame in Figma (optionally with auto-layout).", inputSchema: CREATE_FRAME }),
@@ -166,6 +180,14 @@ export const VENDOR_WRITE_TOOLS: readonly ToolDescriptor[] = Object.freeze([
   Object.freeze({ name: "set_focus", description: "Center the viewport on a node.", inputSchema: FOCUS }),
   Object.freeze({ name: "set_selections", description: "Set the current Figma selection to the given node ids.", inputSchema: SELECTIONS }),
   Object.freeze({ name: "join_channel", description: "Join a relay channel (idempotent — the daemon already joined at startup).", inputSchema: JOIN_CHANNEL }),
+  Object.freeze({
+    name: "set_range_font",
+    description:
+      "Apply font style/size to character ranges of a text node (preserves visual hierarchy after set_text_content). " +
+      "ranges: [{start:number, end:number, fontStyle?:string, fontSize?:number}]. " +
+      "fontFamily is optional — omitted keeps the node's current font family.",
+    inputSchema: SET_RANGE_FONT,
+  }),
 ]);
 
 function err(message: string): ToolResponse {

@@ -50,8 +50,42 @@ export class FigmaRelay {
   /** Bind and start accepting connections. Resolves once `listening`. */
   async start(): Promise<void> {
     if (this.wss) return;
+    const port = this.port;
     await new Promise<void>((resolve, reject) => {
-      const wss = new WebSocketServer({ port: this.port, host: this.host });
+      // @AX:WARN Host whitelist is the primary DNS-rebinding defence.
+      // Origin null is allowed for Figma plugin iframe and Node clients
+      // that send no Origin header. SPEC-FIGMA security audit H-1.
+      const verifyClient = (
+        info: { origin: string; req: { headers: Record<string, string | string[] | undefined> } },
+        done: (result: boolean) => void,
+      ): void => {
+        const host = String(info.req.headers.host ?? "");
+        const hostOk =
+          host === `127.0.0.1:${port}` || host === `localhost:${port}`;
+
+        const origin: string | undefined =
+          typeof info.origin === "string" ? info.origin : undefined;
+        let originOk: boolean;
+        if (!origin || origin === "null") {
+          // No origin header — Node.js clients and Figma plugin iframes.
+          originOk = true;
+        } else {
+          // Browser-originated connections: allow only *.figma.com.
+          try {
+            originOk = new URL(origin).hostname.endsWith(".figma.com");
+          } catch {
+            originOk = false;
+          }
+        }
+
+        done(hostOk && originOk);
+      };
+
+      const wss = new WebSocketServer({
+        port: this.port,
+        host: this.host,
+        verifyClient,
+      });
       wss.once("listening", () => {
         this.wss = wss;
         wss.on("connection", (ws) => this.handleConnection(ws));

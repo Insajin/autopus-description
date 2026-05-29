@@ -35,6 +35,13 @@ mkdirSync(outDir, { recursive: true });
 const manifestSrc = JSON.parse(
   readFileSync(join(vendorPluginDir, "manifest.json"), "utf8"),
 );
+// SPEC-FIGMA-017 — the autopus ui.html demotes upstream analytics and never
+// fetches google-analytics.com. Strip that host from networkAccess so the
+// manifest policy matches actual runtime behaviour (avoids security-team
+// confusion). Keep only the local relay socket.
+const stripGoogleAnalytics = (domains) =>
+  (domains || []).filter((d) => !/google-analytics\.com/i.test(d));
+
 const rebranded = {
   ...manifestSrc,
   name: "Autopus Figma",
@@ -42,8 +49,12 @@ const rebranded = {
   // We DO NOT modify id here — the publish step (Figma UI) replaces it.
   networkAccess: {
     ...manifestSrc.networkAccess,
+    allowedDomains: stripGoogleAnalytics(manifestSrc.networkAccess?.allowedDomains),
+    devAllowedDomains: stripGoogleAnalytics(
+      manifestSrc.networkAccess?.devAllowedDomains,
+    ),
     reasoning:
-      "Connects to a local Autopus relay (autopus daemon ws://127.0.0.1:3055) and emits anonymous usage events.",
+      "Connects to a local Autopus relay (autopus daemon ws://127.0.0.1:3055). No external network access.",
   },
 };
 writeFileSync(
@@ -54,7 +65,25 @@ writeFileSync(
 console.log(`build-figma-plugin: manifest.json (name="${rebranded.name}")`);
 
 // 2) Plugin main thread — vendor verbatim + autopus description handler patch.
-const vendorCodeJs = readFileSync(join(vendorPluginDir, "code.js"), "utf8");
+let vendorCodeJs = readFileSync(join(vendorPluginDir, "code.js"), "utf8");
+
+// H-3: Strip vendor analytics IIFE from the built output (telemetry transparency).
+// The vendor source is NOT modified — only the in-memory copy used for the build.
+// If the block shifts in a future vendor update, emit a warning and continue with
+// the original content (defensive — never break the build over a missing strip).
+// Pattern is conservative and specific: matches the comment + IIFE verbatim.
+// Uses [\r\n]+ to handle both LF and CRLF line endings in vendor source.
+const ANALYTICS_BLOCK =
+  /\/\/ Initialize anonymous analytics client_id \(persisted via clientStorage\)[\r\n]+\(async \(\) => \{[\s\S]*?analyticsClientId[\s\S]*?\}\)\(\);[\r\n]+/;
+const strippedCodeJs = vendorCodeJs.replace(ANALYTICS_BLOCK, "");
+if (strippedCodeJs === vendorCodeJs) {
+  console.warn(
+    "build-figma-plugin: analytics block not found — vendor code.js may have changed",
+  );
+} else {
+  vendorCodeJs = strippedCodeJs;
+  console.log("build-figma-plugin: analytics IIFE stripped (H-3)");
+}
 
 // Patch: prepend a marker comment and append a small autopus dispatcher that
 // wraps `handleCommand` to handle description-workflow command names that
@@ -119,6 +148,74 @@ const AUTOPUS_PATCH = `
         page.appendChild(text);
         return { ok: true, id: text.id };
       }
+      case 'set_range_font': {
+        // Apply font style/size to character ranges of a text node.
+        // Preserves visual hierarchy after set_text_content replaces all characters.
+        const node = figma.getNodeById(params.nodeId);
+        if (!node) throw new Error('node_not_found');
+        if (node.type !== 'TEXT') throw new Error('not_a_text_node');
+
+        // Determine the base font family: explicit param > node uniform family > first-char family.
+        let baseFamily;
+        if (params.fontFamily) {
+          baseFamily = String(params.fontFamily);
+        } else if (node.fontName !== figma.mixed) {
+          baseFamily = node.fontName.family;
+        } else {
+          baseFamily = node.getRangeFontName(0, 1).family;
+        }
+
+        const ranges = Array.isArray(params.ranges) ? params.ranges : [];
+        const charLen = node.characters.length;
+        const skipped = [];
+        const toLoad = new Map(); // key="family|style" => {family, style}
+
+        // First pass: collect all font variants we need to load.
+        for (const r of ranges) {
+          const start = Number(r.start);
+          const end = Number(r.end);
+          if (start < 0 || end > charLen || start >= end) {
+            skipped.push({ start, end, reason: 'out_of_bounds' });
+            continue;
+          }
+          // Resolve the style for this range: explicit > current range style > Regular.
+          let style;
+          if (r.fontStyle) {
+            style = String(r.fontStyle);
+          } else {
+            const cur = node.getRangeFontName(start, start + 1);
+            style = (cur !== figma.mixed) ? cur.style : 'Regular';
+          }
+          const key = baseFamily + '|' + style;
+          if (!toLoad.has(key)) toLoad.set(key, { family: baseFamily, style });
+        }
+
+        // Load all required fonts before any setRange call (avoids partial apply).
+        for (const fontName of toLoad.values()) {
+          await figma.loadFontAsync(fontName);
+        }
+
+        // Second pass: apply font name and size to each valid range.
+        let appliedRanges = 0;
+        for (const r of ranges) {
+          const start = Number(r.start);
+          const end = Number(r.end);
+          if (start < 0 || end > charLen || start >= end) continue; // already recorded
+          let style;
+          if (r.fontStyle) {
+            style = String(r.fontStyle);
+          } else {
+            const cur = node.getRangeFontName(start, start + 1);
+            style = (cur !== figma.mixed) ? cur.style : 'Regular';
+          }
+          node.setRangeFontName(start, end, { family: baseFamily, style });
+          if (r.fontSize != null) {
+            node.setRangeFontSize(start, end, Number(r.fontSize));
+          }
+          appliedRanges++;
+        }
+        return { ok: true, nodeId: params.nodeId, appliedRanges, skipped };
+      }
       case 'noop':
         return { ok: true };
       default:
@@ -140,103 +237,13 @@ console.log(
 //    plugin must also auto-connect to the daemon relay at ws://localhost:3055
 //    and forward broadcasts to code.js as execute-command messages. We inject
 //    the bridge as a <script> block before </body>.
-const UI_BRIDGE = `
-    <script>
-      // === AUTOPUS PATCH (SPEC-FIGMA-017 WebSocket bridge) ===
-      // Auto-connect to the daemon relay and bridge vendor design commands
-      // between WebSocket and Figma main thread (code.js). The channel name
-      // can be overridden by appending ?channel=name to the plugin URL but
-      // defaults to "autopus" — matching the daemon's default.
-      (function autopusBridge() {
-        const params = new URLSearchParams(window.location.search || "");
-        const CHANNEL = params.get("channel") || "autopus";
-        const URL = "ws://localhost:3055";
-        let ws = null;
-        let connected = false;
-
-        function setStatus(isConnected) {
-          connected = isConnected;
-          const dot = document.getElementById("conn-dot");
-          const label = document.getElementById("conn-label");
-          if (dot) dot.className = "dot " + (isConnected ? "connected" : "disconnected");
-          if (label) label.textContent = isConnected
-            ? ("Connected · channel=" + CHANNEL)
-            : "Connecting…";
-        }
-
-        function sendToFigma(message) {
-          parent.postMessage({ pluginMessage: message, pluginId: "*" }, "*");
-        }
-
-        function reply(id, body) {
-          if (!ws || ws.readyState !== 1) return;
-          ws.send(JSON.stringify({
-            id: id,
-            type: "message",
-            channel: CHANNEL,
-            message: Object.assign({ id: id }, body),
-          }));
-        }
-
-        function connect() {
-          try {
-            ws = new WebSocket(URL);
-          } catch (e) {
-            setStatus(false);
-            setTimeout(connect, 2000);
-            return;
-          }
-          ws.onopen = function () {
-            ws.send(JSON.stringify({
-              id: "join-" + Date.now(),
-              type: "join",
-              channel: CHANNEL,
-            }));
-          };
-          ws.onmessage = function (event) {
-            let data;
-            try { data = JSON.parse(event.data); } catch (_) { return; }
-            if (!data || typeof data !== "object") return;
-            if (data.type === "system") {
-              const m = data.message;
-              if (typeof m === "string" && m.indexOf("Joined channel") === 0) {
-                setStatus(true);
-              }
-              return;
-            }
-            if (data.type === "broadcast" && data.message && data.message.command) {
-              // Forward the command to code.js for Figma execution.
-              sendToFigma({
-                type: "execute-command",
-                id: data.message.id,
-                command: data.message.command,
-                params: data.message.params || {},
-              });
-            }
-          };
-          ws.onclose = function () {
-            setStatus(false);
-            setTimeout(connect, 2000);
-          };
-          ws.onerror = function () { /* let onclose drive reconnect */ };
-        }
-
-        // code.js → UI → WebSocket: relay command results back to the daemon.
-        window.addEventListener("message", function (event) {
-          const msg = event && event.data && event.data.pluginMessage;
-          if (!msg || typeof msg !== "object") return;
-          if (msg.type === "command-result" && msg.id) {
-            reply(msg.id, { result: msg.result });
-          } else if (msg.type === "command-error" && msg.id) {
-            reply(msg.id, { error: msg.error });
-          }
-        });
-
-        setStatus(false);
-        connect();
-      })();
-    </script>
-`;
+//    Bridge source lives in scripts/plugin-ui-bridge.js (kept separate to
+//    respect the 300-line file-size limit on build scripts).
+const bridgeSrc = readFileSync(join(here, "plugin-ui-bridge.js"), "utf8");
+const UI_BRIDGE = `\n    <script>\n${bridgeSrc
+  .split("\n")
+  .map((l) => "      " + l)
+  .join("\n")}\n    </script>\n`;
 
 const vendorUiHtml = readFileSync(join(vendorPluginDir, "ui.html"), "utf8");
 const patchedUiHtml = vendorUiHtml.replace(
