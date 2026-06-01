@@ -78,6 +78,21 @@ const SERVER_VERSION = "0.2.0";
 const DEFAULT_INSTRUCTIONS =
   "Read+write MCP wire surface for the Autopus daemon (6 resources, 9 baseline tools, optional figma_/validate/generate extras).";
 
+/* C-1 UX: the relay binds to a per-session secret channel, and the Figma plugin
+ * cannot connect until the user pastes that secret into its Connect field.
+ * Surface the secret in the MCP server instructions so the connected agent can
+ * proactively relay it to the user — no manual file lookup needed. The MCP stdio
+ * pipe is already a trusted operator channel, so this does not weaken C-1 (an
+ * unprivileged process has no access to these instructions). */
+function figmaChannelInstruction(channel: string): string {
+  return (
+    `Figma plugin channel secret for THIS session: ${channel}\n` +
+    `When the user wants to use the Autopus Figma plugin, proactively tell them ` +
+    `this secret and have them paste it into the plugin's channel field, then ` +
+    `click Connect. The plugin cannot connect until they do (security audit C-1).`
+  );
+}
+
 export interface EmitClientProfileAttachedInput {
   readonly audit: DaemonAuditWriter;
   readonly registry: CapabilityProfileRegistry;
@@ -133,6 +148,9 @@ export interface CreateMcpStdioServerInput {
   // [NEW] reclassification candidates) that forward to the rebranded
   // Autopus Figma plugin over the relay.
   readonly figmaPluginClient?: FigmaPluginClient;
+  // C-1 — the per-session relay channel secret. When provided, it is surfaced
+  // in the server instructions so the connected agent can relay it to the user.
+  readonly figmaChannel?: string;
 }
 
 /* @AX:ANCHOR: [AUTO] fan-in=4 — wires the SDK Server, registers resource/tool
@@ -146,10 +164,13 @@ export interface CreateMcpStdioServerInput {
 export function createMcpStdioServer(
   input: CreateMcpStdioServerInput,
 ): Server {
+  const instructions = input.figmaChannel
+    ? `${DEFAULT_INSTRUCTIONS}\n\n${figmaChannelInstruction(input.figmaChannel)}`
+    : DEFAULT_INSTRUCTIONS;
   const server = new Server(
     { name: SERVER_NAME, version: SERVER_VERSION },
     {
-      instructions: DEFAULT_INSTRUCTIONS,
+      instructions,
       capabilities: { resources: {}, tools: {} },
     },
   );
@@ -317,6 +338,7 @@ export async function runMcpStdio(
     writeResources,
     auditLogPath,
     figmaPluginClient,
+    figmaChannel,
   });
   const transport = new StdioServerTransport();
 

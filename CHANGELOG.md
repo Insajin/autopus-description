@@ -23,7 +23,15 @@ any local process could join and inject mutation commands at the open plugin.
   Connect (consent UX, audit C-1 option 3). `?channel=<secret>` still
   auto-connects. A rejected channel stops the reconnect loop.
 
-Note: the plugin Connect flow needs live Figma verification before publishing.
+- `src/daemon/mcp-stdio-entry.ts`: when a session channel secret exists, it is
+  appended to the MCP server `instructions` so the connected agent can surface
+  it to the user automatically on connect (no manual file lookup). The MCP stdio
+  pipe is a trusted operator channel, so this does not weaken C-1. At session
+  start the agent receives it via instructions; on mid-session reconnect the
+  agent falls back to reading `.autopus/figma-channel.txt`.
+
+Verified live (2026-06-01): random secret generated + written, plugin Connect
+form joined the secret channel, `get_document_info` roundtrip succeeded.
 
 ### Changed — docs hygiene (audit M-1)
 
