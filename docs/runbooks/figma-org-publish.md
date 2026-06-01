@@ -1,6 +1,6 @@
 # Autopus Figma 플러그인 — Figma Organization Private Publish
 
-> 대상: 사내 디자인/플랫폼 관리자
+> 대상: 조직 디자인/플랫폼 관리자
 > 목적: Autopus Figma 플러그인을 회사 Figma Organization 안에서만 보이도록 private publish하여 디자이너들이 마켓플레이스 검색 한 번으로 install할 수 있게 한다.
 > 전제: 회사 Figma Organization plan 활성, 본인 계정에 plugin publish 권한.
 
@@ -57,8 +57,8 @@ Publish 전 동작 검증을 위해 먼저 dev-mode로 import하여 본인 계�
 3. 폼 작성:
    - **Name**: `Autopus Figma`
    - **Tagline**: `Description workflow + AI-assisted design creation for Autopus.`
-   - **Description**: 사내 사용 안내(예: "사내 디자이너가 Claude Desktop / Codex CLI 통해 Figma 디자인 생성·수정. 사용 가이드: 사내 슬랙 #design-ai")
-   - **Icon**: 사내 로고 사용 (512×512 PNG 권장)
+   - **Description**: 조직 사용 안내(예: "조직 디자이너가 Claude Desktop / Codex CLI 통해 Figma 디자인 생성·수정. 사용 가이드: 팀 채널")
+   - **Icon**: 조직 로고 사용 (512×512 PNG 권장)
    - **Cover image**: 1920×960 권장 (선택)
    - **Categories**: Design Systems, Productivity
 4. **Publishing options**:
@@ -76,7 +76,7 @@ Publish 완료 후, 디자이너는 다음 절차로 install:
 2. 검색창에 "Autopus Figma" → Install (Org 사용자에게만 노출됨).
 3. 디자이너용 가이드: `docs/guides/designer-figma-mcp-guide.md` 1-3장 참고.
 
-사내 슬랙 #design-ai 또는 공지 채널에 publish 완료 + 가이드 링크 함께 안내.
+팀 채널 또는 공지 채널에 publish 완료 + 가이드 링크 함께 안내.
 
 ---
 
@@ -98,7 +98,7 @@ Plugin 코드(vendor 또는 autopus patch) 변경 시:
 문제 발생 시 즉시 회수:
 
 1. Plugins → Manage in Figma → **Unpublish** → "Yes, unpublish".
-2. 사내 채널에 즉시 공지.
+2. 조직 채널에 즉시 공지.
 3. 디자이너는 install된 plugin을 Uninstall하면 새 명령 차단(이미 진행 중 작업은 영향 없음).
 
 ---
@@ -125,4 +125,4 @@ Plugin 코드(vendor 또는 autopus patch) 변경 시:
 - [ ] Icon / Cover / Description 작성 완료
 - [ ] "Make publicly available" 체크 해제
 - [ ] Organization only 옵션 활성화 확인
-- [ ] 사내 슬랙 #design-ai에 publish 공지 초안 준비
+- [ ] 팀 채널에 publish 공지 초안 준비

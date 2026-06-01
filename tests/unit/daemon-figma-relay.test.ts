@@ -96,6 +96,51 @@ describe("FigmaRelay protocol", () => {
     b.close();
   });
 
+  it("rejects a join whose channel is not the configured secret (C-1)", async () => {
+    const secret = "s3cr3t-channel-c1";
+    const guarded = new FigmaRelay({
+      port: TEST_PORT + 1,
+      allowedChannel: secret,
+    });
+    await guarded.start();
+    const url = `ws://127.0.0.1:${TEST_PORT + 1}`;
+    try {
+      // Wrong channel → "Channel not authorized" + socket closed, no membership.
+      const bad = new WebSocket(url);
+      const badMsgs: Array<{ type?: string; message?: unknown }> = [];
+      await new Promise<void>((r) => bad.once("open", () => r()));
+      bad.on("message", (d) => badMsgs.push(JSON.parse(d.toString())));
+      const badClosed = new Promise<void>((r) => bad.once("close", () => r()));
+      bad.send(JSON.stringify({ type: "join", channel: "autopus" }));
+      await badClosed;
+      expect(
+        badMsgs.some(
+          (m) => m.type === "error" && m.message === "Channel not authorized",
+        ),
+      ).toBe(true);
+      expect(guarded.stats().channels).toBe(0);
+
+      // Correct secret → joined.
+      const good = new WebSocket(url);
+      const goodMsgs: Array<{ type?: string; message?: unknown }> = [];
+      await new Promise<void>((r) => good.once("open", () => r()));
+      good.on("message", (d) => goodMsgs.push(JSON.parse(d.toString())));
+      good.send(JSON.stringify({ type: "join", channel: secret }));
+      await new Promise((r) => setTimeout(r, 60));
+      expect(
+        goodMsgs.some(
+          (m) =>
+            m.type === "system" &&
+            typeof m.message === "string" &&
+            (m.message as string).indexOf("Joined channel") === 0,
+        ),
+      ).toBe(true);
+      good.close();
+    } finally {
+      await guarded.stop();
+    }
+  });
+
   it("FigmaPluginClient connects, joins, and roundtrips a command", async () => {
     // Spawn a "fake plugin" peer that listens for messages and replies.
     const fakePlugin = new WebSocket(TEST_URL);

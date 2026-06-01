@@ -2,6 +2,35 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.3] — 2026-06-01
+
+### Security — C-1: per-session secret relay channel (audit C-1)
+
+The relay join channel doubled as the only access-control gate, but defaulted
+to the fixed, OSS-published name `"autopus"` — effectively unauthenticated, so
+any local process could join and inject mutation commands at the open plugin.
+
+- `src/daemon/mcp-stdio-entry.ts`: `FIGMA_CHANNEL` now defaults to a random
+  per-session secret (`randomBytes(16)`) instead of `"autopus"`. The secret is
+  surfaced to the operator on stderr and written to the gitignored
+  `.autopus/figma-channel.txt`. An explicit `FIGMA_CHANNEL` still overrides for
+  advanced/CI use.
+- `src/daemon/figma-relay.ts`: new `allowedChannel` option. When set, `handleJoin`
+  rejects any other channel with `Channel not authorized` and closes the socket
+  (fail-closed). The relay is now bound to a single secret channel.
+- `scripts/plugin-ui-bridge.js`: the plugin no longer auto-joins a fixed default.
+  It renders a Connect form; the operator pastes the session secret and clicks
+  Connect (consent UX, audit C-1 option 3). `?channel=<secret>` still
+  auto-connects. A rejected channel stops the reconnect loop.
+
+Note: the plugin Connect flow needs live Figma verification before publishing.
+
+### Changed — docs hygiene (audit M-1)
+
+- `docs/guides/designer-figma-mcp-guide.md`, `docs/runbooks/figma-org-publish.md`:
+  internal-only Slack channel and org-specific phrasing generalized for the
+  public repo.
+
 ## [0.3.2] — 2026-05-27
 
 ### Fixed — Plugin ↔ daemon connection wiring

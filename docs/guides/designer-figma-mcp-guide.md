@@ -17,7 +17,7 @@ Claude Desktop에 채팅으로 시키면 Claude가 **Figma 파일에 직접 작�
 | 플로우 다이어그램 / 와이어프레임 | "회원가입부터 결제까지 플로우를 FigJam에 그려줘" |
 | 코드/설명으로 페이지·모달 생성 | "이 React 코드 보고 같은 화면 Figma에 만들어줘" |
 
-> Claude Desktop의 **공식 Figma 플러그인은 읽기만** 됩니다. 따라서 위의 "쓰기" 작업은 별도로 사내 **Autopus Figma 플러그인** + **autopus-mcp** 서버로 처리합니다. 디자이너가 해야 할 셋업은 그 두 가지 + Claude Desktop 등록.
+> Claude Desktop의 **공식 Figma 플러그인은 읽기만** 됩니다. 따라서 위의 "쓰기" 작업은 별도로 조직 **Autopus Figma 플러그인** + **autopus-mcp** 서버로 처리합니다. 디자이너가 해야 할 셋업은 그 두 가지 + Claude Desktop 등록.
 
 ---
 
@@ -38,13 +38,22 @@ Figma 우상단 프로필 → Settings → Security → Personal access tokens �
 
 ### 1.3 Autopus Figma 플러그인 설치
 
-회사 디자인 팀이 Figma Organization에 publish해 둔 **Autopus Figma** 플러그인을 install하세요:
+#### 경로 A — Figma Organization marketplace (정식 publish 후)
 
 1. Figma 데스크탑 → 좌상단 햄버거 → Resources → Plugins
 2. 검색창에 "Autopus Figma"
-3. Install (Organization private이므로 사내 계정에서만 보임)
+3. Install (Organization private이므로 조직 계정에서만 보임)
 
-만약 사내 publish 전이라 못 찾으면, 사내 슬랙 #design-ai 채널에서 dev-mode 임시 설치 안내를 요청하세요.
+#### 경로 B — Dev-mode import (publish 전, 또는 이 압축파일을 받은 경우)
+
+이 압축파일(`autopus-figma-designer.zip`) 안에 plugin 파일들이 들어있습니다. 압축 풀린 폴더 위치를 기억해두고:
+
+1. Figma 데스크탑에서 **임의의 파일을 엽니다** (빈 파일도 OK)
+2. 좌상단 햄버거 → Plugins → Development → **Import plugin from manifest...**
+3. 파일 선택 대화상자에서 압축 푼 폴더 안의 **`manifest.json`** 선택
+4. 그 후 Plugins → Development → **Autopus Figma** 가 보입니다 → Run
+
+(Dev-mode plugin은 본인 계정에만 등록되고 다른 디자이너에게 자동 공유 안 됨 — 각자 같은 import 절차를 반복해야 합니다.)
 
 ---
 
@@ -63,11 +72,16 @@ Windows에서 `claude_desktop_config.json` 경로:
 
 `claude_desktop_config.json` 파일을 메모장에서 열고 다음 블록을 추가:
 
+> ⚠️ **Windows에서는 절대 경로 필수**: Claude Desktop이 npm global bin을 PATH에서 못 찾는 경우가 흔합니다. `command`를 `node` + `args`에 entry script의 **절대 경로**로 명시하세요.
+
 ```json
 {
   "mcpServers": {
     "autopus-figma": {
-      "command": "autopus-mcp-stdio",
+      "command": "node",
+      "args": [
+        "C:\\Users\\본인이름\\AppData\\Roaming\\npm\\node_modules\\@autopus\\figma-mcp\\dist\\src\\daemon\\mcp-stdio-entry.js"
+      ],
       "env": {
         "FIGMA_TOKEN": "figd_여기에_본인_토큰",
         "AUTOPUS_AUDIT_DIR": "%USERPROFILE%\\.autopus"
@@ -89,16 +103,15 @@ Windows에서 `claude_desktop_config.json` 경로:
 
 ## 3. 매 작업 전 — 플러그인 띄우기
 
-채팅에서 명령하기 전에 **반드시** 다음 절차를 진행하세요. 그렇지 않으면 명령이 도달하지 못합니다.
+채팅에서 명령하기 전에 **반드시** 다음 절차를 진행하세요.
 
 1. Figma 데스크탑에서 작업할 파일을 엽니다.
 2. 우상단 햄버거 → Plugins → **Autopus Figma** → Run.
-3. 플러그인 창이 뜨면 채널 입력란에 본인 채널 이름(예: `myname-proj`)을 적고 **Join**.
-4. Claude Desktop으로 돌아가 채팅에 입력:
-   ```
-   autopus-figma의 join_channel로 채널 "myname-proj"에 연결해줘
-   ```
-   Claude가 "Successfully joined channel: myname-proj" 류 응답을 하면 준비 완료.
+3. autopus-mcp 데몬이 시작될 때 **채널 시크릿**을 발급합니다(매 세션 랜덤). 시크릿은 데몬 stderr 로그와 `.autopus/figma-channel.txt` 파일에 표시됩니다. Claude에게 "figma 채널 시크릿 알려줘"라고 물어도 됩니다.
+4. 플러그인 창의 입력란에 그 시크릿을 붙여넣고 **Connect**를 누릅니다.
+5. 상단 dot이 **녹색 + "Connected · channel ok"** 로 바뀌면 준비 완료.
+
+보안상 채널은 매 세션 랜덤 시크릿입니다(예전 고정 `autopus` 채널은 제거됨 — 보안 감사 C-1). 시크릿을 모르는 다른 로컬 프로세스는 plugin 채널에 접속할 수 없습니다.
 
 작업 끝나면 플러그인 창을 닫아도 됩니다. 다음에 다시 시작할 때 같은 절차.
 
@@ -142,7 +155,7 @@ Windows에서 `claude_desktop_config.json` 경로:
 - 마름모: 분기(이메일 인증 실패, 카드 실패, 쿠폰 적용)
 - 화살표로 연결
 - 위에서 아래로 흐름
-- 채널 myname-proj 에서 현재 열린 파일 사용
+- 현재 열린 Figma 파일에 그려줘
 ```
 
 내부 도구: `create_frame` × N → `create_text` × N → `set_default_connector` → `create_connections`.
@@ -180,9 +193,14 @@ Claude가 가한 모든 변경은 Figma의 Ctrl+Z로 되돌릴 수 있습니다.
 ❌ "토큰 만들고 그걸로 대시보드 만들고 플로우도 그려줘"
 ✅ 셋을 별도 채팅 세션 또는 메시지로
 
-### 5.4 채널 끊김
+### 5.4 연결 끊김
 
-플러그인 창을 닫거나 Figma 앱이 백그라운드에서 슬립되면 채널이 끊깁니다. 다음 명령에서 "PLUGIN_NOT_CONNECTED" 응답이 오면 3장 절차를 다시 하세요.
+두 가지 경우로 나뉩니다:
+
+| 상황 | 조치 |
+|------|------|
+| Plugin 창이 **열려있는 채로** 연결만 끊긴 경우 (dot이 빨강) | 그대로 두면 **2초 안에 자동 재연결**. WebSocket reconnect 루프가 돌고 있음 |
+| Plugin **창 자체가 닫혔거나** Claude Desktop이 재시작된 경우 | 자동 복구 안 됨. Figma → Plugins → Autopus Figma → **Run** 다시 |
 
 ### 5.5 도구가 안 보일 때
 
@@ -215,6 +233,7 @@ approve / undo / preview 등은 autopus-mcp의 기본 도구라 별도 셋업이
 - **Figma 토큰을 외부로 공유 금지.** 토큰은 모든 파일 접근 권한. 슬랙·이메일·캡쳐에 노출 X.
 - **라이브러리 publish는 한 번 더 확인.** "publish해줘"라고 Claude에게 시키기 전에 결과 미리보기로 검토.
 - **AI 결과는 검토 후 사용.** 토큰 바인딩, 자동 레이아웃은 가끔 어긋남.
+- **외부 네트워크 호출 없음.** Plugin은 `ws://localhost:3055` (사용자 본인 PC의 autopus daemon)로만 통신합니다. manifest.json `networkAccess.allowedDomains` 에 localhost만 등록됨 — Google Analytics 같은 외부 도메인은 의도적으로 제거됨. 보안팀 review 시 이 파일 보여주시면 됩니다.
 
 ---
 
@@ -242,14 +261,14 @@ A. 사용 중인 Figma 파일에 해당 폰트가 이미 등록돼 있어야 합
 | 증상 | 조치 |
 |------|------|
 | Claude Desktop 도구 목록에 autopus-figma 없음 | `claude_desktop_config.json` 문법 오류 + Claude Desktop 완전 재시작 |
-| `PLUGIN_NOT_CONNECTED` 응답 | Autopus Figma 플러그인 창 다시 띄우고 채널 join, 그 후 `join_channel`로 daemon 측에도 join |
+| `PLUGIN_NOT_CONNECTED` 응답 | Autopus Figma 플러그인 창을 닫고 다시 Run. 상단 dot이 녹색이 될 때까지 기다리기. 그래도 빨강이면 Claude Desktop을 트레이 Quit → 재시작 |
 | "node_not_found" | Claude에게 `get_selection`이나 `get_document_info`를 먼저 시켜서 노드 ID 확인하게 함 |
 | 폰트 로드 에러 | 데스크탑 Figma에서 해당 폰트를 미리 install/register |
 | 색이 이상하게 들어감 | Figma는 RGBA 0-1 범위. "RGBA 0-1 기준으로 #3B82F6 → r:0.231, g:0.51, b:0.965 적용해줘" 처럼 단위 명시 |
 | 자동 레이아웃 깨짐 | "set_layout_mode를 VERTICAL로 잡고 set_padding 모두 16, set_item_spacing 8" 같이 명시 |
 | 한 번에 너무 많이 만들었음 | Ctrl+Z 한 번이면 마지막 변경만. 여러 단계 되돌리려면 여러 번 Ctrl+Z |
 
-해결 안 되면 사내 슬랙 #design-ai 채널에 스크린샷+에러 메시지로 문의.
+해결 안 되면 팀 채널 채널에 스크린샷+에러 메시지로 문의.
 
 ---
 
@@ -257,4 +276,4 @@ A. 사용 중인 Figma 파일에 해당 폰트가 이미 등록돼 있어야 합
 
 - Claude Desktop 공식 문서: https://docs.claude.com/desktop
 - Autopus Figma 플러그인 publish 절차 (관리자용): `docs/runbooks/figma-org-publish.md`
-- 본 가이드 출처/업데이트: 사내 슬랙 #design-ai 또는 PR
+- 본 가이드 출처/업데이트: 팀 채널 또는 PR

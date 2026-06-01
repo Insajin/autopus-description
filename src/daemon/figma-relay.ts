@@ -21,6 +21,14 @@ export interface FigmaRelayOptions {
   readonly port?: number;
   /** Bind address. 127.0.0.1 by default; "0.0.0.0" only when explicitly opted in. */
   readonly host?: string;
+  /**
+   * When set, only this exact channel may be joined; any other channel name is
+   * rejected and the socket closed. Binds the relay to a single per-session
+   * secret channel so a local process that does not know the secret cannot
+   * join the daemon↔plugin channel and inject mutation commands.
+   * SPEC-FIGMA security audit C-1. Undefined = legacy open multi-channel mode.
+   */
+  readonly allowedChannel?: string;
 }
 
 export interface FigmaRelayStats {
@@ -38,6 +46,7 @@ const DEFAULT_HOST = "127.0.0.1";
 export class FigmaRelay {
   private readonly port: number;
   private readonly host: string;
+  private readonly allowedChannel: string | null;
   private wss: WebSocketServer | null = null;
   private readonly channels = new Map<string, Set<WebSocket>>();
   private readonly state = new WeakMap<WebSocket, ClientState>();
@@ -45,6 +54,7 @@ export class FigmaRelay {
   constructor(opts: FigmaRelayOptions = {}) {
     this.port = opts.port ?? VENDOR_PORT;
     this.host = opts.host ?? DEFAULT_HOST;
+    this.allowedChannel = opts.allowedChannel ?? null;
   }
 
   /** Bind and start accepting connections. Resolves once `listening`. */
@@ -163,6 +173,18 @@ export class FigmaRelay {
     const channel = typeof msg.channel === "string" ? msg.channel : "";
     if (!channel) {
       this.send(ws, { type: "error", message: "Channel name is required" });
+      return;
+    }
+    // C-1: fail-closed when a per-session secret channel is configured. A peer
+    // that does not present the exact secret is rejected and disconnected, so
+    // an unprivileged local process cannot reach the daemon↔plugin channel.
+    if (this.allowedChannel !== null && channel !== this.allowedChannel) {
+      this.send(ws, { type: "error", message: "Channel not authorized" });
+      try {
+        ws.close();
+      } catch {
+        /* swallow — peer disconnect race */
+      }
       return;
     }
     let set = this.channels.get(channel);

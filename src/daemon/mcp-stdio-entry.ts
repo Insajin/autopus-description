@@ -13,6 +13,8 @@
 // Lifecycle: process stays alive until stdin EOF (transport `onclose`) or
 // SIGTERM/SIGINT (NFR-05 long-running guard).
 
+import { randomBytes } from "node:crypto";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -261,8 +263,28 @@ export async function runMcpStdio(
    * manually. Channel defaults to "autopus" so single-user single-session
    * setups (the 99% case) need zero configuration; multi-session callers
    * override with FIGMA_CHANNEL. The relay binds 127.0.0.1 only. */
-  const figmaChannel = process.env.FIGMA_CHANNEL ?? "autopus";
-  const relay = new FigmaRelay({ port: 3055 });
+  /* C-1 (security audit): the join channel doubles as the only access-control
+   * gate on the relay. A fixed, OSS-published default ("autopus") is effectively
+   * unauthenticated — any local process can join and inject mutation commands.
+   * Default to a random per-session secret instead; FIGMA_CHANNEL still overrides
+   * for advanced/CI setups. The secret is surfaced to the operator (stderr + a
+   * gitignored file) so they can paste it into the plugin's Connect field. */
+  const explicitChannel = process.env.FIGMA_CHANNEL;
+  const figmaChannel = explicitChannel ?? randomBytes(16).toString("hex");
+  if (!explicitChannel) {
+    const channelFile = join(auditDir, "figma-channel.txt");
+    try {
+      writeFileSync(channelFile, figmaChannel + "\n", "utf8");
+    } catch {
+      /* non-fatal — stderr still carries the secret */
+    }
+    process.stderr.write(
+      `autopus-mcp-stdio: figma channel secret = ${figmaChannel}\n` +
+        `  paste this into the Autopus Figma plugin's channel field to connect ` +
+        `(also written to ${channelFile})\n`,
+    );
+  }
+  const relay = new FigmaRelay({ port: 3055, allowedChannel: figmaChannel });
   let figmaPluginClient: FigmaPluginClient | undefined;
   try {
     await relay.start();
