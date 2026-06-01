@@ -242,6 +242,7 @@ export function createMcpStdioServer(
     p2WriteContext,
     vendorReadContext,
     vendorWriteContext,
+    figmaChannel: input.figmaChannel,
   });
 
   server.oninitialized = () => {

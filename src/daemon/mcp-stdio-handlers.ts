@@ -102,7 +102,18 @@ export interface HandlerWiring {
   // forwarded through FigmaPluginClient to the rebranded Autopus Figma plugin).
   readonly vendorReadContext?: VendorReadContext;
   readonly vendorWriteContext?: VendorWriteContext;
+  // C-1 — per-session relay channel secret. When set, exposes a
+  // `get_figma_channel` read tool so the agent can fetch + relay the secret to
+  // the user mid-session (instructions only surface at session init).
+  readonly figmaChannel?: string;
 }
+
+const GET_FIGMA_CHANNEL_TOOL: ToolDescriptor = Object.freeze({
+  name: "get_figma_channel",
+  description:
+    "Returns the per-session Figma plugin channel secret. Tell the user this value to paste into the Autopus Figma plugin's Connect field.",
+  inputSchema: EMPTY_INPUT_SCHEMA,
+});
 
 function toToolWire(t: ToolDescriptor): {
   name: string;
@@ -175,6 +186,7 @@ export function registerToolHandlers(
     | "p2WriteContext"
     | "vendorReadContext"
     | "vendorWriteContext"
+    | "figmaChannel"
   >,
 ): void {
   const writeCtx = wiring?.writeToolContext;
@@ -186,6 +198,7 @@ export function registerToolHandlers(
   const p2WriteCtx = wiring?.p2WriteContext;
   const vendorReadCtx = wiring?.vendorReadContext;
   const vendorWriteCtx = wiring?.vendorWriteContext;
+  const figmaChannel = wiring?.figmaChannel;
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     /* SPEC-FIGMA-014 REQ-04 + SPEC-FIGMA-015 REQ-06 — fixed order: baseline
      * reads, extra reads, brief reads, SPEC-FIGMA-011 writes, extra writes,
@@ -210,6 +223,9 @@ export function registerToolHandlers(
     const vendorWrites = vendorWriteCtx
       ? vendorWriteCtx.tools.map(toToolWire)
       : [];
+    // Appended only when a channel secret is wired, so the baseline/extra wire
+    // surface stays byte-equal in callers that do not set figmaChannel (INV-W4).
+    const channelTool = figmaChannel ? [toToolWire(GET_FIGMA_CHANNEL_TOOL)] : [];
     return {
       tools: [
         ...reads,
@@ -222,6 +238,7 @@ export function registerToolHandlers(
         ...briefWrites,
         ...p2Writes,
         ...vendorWrites,
+        ...channelTool,
       ],
     };
   });
@@ -229,6 +246,13 @@ export function registerToolHandlers(
   server.setRequestHandler(CallToolRequestSchema, async (req) => {
     const name = req.params.name;
     const args = (req.params.arguments ?? {}) as Record<string, unknown>;
+    if (name === GET_FIGMA_CHANNEL_TOOL.name && figmaChannel) {
+      // The secret is meant to be relayed to the user; it carries no figd_/bearer
+      // token shape, so redact() is a no-op here — return it verbatim.
+      return {
+        content: [{ type: "text", text: JSON.stringify({ channel: figmaChannel }) }],
+      };
+    }
     if (READ_ONLY_NAMES.has(name)) {
       const result = await handleMcpToolCall({ tool: name, args });
       /* @AX:WARN: [AUTO] zero-leak invariant — CallTool outbound `text` MUST be

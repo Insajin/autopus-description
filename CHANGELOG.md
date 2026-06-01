@@ -28,7 +28,12 @@ any local process could join and inject mutation commands at the open plugin.
   it to the user automatically on connect (no manual file lookup). The MCP stdio
   pipe is a trusted operator channel, so this does not weaken C-1. At session
   start the agent receives it via instructions; on mid-session reconnect the
-  agent falls back to reading `.autopus/figma-channel.txt`.
+  agent calls the `get_figma_channel` tool (below) or reads
+  `.autopus/figma-channel.txt`.
+- `src/daemon/mcp-stdio-handlers.ts`: new `get_figma_channel` read tool, listed
+  only when a channel secret is wired (baseline wire surface stays byte-equal,
+  INV-W4). Returns `{ channel }` so the agent can fetch and relay the secret at
+  any point in a session, not just at init.
 
 Verified live (2026-06-01): random secret generated + written, plugin Connect
 form joined the secret channel, `get_document_info` roundtrip succeeded.
