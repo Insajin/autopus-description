@@ -1,0 +1,54 @@
+name: deprecate
+
+# Manually deprecate (or un-deprecate) a published @autopus/figma-mcp version.
+# Runs in CI so it can use the NPM_TOKEN automation token (bypasses 2FA), which
+# the npm publish policy requires for write operations. Trigger from the Actions
+# tab or `gh workflow run deprecate.yml`.
+#
+# Un-deprecate: dispatch with an empty `message`.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Exact published version to deprecate (e.g. 0.3.2)."
+        type: string
+        required: true
+        default: "0.3.2"
+      message:
+        description: "Deprecation message. Empty string un-deprecates."
+        type: string
+        required: false
+        default: "Security (C-1): 0.3.2 uses a fixed, guessable relay channel (default 'autopus') — any local process could inject design mutations. Upgrade to 0.3.3+, which binds the relay to a per-session secret channel."
+
+permissions:
+  contents: read
+
+jobs:
+  deprecate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Validate version
+        env:
+          PKG_VERSION: ${{ inputs.version }}
+        run: |
+          if ! printf '%s' "$PKG_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$'; then
+            echo "::error::Refusing to run: '$PKG_VERSION' is not a valid semver."
+            exit 1
+          fi
+          echo "Target: @autopus/figma-mcp@$PKG_VERSION"
+
+      - name: Deprecate
+        # Inputs are passed via env (never inlined into the shell) to avoid
+        # GitHub Actions expression injection.
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PKG_VERSION: ${{ inputs.version }}
+          DEP_MESSAGE: ${{ inputs.message }}
+        run: npm deprecate "@autopus/figma-mcp@${PKG_VERSION}" "${DEP_MESSAGE}"
