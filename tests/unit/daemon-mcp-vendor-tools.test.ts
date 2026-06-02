@@ -75,7 +75,7 @@ afterEach(() => {
 });
 
 describe("SPEC-FIGMA-017 vendor MCP surface absorption", () => {
-  it("ListTools includes 13 vendor read + 28 vendor write tools (Strategy B verbatim)", async () => {
+  it("ListTools includes 13 vendor read + 30 vendor write tools (Strategy B verbatim)", async () => {
     const resp = (await invokeHandler(server, "tools/list", {})) as {
       tools: Array<{ name: string }>;
     };
@@ -100,6 +100,7 @@ describe("SPEC-FIGMA-017 vendor MCP surface absorption", () => {
     expect(names).toContain("set_default_connector");
     expect(names).toContain("create_component_instance");
     expect(names).toContain("join_channel");
+    expect(names).toContain("rename_node");
   });
 
   it("baseline autopus tools coexist (INV-W4a)", async () => {

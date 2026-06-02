@@ -163,6 +163,14 @@ const AUTOPUS_PATCH = `
         node.name = String(params.original_name || node.name);
         return { ok: true };
       }
+      case 'rename_node': {
+        // Generic layer rename for any node type (frames, text, groups, etc.).
+        // Unlike set_frame_name this is not restricted to FRAME nodes.
+        const node = await figma.getNodeByIdAsync(params.nodeId);
+        if (!node) throw new Error('node_not_found');
+        node.name = String(params.name == null ? node.name : params.name);
+        return { id: node.id, name: node.name };
+      }
       case 'upsert_descriptions_page_node': {
         // Find or create a page named pageName; append a TEXT node with text.
         const targetPageName = String(params.pageName || 'Descriptions');

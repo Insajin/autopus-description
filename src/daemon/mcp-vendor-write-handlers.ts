@@ -128,6 +128,10 @@ const CLONE = schema(
   { nodeId: { type: "string" }, x: { type: "number" }, y: { type: "number" } },
   ["nodeId"],
 );
+const RENAME_NODE = schema(
+  { nodeId: { type: "string" }, name: { type: "string" } },
+  ["nodeId", "name"],
+);
 const FOCUS = schema({ nodeId: { type: "string" } }, ["nodeId"]);
 const SELECTIONS = schema({ nodeIds: { type: "array" } }, ["nodeIds"]);
 const CONNECTOR_DEFAULT = schema({ connectorId: { type: "string" } }, []);
@@ -164,6 +168,7 @@ export const VENDOR_WRITE_TOOLS: readonly ToolDescriptor[] = Object.freeze([
   Object.freeze({ name: "move_node", description: "Move a node to (x, y).", inputSchema: MOVE_NODE }),
   Object.freeze({ name: "resize_node", description: "Resize a node to width/height.", inputSchema: RESIZE_NODE }),
   Object.freeze({ name: "clone_node", description: "Clone an existing node at offset.", inputSchema: CLONE }),
+  Object.freeze({ name: "rename_node", description: "Rename a node's layer name (any node type).", inputSchema: RENAME_NODE }),
   Object.freeze({ name: "delete_node", description: "Delete a node by id.", inputSchema: DELETE_ONE }),
   Object.freeze({ name: "delete_multiple_nodes", description: "Delete many nodes in one call.", inputSchema: DELETE_MANY }),
   Object.freeze({ name: "set_layout_mode", description: "Switch a frame to NONE / HORIZONTAL / VERTICAL auto-layout.", inputSchema: LAYOUT_MODE }),
