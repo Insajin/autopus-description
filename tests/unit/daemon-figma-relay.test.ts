@@ -187,4 +187,36 @@ describe("FigmaRelay protocol", () => {
     await client.close();
     fakePlugin.close();
   });
+
+  it("FigmaPluginClient auto-reconnects after the socket drops", async () => {
+    const port = TEST_PORT + 2;
+    const url = `ws://127.0.0.1:${port}`;
+    const r1 = new FigmaRelay({ port });
+    await r1.start();
+    const client = new FigmaPluginClient({
+      url,
+      channel: "rc",
+      timeoutMs: 3000,
+    });
+    await client.connect();
+    expect(client.isReady()).toBe(true);
+
+    // Drop the connection by stopping the relay; the client should notice the
+    // close and schedule a reconnect (shouldReconnect was armed on connect()).
+    await r1.stop();
+    await new Promise((r) => setTimeout(r, 200));
+    expect(client.isReady()).toBe(false);
+
+    // Bring the relay back; the client must reconnect + re-join on its own.
+    const r2 = new FigmaRelay({ port });
+    await r2.start();
+    const start = Date.now();
+    while (!client.isReady() && Date.now() - start < 6000) {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    expect(client.isReady()).toBe(true);
+
+    await client.close();
+    await r2.stop();
+  });
 });

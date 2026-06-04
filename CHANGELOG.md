@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.5] — 2026-06-04
+
+### Fixed — relay connection robustness
+The plugin↔relay↔daemon WebSocket had no keepalive and the daemon client never
+reconnected, so an idle period dropped the socket and left the daemon dead until
+a manual `/mcp` reconnect ("socket connection closed").
+
+- `src/daemon/figma-relay.ts`: 30s ping/pong heartbeat — idle connections stay
+  alive and peers that miss a pong are terminated (dead-socket reaping). `ws`
+  auto-pongs, so node and browser peers need no extra code.
+- `src/daemon/figma-plugin-client.ts`: auto-reconnect with capped backoff (1s →
+  30s) + channel re-join after a drop; the daemon self-heals without a manual
+  reconnect. Disarmed on intentional `close()`.
+
 ## [0.3.4] — 2026-06-04
 
 ### Changed — public plugin rename + Figma Community publish prep

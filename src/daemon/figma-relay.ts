@@ -38,10 +38,16 @@ export interface FigmaRelayStats {
 
 interface ClientState {
   channel: string | null;
+  alive: boolean;
 }
 
 const VENDOR_PORT = 3055;
 const DEFAULT_HOST = "127.0.0.1";
+// Heartbeat: ping every 30s and terminate peers that miss a pong, so idle
+// connections survive NAT/idle timeouts and dead sockets are reaped. The `ws`
+// library auto-responds to pings with pongs, so node and browser peers stay
+// alive without extra client code.
+const HEARTBEAT_MS = 30_000;
 
 export class FigmaRelay {
   private readonly port: number;
@@ -50,6 +56,7 @@ export class FigmaRelay {
   private wss: WebSocketServer | null = null;
   private readonly channels = new Map<string, Set<WebSocket>>();
   private readonly state = new WeakMap<WebSocket, ClientState>();
+  private heartbeat: ReturnType<typeof setInterval> | null = null;
 
   constructor(opts: FigmaRelayOptions = {}) {
     this.port = opts.port ?? VENDOR_PORT;
@@ -99,6 +106,7 @@ export class FigmaRelay {
       wss.once("listening", () => {
         this.wss = wss;
         wss.on("connection", (ws) => this.handleConnection(ws));
+        this.startHeartbeat(wss);
         resolve();
       });
       wss.once("error", reject);
@@ -110,6 +118,10 @@ export class FigmaRelay {
     if (!this.wss) return;
     const wss = this.wss;
     this.wss = null;
+    if (this.heartbeat) {
+      clearInterval(this.heartbeat);
+      this.heartbeat = null;
+    }
     await new Promise<void>((resolve) => {
       for (const ws of wss.clients) {
         try {
@@ -131,13 +143,46 @@ export class FigmaRelay {
   }
 
   private handleConnection(ws: WebSocket): void {
-    this.state.set(ws, { channel: null });
+    this.state.set(ws, { channel: null, alive: true });
     this.send(ws, {
       type: "system",
       message: "Please join a channel to start chatting",
     });
+    ws.on("pong", () => {
+      const s = this.state.get(ws);
+      if (s) s.alive = true;
+    });
     ws.on("message", (raw: RawData) => this.handleMessage(ws, raw));
     ws.on("close", () => this.handleClose(ws));
+  }
+
+  /* @AX:WARN: [AUTO] liveness — ping each peer every HEARTBEAT_MS; a peer that
+   * missed the previous pong is terminated so dead sockets are reaped and idle
+   * connections do not get silently dropped by NAT/idle timeouts.
+   * @AX:REASON: SPEC-FIGMA security audit follow-up — connection robustness. */
+  private startHeartbeat(wss: WebSocketServer): void {
+    const interval = setInterval(() => {
+      for (const ws of wss.clients) {
+        const s = this.state.get(ws);
+        if (s && s.alive === false) {
+          try {
+            ws.terminate();
+          } catch {
+            /* swallow — peer disconnect race */
+          }
+          continue;
+        }
+        if (s) s.alive = false;
+        try {
+          ws.ping();
+        } catch {
+          /* swallow */
+        }
+      }
+    }, HEARTBEAT_MS);
+    // The heartbeat must not keep the daemon process alive on its own.
+    interval.unref?.();
+    this.heartbeat = interval;
   }
 
   private handleMessage(ws: WebSocket, raw: RawData): void {

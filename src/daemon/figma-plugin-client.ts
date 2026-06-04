@@ -39,6 +39,13 @@ export class FigmaPluginClient {
   private ws: WebSocket | null = null;
   private joined = false;
   private readonly pending = new Map<string, PendingRequest>();
+  // Auto-reconnect: once a first connect() succeeds, a dropped socket (idle
+  // timeout, transient network) self-heals with capped backoff + re-join,
+  // instead of leaving the daemon dead until a manual /mcp reconnect.
+  private shouldReconnect = false;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private reconnectDelay = 1_000;
+  private readonly maxReconnectDelay = 30_000;
 
   constructor(opts: FigmaPluginClientOptions) {
     this.url = opts.url ?? DEFAULT_URL;
@@ -61,9 +68,18 @@ export class FigmaPluginClient {
       });
     });
     await this.join();
+    // Connected + joined: arm auto-reconnect and reset backoff.
+    this.shouldReconnect = true;
+    this.reconnectDelay = 1_000;
   }
 
   async close(): Promise<void> {
+    // Intentional shutdown — disarm auto-reconnect.
+    this.shouldReconnect = false;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     const ws = this.ws;
     this.ws = null;
     this.joined = false;
@@ -182,10 +198,31 @@ export class FigmaPluginClient {
 
   private onClose(): void {
     this.joined = false;
+    this.ws = null;
     for (const p of this.pending.values()) {
       clearTimeout(p.timer);
       p.reject(new Error("plugin_disconnected"));
     }
     this.pending.clear();
+    if (this.shouldReconnect) this.scheduleReconnect();
+  }
+
+  private scheduleReconnect(): void {
+    if (this.reconnectTimer) return;
+    const delay = this.reconnectDelay;
+    const t = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect().catch(() => {
+        // Connect failed (relay down / not yet rebound) — back off and retry.
+        this.reconnectDelay = Math.min(
+          this.reconnectDelay * 2,
+          this.maxReconnectDelay,
+        );
+        this.scheduleReconnect();
+      });
+    }, delay);
+    // The reconnect timer must not keep the process alive on its own.
+    t.unref?.();
+    this.reconnectTimer = t;
   }
 }
