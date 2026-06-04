@@ -14,7 +14,7 @@
 // downstream handler logs/persists them (INV-W2 inherited).
 
 import { WebSocketServer, WebSocket, type RawData } from "ws";
-import { redact } from "../token-redactor.js";
+import { redactWire } from "./redact-extended.js";
 
 export interface FigmaRelayOptions {
   /** Port to bind. Vendor uses 3055; pass another for parallel test runs. */
@@ -48,6 +48,10 @@ const DEFAULT_HOST = "127.0.0.1";
 // library auto-responds to pings with pongs, so node and browser peers stay
 // alive without extra client code.
 const HEARTBEAT_MS = 30_000;
+// DoS guards (audit M-2). The relay only ever carries small JSON command
+// envelopes; cap inbound frame size and the number of peers per channel.
+const MAX_PAYLOAD = 1024 * 1024; // 1 MiB
+const MAX_CLIENTS_PER_CHANNEL = 8; // daemon + plugin = 2; headroom for retries
 
 export class FigmaRelay {
   private readonly port: number;
@@ -102,6 +106,7 @@ export class FigmaRelay {
         port: this.port,
         host: this.host,
         verifyClient,
+        maxPayload: MAX_PAYLOAD,
       });
       wss.once("listening", () => {
         this.wss = wss;
@@ -233,6 +238,16 @@ export class FigmaRelay {
       return;
     }
     let set = this.channels.get(channel);
+    // M-2: cap peers per channel so a local process cannot flood connections.
+    if (set && set.size >= MAX_CLIENTS_PER_CHANNEL && !set.has(ws)) {
+      this.send(ws, { type: "error", message: "Channel is full" });
+      try {
+        ws.close();
+      } catch {
+        /* swallow — peer disconnect race */
+      }
+      return;
+    }
     if (!set) {
       set = new Set();
       this.channels.set(channel, set);
@@ -321,7 +336,7 @@ export class FigmaRelay {
   // @AX:REASON: SPEC-FIGMA-009 INV-W2 — broadcast surface treated as wire.
   private send(ws: WebSocket, payload: unknown): void {
     if (ws.readyState !== WebSocket.OPEN) return;
-    const text = redact(JSON.stringify(payload));
+    const text = redactWire(JSON.stringify(payload));
     try {
       ws.send(text);
     } catch {

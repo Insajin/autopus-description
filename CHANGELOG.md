@@ -2,6 +2,40 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.6] — 2026-06-04
+
+### Fixed
+- **Plugin id**: pin the publishing account's own Community plugin id
+  (`1644170376077943662`). The vendor manifest id is the upstream "Talk To Figma"
+  plugin already live on Community, so publishing under it was impossible.
+- **`set_stroke_color`**: accept the flat `{r,g,b,a,weight}` shape the daemon
+  sends (the vendor handler expected a nested `color` and threw "cannot convert
+  to object").
+- **`create_text`**: create with characters + a loaded font in one call. The
+  vendor handler made an empty auto-width node (ignoring `text`), forcing a
+  second `set_text_content` call and causing the upstream creation timeout.
+
+### Security / robustness
+- **M-2**: relay `maxPayload` (1 MiB) + per-channel client cap (8) — DoS guards.
+- **M-3**: WebSocket send checkpoints (relay broadcast + plugin client) now use a
+  composite redactor (figd_/xoxb-/bearer/absolute-path/tunnel) via `redactWire`,
+  not figd_ only.
+- Destructive vendor tools (`delete_node`, `delete_multiple_nodes`) carry a
+  human-confirm warning in their descriptions (MCP human-in-the-loop).
+- H-2 (fail-closed on relay bind failure) confirmed already satisfied: a failed
+  bind leaves the plugin client unwired, so no vendor write surface is exposed.
+
+### Changed
+- Channel secret is now **stable per project**: reused from
+  `.autopus/figma-channel.txt` across daemon restarts (paste once) instead of a
+  fresh secret each boot. `FIGMA_CHANNEL` still overrides.
+- `docs/runbooks/figma-community-publish.md`: document the plugin-id gotcha.
+
+### Deferred (tracked, not in this release)
+- Per-message rate limit (token bucket); image/asset placement tool; CI Actions
+  Node 20 → 24 bump (non-breaking until 2026-09-16); interactive destructive-op
+  gate beyond description warnings.
+
 ## [0.3.5] — 2026-06-04
 
 ### Fixed — relay connection robustness

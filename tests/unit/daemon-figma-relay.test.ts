@@ -5,6 +5,7 @@ import { WebSocket } from "ws";
 
 import { FigmaRelay } from "../../src/daemon/figma-relay.js";
 import { FigmaPluginClient } from "../../src/daemon/figma-plugin-client.js";
+import { redactWire } from "../../src/daemon/redact-extended.js";
 
 // Pick a port unlikely to collide with a real Figma plugin in dev.
 const TEST_PORT = 3955;
@@ -218,5 +219,46 @@ describe("FigmaRelay protocol", () => {
 
     await client.close();
     await r2.stop();
+  });
+
+  it("rejects peers beyond the per-channel cap (M-2)", async () => {
+    const open = (): Promise<WebSocket> =>
+      new Promise((res) => {
+        const w = new WebSocket(TEST_URL);
+        w.once("open", () => res(w));
+      });
+    const sockets: WebSocket[] = [];
+    for (let i = 0; i < 8; i++) {
+      const w = await open();
+      sockets.push(w);
+      w.send(JSON.stringify({ type: "join", channel: "full" }));
+    }
+    await new Promise((r) => setTimeout(r, 150));
+
+    const extra = await open();
+    const msgs: Array<{ type?: string; message?: unknown }> = [];
+    extra.on("message", (d) => msgs.push(JSON.parse(d.toString())));
+    const closed = new Promise<void>((r) => extra.once("close", () => r()));
+    extra.send(JSON.stringify({ type: "join", channel: "full" }));
+    await closed;
+    expect(
+      msgs.some((m) => m.type === "error" && m.message === "Channel is full"),
+    ).toBe(true);
+
+    for (const w of sockets) w.close();
+    extra.close();
+  });
+});
+
+describe("redactWire (wire-surface composite redaction, M-3)", () => {
+  it("redacts figd_, absolute paths, and tunnel URLs", () => {
+    const out = redactWire(
+      "tok=figd_ABCDEFGHIJKLMNOPQRSTUVWX " +
+        "path=/Users/alice/secret " +
+        "url=https://abc-123.trycloudflare.com/x",
+    );
+    expect(out).not.toContain("figd_ABCDEFGHIJKLMNOPQRSTUVWX");
+    expect(out).not.toContain("/Users/alice");
+    expect(out).not.toContain("trycloudflare.com");
   });
 });

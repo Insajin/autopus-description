@@ -47,8 +47,11 @@ const rebranded = {
   // Public Community name must not contain "Figma" (Figma brand/publishing
   // guideline). "Autopus Description" — the design-description workflow plugin.
   name: "Autopus Description",
-  // id is left as-is for dev-mode imports; Figma assigns a new id on publish.
-  // We DO NOT modify id here — the publish step (Figma UI) replaces it.
+  // The vendor manifest id (1485687494525374295) is the UPSTREAM "Talk To Figma
+  // MCP Plugin" that is already LIVE on Figma Community — publishing under it is
+  // impossible. Pin our own Community plugin id (created under the publishing
+  // account) so dev-mode import matches the plugin we publish.
+  id: "1644170376077943662",
   networkAccess: {
     ...manifestSrc.networkAccess,
     allowedDomains: stripGoogleAnalytics(manifestSrc.networkAccess?.allowedDomains),
@@ -139,6 +142,60 @@ const AUTOPUS_PATCH = `
         }
         node.characters = String(params.text == null ? '' : params.text);
         return { id: node.id, name: node.name, characters: node.characters };
+      }
+      case 'set_stroke_color': {
+        // Vendor setStrokeColor destructures params.color.{r,g,b,a}, but the
+        // daemon sends FLAT { nodeId, r, g, b, a, weight } — that mismatch threw
+        // "Cannot convert undefined to object". Accept the flat shape here.
+        const node = await figma.getNodeByIdAsync(params.nodeId);
+        if (!node) throw new Error('node_not_found');
+        if (!('strokes' in node)) throw new Error('node_does_not_support_strokes');
+        const r = params.r != null ? Number(params.r) : 0;
+        const g = params.g != null ? Number(params.g) : 0;
+        const b = params.b != null ? Number(params.b) : 0;
+        const a = params.a != null ? Number(params.a) : 1;
+        node.strokes = [{ type: 'SOLID', color: { r, g, b }, opacity: a }];
+        if (params.weight != null) node.strokeWeight = Number(params.weight);
+        return { ok: true, nodeId: params.nodeId };
+      }
+      case 'create_text': {
+        // Vendor create_text creates an EMPTY auto-width node (the text param
+        // is ignored and the font may be unloaded), forcing a second
+        // set_text_content call and causing the upstream text-creation
+        // timeout. Create with characters + a loaded font in one call.
+        const family = String(params.fontFamily || 'Inter');
+        const weight = Number(params.fontWeight) || 400;
+        const style =
+          weight >= 700 ? 'Bold'
+          : weight >= 600 ? 'Semi Bold'
+          : weight >= 500 ? 'Medium'
+          : 'Regular';
+        await figma.loadFontAsync({ family, style });
+        const text = figma.createText();
+        text.fontName = { family, style };
+        if (params.fontSize != null) text.fontSize = Number(params.fontSize);
+        text.characters = String(params.text == null ? '' : params.text);
+        if (params.fontColor) {
+          const c = params.fontColor;
+          text.fills = [{
+            type: 'SOLID',
+            color: { r: Number(c.r) || 0, g: Number(c.g) || 0, b: Number(c.b) || 0 },
+            opacity: c.a != null ? Number(c.a) : 1,
+          }];
+        }
+        if (params.x != null) text.x = Number(params.x);
+        if (params.y != null) text.y = Number(params.y);
+        if (params.name) text.name = String(params.name);
+        if (params.parentId) {
+          const parent = await figma.getNodeByIdAsync(params.parentId);
+          if (parent && 'appendChild' in parent) parent.appendChild(text);
+        }
+        return {
+          id: text.id,
+          name: text.name,
+          characters: text.characters,
+          fontName: text.fontName,
+        };
       }
       case 'set_plugin_data': {
         const node = await figma.getNodeByIdAsync(params.nodeId);

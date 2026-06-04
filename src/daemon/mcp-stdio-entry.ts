@@ -14,7 +14,7 @@
 // SIGTERM/SIGINT (NFR-05 long-running guard).
 
 import { randomBytes } from "node:crypto";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -292,18 +292,34 @@ export async function runMcpStdio(
    * for advanced/CI setups. The secret is surfaced to the operator (stderr + a
    * gitignored file) so they can paste it into the plugin's Connect field. */
   const explicitChannel = process.env.FIGMA_CHANNEL;
-  const figmaChannel = explicitChannel ?? randomBytes(16).toString("hex");
-  if (!explicitChannel) {
-    const channelFile = join(auditDir, "figma-channel.txt");
+  const channelFile = join(auditDir, "figma-channel.txt");
+  let figmaChannel: string;
+  if (explicitChannel) {
+    figmaChannel = explicitChannel;
+  } else {
+    // P2-9: reuse a stable per-project secret across daemon restarts so the
+    // operator pastes it into the plugin once, instead of a fresh secret every
+    // boot. Still a random, gitignored secret (C-1). FIGMA_CHANNEL overrides.
+    let existing = "";
     try {
-      writeFileSync(channelFile, figmaChannel + "\n", "utf8");
+      existing = readFileSync(channelFile, "utf8").trim();
     } catch {
-      /* non-fatal — stderr still carries the secret */
+      /* no prior secret — generate one below */
+    }
+    if (/^[0-9a-f]{32}$/.test(existing)) {
+      figmaChannel = existing;
+    } else {
+      figmaChannel = randomBytes(16).toString("hex");
+      try {
+        writeFileSync(channelFile, figmaChannel + "\n", "utf8");
+      } catch {
+        /* non-fatal — stderr still carries the secret */
+      }
     }
     process.stderr.write(
       `autopus-mcp-stdio: figma channel secret = ${figmaChannel}\n` +
-        `  paste this into the Autopus Figma plugin's channel field to connect ` +
-        `(also written to ${channelFile})\n`,
+        `  paste this into the Autopus plugin's channel field to connect ` +
+        `(also at ${channelFile})\n`,
     );
   }
   const relay = new FigmaRelay({ port: 3055, allowedChannel: figmaChannel });

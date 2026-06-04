@@ -18,6 +18,7 @@ import {
   ABSOLUTE_PATH_PATTERNS_SOURCE,
   REDACTED,
 } from "../redact-patterns.js";
+import { redactTunnelUrl } from "../token-redactor.js";
 
 const FIGD_RE = new RegExp(FIGD_PATTERN_SOURCE, "g");
 const XOXB_RE = new RegExp(XOXB_PATTERN_SOURCE, "g");
@@ -41,6 +42,15 @@ export function redactExtended(input: string): string {
     out = out.replace(re, REDACTED);
   }
   return out;
+}
+
+// Composite redactor for the WebSocket wire surface (relay broadcast + plugin
+// client send). Covers figd_/xoxb-/bearer/absolute-path (redactExtended) plus
+// trycloudflare tunnel URLs — the full secret surface, not just figd_ (audit
+// M-3). redactExtended and redactTunnelUrl are independent and compose cleanly.
+export function redactWire(input: string): string {
+  if (typeof input !== "string") return input as unknown as string;
+  return redactTunnelUrl(redactExtended(input));
 }
 
 export function redactExtendedObject(value: unknown): unknown {

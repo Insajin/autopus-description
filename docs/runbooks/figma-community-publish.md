@@ -103,7 +103,18 @@ Built on [cursor-talk-to-figma-mcp](https://github.com/sonnylazuardi/cursor-talk
 - [ ] MIT credit to cursor-talk-to-figma-mcp present
 - [ ] "Make publicly available" checked → Submit for review
 
+## Plugin id (important)
+
+The vendor manifest id `1485687494525374295` is the **upstream "Talk To Figma MCP
+Plugin" that is already live on Figma Community** — you cannot publish under it.
+Each publishing account must register its own plugin id:
+
+1. In Figma desktop (the publishing account): Plugins → Development → **New plugin**
+   → name `Autopus Description` → Figma assigns a fresh id this account owns.
+2. The build pins that id (`scripts/build-figma-plugin.mjs` → `rebranded.id`).
+   The current pinned id is `1644170376077943662`. If you publish under a
+   different account, update that constant to your account's new id and rebuild.
+
 ## Notes
 
-- The plugin `id` in `manifest.json` is the dev id; Figma assigns the public id on first publish. Do not hand-edit it.
 - Org-private alternative (for internal-only distribution) is documented in `docs/runbooks/figma-org-publish.md`.

@@ -12,7 +12,7 @@
 import { WebSocket } from "ws";
 import { randomUUID } from "node:crypto";
 
-import { redact } from "../token-redactor.js";
+import { redactWire } from "./redact-extended.js";
 
 export interface FigmaPluginClientOptions {
   /** Relay URL, defaults to ws://127.0.0.1:3055. */
@@ -130,7 +130,7 @@ export class FigmaPluginClient {
         reject(new Error(`figma_command_timeout:${command}`));
       }, this.timeoutMs);
       this.pending.set(id, { resolve, reject, timer });
-      this.ws!.send(redact(JSON.stringify(envelope)));
+      this.ws!.send(redactWire(JSON.stringify(envelope)));
     });
   }
 
