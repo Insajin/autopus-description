@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.8] — 2026-06-04
+
+### Improved — description-generation skill (accessibility + exact copy)
+Web-researched developer-handoff and WCAG best practices folded into the
+node-only generation prompt (`src/prompts/node-only.ts`):
+- Generated descriptions now require concrete **accessibility** annotations —
+  text alternatives stating purpose (not appearance), keyboard + focus/tab
+  order, color-independence, contrast, target size, and screen-reader/heading/
+  landmark intent — routed into `edge_cases` and `area_annotations`, with
+  `[CANNOT_INFER]` when not derivable. No schema migration (uses existing
+  validated fields).
+- **Exact user-facing copy** (labels, placeholders, empty-state, error/toast/
+  tooltip) must be captured verbatim in quotes, not paraphrased.
+- `SYSTEM_BASE` coverage list and the `edge_cases` schema hint updated to match.
+
 ## [0.3.7] — 2026-06-04
 
 ### Added

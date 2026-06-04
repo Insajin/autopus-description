@@ -89,4 +89,13 @@ describe("project brief prompt context", () => {
     expect(prompt.user).toContain("reduced-motion");
     expect(prompt.user).toContain("Report Search");
   });
+
+  it("node-only prompt requires accessibility annotations and exact copy", () => {
+    const prompt = buildNodeOnlyPrompt({ screen_id: "A11Y-01", name: "Login" });
+    expect(prompt.system).toContain("accessibility requirements");
+    expect(prompt.user).toContain("text alternatives");
+    expect(prompt.user).toContain("keyboard focus/tab order");
+    expect(prompt.user).toContain("do-not-rely-on-color-alone");
+    expect(prompt.user).toContain("exact user-facing copy");
+  });
 });
