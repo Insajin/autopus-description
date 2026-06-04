@@ -178,17 +178,49 @@ describe("SPEC-FIGMA-017 vendor MCP surface absorption", () => {
     expect(pluginStub.lastArgs?.nodeId).toBe("1:5");
   });
 
-  it("delete_node and clone_node both reach plugin", async () => {
-    await invokeHandler(server, "tools/call", {
+  it("delete_node requires confirm:true (destructive gate)", async () => {
+    // Without confirm -> not forwarded; returns a confirmation summary.
+    const r1 = (await invokeHandler(server, "tools/call", {
       name: "delete_node",
       arguments: { nodeId: "1:9" },
+    })) as { content: Array<{ text: string }>; isError?: boolean };
+    expect(r1.isError).not.toBe(true);
+    expect(pluginStub.lastCommand).not.toBe("delete_node");
+    const parsed = JSON.parse(r1.content[0].text);
+    expect(parsed.requiresConfirmation).toBe(true);
+    expect(parsed.count).toBe(1);
+
+    // With confirm:true -> forwarded to the plugin, confirm flag stripped.
+    await invokeHandler(server, "tools/call", {
+      name: "delete_node",
+      arguments: { nodeId: "1:9", confirm: true },
     });
     expect(pluginStub.lastCommand).toBe("delete_node");
+    expect(pluginStub.lastArgs).not.toHaveProperty("confirm");
+
     await invokeHandler(server, "tools/call", {
       name: "clone_node",
       arguments: { nodeId: "1:9", x: 100, y: 50 },
     });
     expect(pluginStub.lastCommand).toBe("clone_node");
+  });
+
+  it("create_image forwards base64 bytes to the plugin", async () => {
+    const resp = (await invokeHandler(server, "tools/call", {
+      name: "create_image",
+      arguments: { imageBase64: "AAAA", x: 0, y: 0, width: 100, height: 100 },
+    })) as { content: Array<{ text: string }>; isError?: boolean };
+    expect(resp.isError).not.toBe(true);
+    expect(pluginStub.lastCommand).toBe("create_image");
+    expect(pluginStub.lastArgs?.imageBase64).toBe("AAAA");
+  });
+
+  it("create_image without bytes or url returns isError", async () => {
+    const resp = (await invokeHandler(server, "tools/call", {
+      name: "create_image",
+      arguments: {},
+    })) as { isError?: boolean };
+    expect(resp.isError).toBe(true);
   });
 
   it("unknown vendor tool name returns isError without crashing", async () => {

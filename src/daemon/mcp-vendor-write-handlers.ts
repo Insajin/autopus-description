@@ -122,8 +122,30 @@ const SWAP_OVERRIDES = schema(
   { sourceInstanceId: { type: "string" }, targetInstanceId: { type: "string" } },
   ["sourceInstanceId", "targetInstanceId"],
 );
-const DELETE_ONE = schema({ nodeId: { type: "string" } }, ["nodeId"]);
-const DELETE_MANY = schema({ nodeIds: { type: "array" } }, ["nodeIds"]);
+// `confirm` gates the actual delete: the first call (without confirm) returns a
+// confirmation-required summary; only confirm:true forwards to the plugin.
+const DELETE_ONE = schema(
+  { nodeId: { type: "string" }, confirm: { type: "boolean" } },
+  ["nodeId"],
+);
+const DELETE_MANY = schema(
+  { nodeIds: { type: "array" }, confirm: { type: "boolean" } },
+  ["nodeIds"],
+);
+const CREATE_IMAGE = schema(
+  {
+    imageUrl: { type: "string" },
+    imageBase64: { type: "string" },
+    x: { type: "number" },
+    y: { type: "number" },
+    width: { type: "number" },
+    height: { type: "number" },
+    scaleMode: { type: "string" },
+    name: { type: "string" },
+    parentId: { type: "string" },
+  },
+  [],
+);
 const CLONE = schema(
   { nodeId: { type: "string" }, x: { type: "number" }, y: { type: "number" } },
   ["nodeId"],
@@ -159,6 +181,7 @@ export const VENDOR_WRITE_TOOLS: readonly ToolDescriptor[] = Object.freeze([
   Object.freeze({ name: "create_rectangle", description: "Create a rectangle in Figma.", inputSchema: CREATE_RECT }),
   Object.freeze({ name: "create_frame", description: "Create a frame in Figma (optionally with auto-layout).", inputSchema: CREATE_FRAME }),
   Object.freeze({ name: "create_text", description: "Create a text node in Figma.", inputSchema: CREATE_TEXT }),
+  Object.freeze({ name: "create_image", description: "Place an image on the canvas as an IMAGE-filled rectangle. Pass imageUrl (the daemon fetches it — the plugin cannot reach the network) or imageBase64. Optional x/y/width/height/scaleMode/name/parentId.", inputSchema: CREATE_IMAGE }),
   Object.freeze({ name: "create_component_instance", description: "Place an instance of a component on the canvas.", inputSchema: COMPONENT_INSTANCE }),
   Object.freeze({ name: "set_fill_color", description: "Set the fill (RGBA 0-1) of a node.", inputSchema: FILL_COLOR }),
   Object.freeze({ name: "set_stroke_color", description: "Set the stroke color and weight of a node.", inputSchema: STROKE_COLOR }),
@@ -231,6 +254,27 @@ async function forward(
   }
 }
 
+const MAX_IMAGE_BYTES = 6 * 1024 * 1024; // 6 MiB raw; base64 + envelope < relay 8 MiB cap
+
+// Daemon-side image fetch: the plugin's networkAccess is localhost-only, so it
+// cannot reach an arbitrary URL. The daemon fetches the bytes and forwards
+// base64. Only http(s) is allowed (no file:/data: — SSRF/local-file guard).
+async function fetchImageBase64(url: string): Promise<string> {
+  const u = new URL(url);
+  if (u.protocol !== "http:" && u.protocol !== "https:") {
+    throw new Error("only http(s) image URLs are allowed");
+  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.length > MAX_IMAGE_BYTES) {
+    throw new Error(`image exceeds ${MAX_IMAGE_BYTES} bytes`);
+  }
+  return buf.toString("base64");
+}
+
+const DELETE_COMMANDS = new Set(["delete_node", "delete_multiple_nodes"]);
+
 export function createVendorWriteContext(
   opts: VendorContextOptions,
 ): VendorWriteContext {
@@ -238,6 +282,49 @@ export function createVendorWriteContext(
     name: string,
     args: Record<string, unknown>,
   ): Promise<ToolResponse> => {
+    // Destructive-op gate (human-in-the-loop): require an explicit confirm:true
+    // second call. The first call returns a summary instead of deleting.
+    if (DELETE_COMMANDS.has(name)) {
+      if (args.confirm !== true) {
+        const targets =
+          name === "delete_node"
+            ? [args.nodeId]
+            : Array.isArray(args.nodeIds)
+              ? args.nodeIds
+              : [];
+        return ok({
+          requiresConfirmation: true,
+          command: name,
+          willDelete: targets,
+          count: targets.length,
+          message:
+            `Destructive: ${targets.length} node(s) would be deleted. ` +
+            `Confirm the target(s) with the user, then re-call ${name} with confirm:true.`,
+        });
+      }
+      const { confirm: _omit, ...rest } = args;
+      return forward(opts.client, name, rest);
+    }
+
+    // Image placement: resolve imageUrl → base64 daemon-side before forwarding.
+    if (name === "create_image") {
+      let imageBase64 =
+        typeof args.imageBase64 === "string" ? args.imageBase64 : "";
+      const imageUrl = typeof args.imageUrl === "string" ? args.imageUrl : "";
+      if (!imageBase64 && imageUrl) {
+        try {
+          imageBase64 = await fetchImageBase64(imageUrl);
+        } catch (e) {
+          return err(`create_image fetch failed: ${(e as Error).message}`);
+        }
+      }
+      if (!imageBase64) {
+        return err("create_image requires imageUrl or imageBase64");
+      }
+      const { imageUrl: _u, imageBase64: _b, ...rest } = args;
+      return forward(opts.client, name, { ...rest, imageBase64 });
+    }
+
     return forward(opts.client, name, args);
   };
   return { tools: VENDOR_WRITE_TOOLS, dispatch };

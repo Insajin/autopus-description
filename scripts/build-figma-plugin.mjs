@@ -197,6 +197,37 @@ const AUTOPUS_PATCH = `
           fontName: text.fontName,
         };
       }
+      case 'create_image': {
+        // The daemon fetched the bytes (plugin networkAccess is localhost-only)
+        // and forwarded base64. Decode -> createImage -> IMAGE-filled rectangle.
+        const b64 = String(params.imageBase64 || '');
+        if (!b64) throw new Error('missing_image_bytes');
+        const bytes = figma.base64Decode(b64);
+        const image = figma.createImage(bytes);
+        const node = figma.createRectangle();
+        const w = params.width != null ? Number(params.width) : 200;
+        const h = params.height != null ? Number(params.height) : 200;
+        node.resize(w, h);
+        node.fills = [{
+          type: 'IMAGE',
+          scaleMode: params.scaleMode || 'FILL',
+          imageHash: image.hash,
+        }];
+        if (params.x != null) node.x = Number(params.x);
+        if (params.y != null) node.y = Number(params.y);
+        if (params.name) node.name = String(params.name);
+        if (params.parentId) {
+          const parent = await figma.getNodeByIdAsync(params.parentId);
+          if (parent && 'appendChild' in parent) parent.appendChild(node);
+        }
+        return {
+          id: node.id,
+          name: node.name,
+          imageHash: image.hash,
+          width: node.width,
+          height: node.height,
+        };
+      }
       case 'set_plugin_data': {
         const node = await figma.getNodeByIdAsync(params.nodeId);
         if (!node) throw new Error('node_not_found');

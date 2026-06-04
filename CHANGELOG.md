@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.7] — 2026-06-04
+
+### Added
+- **`create_image`** vendor tool: place an image as an IMAGE-filled rectangle.
+  Pass `imageUrl` (the daemon fetches it — the plugin's networkAccess is
+  localhost-only) or `imageBase64` directly. http(s) only, 6 MiB image cap; relay
+  `maxPayload` raised 1 → 8 MiB to carry the bytes (still 12× under the ws
+  default). Optional x/y/width/height/scaleMode/name/parentId.
+
+### Security
+- **Destructive-op gate** (interactive human-in-the-loop): `delete_node` /
+  `delete_multiple_nodes` now require an explicit `confirm:true` second call. The
+  first call deletes nothing and returns a confirmation summary
+  (`requiresConfirmation`, `willDelete`, `count`) so the agent must confirm the
+  targets with the user before re-calling.
+
 ## [0.3.6] — 2026-06-04
 
 ### Fixed

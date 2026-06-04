@@ -48,9 +48,10 @@ const DEFAULT_HOST = "127.0.0.1";
 // library auto-responds to pings with pongs, so node and browser peers stay
 // alive without extra client code.
 const HEARTBEAT_MS = 30_000;
-// DoS guards (audit M-2). The relay only ever carries small JSON command
-// envelopes; cap inbound frame size and the number of peers per channel.
-const MAX_PAYLOAD = 1024 * 1024; // 1 MiB
+// DoS guards (audit M-2). Cap inbound frame size and peers per channel. 8 MiB
+// keeps small JSON command envelopes cheap while allowing create_image to carry
+// a base64 image bytes payload, yet is 12x below the ws default (100 MiB).
+const MAX_PAYLOAD = 8 * 1024 * 1024; // 8 MiB
 const MAX_CLIENTS_PER_CHANNEL = 8; // daemon + plugin = 2; headroom for retries
 
 export class FigmaRelay {
