@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.4] — 2026-06-04
+
+### Changed — public plugin rename + Figma Community publish prep
+- Plugin renamed `Autopus Figma` → **`Autopus Description`**. Figma's brand/
+  publishing guideline forbids "Figma" in Community plugin names. Build emits the
+  new name (`scripts/build-figma-plugin.mjs`).
+- `scripts/plugin-ui-bridge.js`: empty-state onboarding. When the daemon is
+  unreachable the plugin shows a setup hint + repo link (and stops the silent
+  reconnect loop) so a fresh install does not look broken.
+- Repository renamed to `Insajin/autopus-description`; `package.json`
+  homepage/repository/bugs URLs and in-plugin/setup links updated.
+- `docs/runbooks/figma-community-publish.md`: Community publish runbook (listing
+  copy, asset specs, submit checklist). Cover + icon stored under `docs/assets/`.
+
 ## [0.3.3] — 2026-06-01
 
 ### Security — C-1: per-session secret relay channel (audit C-1)

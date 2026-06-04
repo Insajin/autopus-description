@@ -1,17 +1,17 @@
 {
   "name": "@autopus/figma-mcp",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "MCP server for the Autopus Figma description workflow — read frames, generate descriptions, manage briefs, write back via plugin bridge.",
   "type": "module",
   "license": "MIT",
   "author": "Bitgapnam",
-  "homepage": "https://github.com/Insajin/auto-discription#readme",
+  "homepage": "https://github.com/Insajin/autopus-description#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Insajin/auto-discription.git"
+    "url": "git+https://github.com/Insajin/autopus-description.git"
   },
   "bugs": {
-    "url": "https://github.com/Insajin/auto-discription/issues"
+    "url": "https://github.com/Insajin/autopus-description/issues"
   },
   "keywords": [
     "mcp",

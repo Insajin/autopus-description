@@ -65,6 +65,22 @@
     wrap.appendChild(input);
     wrap.appendChild(btn);
     (document.body || document.documentElement).appendChild(wrap);
+
+    // Onboarding hint: this plugin is a thin client to a local daemon, so a
+    // fresh install does nothing until the daemon is running. Make that explicit
+    // instead of looking broken.
+    if (!document.getElementById("autopus-connect-help")) {
+      const help = document.createElement("div");
+      help.id = "autopus-connect-help";
+      help.style.cssText =
+        "margin:4px 0 8px;font-family:sans-serif;font-size:11px;color:#666;line-height:1.45;";
+      help.textContent =
+        "Requires the Autopus MCP daemon running locally " +
+        "(npm i -g @autopus/figma-mcp). The daemon prints a per-session channel " +
+        "secret — paste it above and click Connect. " +
+        "Setup: github.com/Insajin/autopus-description";
+      (document.body || document.documentElement).appendChild(help);
+    }
   }
 
   function sendToFigma(message) {
@@ -92,8 +108,7 @@
     try {
       ws = new WebSocket(URL_WS);
     } catch (e) {
-      setStatus(false, "Relay unreachable — retrying");
-      setTimeout(connect, 2000);
+      setStatus(false, "Couldn't open ws://localhost:3055 — is the daemon running?");
       return;
     }
     ws.onopen = function () {
@@ -134,10 +149,18 @@
     };
     ws.onclose = function () {
       const wasConnected = connected;
-      setStatus(false, "Disconnected");
-      // Only auto-reconnect if the channel had worked — avoids hammering the
-      // relay with a rejected secret in a tight loop.
-      if (wasConnected) setTimeout(connect, 2000);
+      if (wasConnected) {
+        // A previously-working connection dropped (daemon restart, etc.).
+        setStatus(false, "Disconnected — reconnecting…");
+        setTimeout(connect, 2000);
+      } else {
+        // Never joined: the daemon isn't reachable on :3055. Don't loop — tell
+        // the user to start it. (A wrong secret is handled by the error branch.)
+        setStatus(
+          false,
+          "Couldn't reach the daemon on ws://localhost:3055 — start @autopus/figma-mcp, then Connect.",
+        );
+      }
     };
     ws.onerror = function () {
       /* let onclose drive reconnect */

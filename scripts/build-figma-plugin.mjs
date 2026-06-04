@@ -44,7 +44,9 @@ const stripGoogleAnalytics = (domains) =>
 
 const rebranded = {
   ...manifestSrc,
-  name: "Autopus Figma",
+  // Public Community name must not contain "Figma" (Figma brand/publishing
+  // guideline). "Autopus Description" — the design-description workflow plugin.
+  name: "Autopus Description",
   // id is left as-is for dev-mode imports; Figma assigns a new id on publish.
   // We DO NOT modify id here — the publish step (Figma UI) replaces it.
   networkAccess: {
