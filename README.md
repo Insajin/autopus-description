@@ -6,7 +6,17 @@ MCP server for the Autopus Figma description workflow. Lets AI clients (Claude C
 
 > Companion to the official Figma MCP. The official `plugin:figma:figma` server covers design creation (`use_figma`, `generate_figma_design`, `generate_figma_library`, `generate_diagram`). This package covers the **description workflow** — what each frame is for, how it behaves, and how to write that knowledge back to Figma in an auditable way.
 
-## Install
+## For designers (no code)
+
+Two pieces — a Figma plugin + a local helper (this package):
+
+1. **Figma plugin** — install **Autopus Description** from the Figma Community (Figma → Plugins → search), or import `dist/plugin/manifest.json` in dev-mode before it is approved.
+2. **Local helper (one-click)** — download `autopus-description.mcpb` from the [latest release](https://github.com/Insajin/autopus-description/releases/latest), then **Claude Desktop → Settings → Extensions → Install Extension**. No Node/npm/JSON — Node ships with Claude Desktop.
+3. **Connect** — run the plugin in Figma, paste the channel secret the helper prints (ask Claude *"what's the figma channel secret?"*), click **Connect**.
+
+Full walkthrough: [docs/guides/designer-figma-mcp-guide.md](docs/guides/designer-figma-mcp-guide.md).
+
+## Install (developers)
 
 ```bash
 npm install -g @autopus/figma-mcp
