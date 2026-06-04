@@ -13,6 +13,7 @@ import {
   buildNodeOnlyPrompt,
   flattenPrompt,
   type FrameMeta,
+  type DescriptionLanguage,
 } from "./prompts/node-only.js";
 import { buildVisionPrompt } from "./prompts/vision.js";
 import {
@@ -46,6 +47,8 @@ export interface RoutingOptions {
   // VISION_CUTOFF check.
   mode?: RoutingMode;
   projectBrief?: ProjectBrief;
+  // Free-text output language for generated descriptions (default Korean).
+  language?: DescriptionLanguage;
 }
 
 // Optional hook a provider can implement to override predicted input tokens
@@ -89,6 +92,7 @@ export async function routeAndGenerate(
   const { screen_id } = frame;
   const nodePrompt = buildNodeOnlyPrompt(frame.frame_meta, {
     projectBrief: opts.projectBrief,
+    language: opts.language,
   });
   const flattenedNode = flattenPrompt(nodePrompt);
 
@@ -113,6 +117,7 @@ export async function routeAndGenerate(
   telemetry.incrementVisionCount();
   const visionPrompt = buildVisionPrompt(frame.frame_meta, frame.screenshot_path, {
     projectBrief: opts.projectBrief,
+    language: opts.language,
   });
   const flattenedVision = flattenPrompt(visionPrompt);
 

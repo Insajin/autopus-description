@@ -21,6 +21,12 @@ export interface FigmaPluginClientOptions {
   readonly channel: string;
   /** Per-request timeout (ms). Default 30s mirrors vendor. */
   readonly timeoutMs?: number;
+  /**
+   * Invoked when the plugin pushes a `set_description_language` message (the
+   * user picked a description language in the plugin UI). Lets the daemon store
+   * the preference and surface it to generation.
+   */
+  readonly onLanguage?: (language: string) => void;
 }
 
 interface PendingRequest {
@@ -36,6 +42,7 @@ export class FigmaPluginClient {
   private readonly url: string;
   private readonly channel: string;
   private readonly timeoutMs: number;
+  private readonly onLanguage?: (language: string) => void;
   private ws: WebSocket | null = null;
   private joined = false;
   private readonly pending = new Map<string, PendingRequest>();
@@ -51,6 +58,7 @@ export class FigmaPluginClient {
     this.url = opts.url ?? DEFAULT_URL;
     this.channel = opts.channel;
     this.timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT;
+    this.onLanguage = opts.onLanguage;
   }
 
   async connect(): Promise<void> {
@@ -179,6 +187,15 @@ export class FigmaPluginClient {
     if (env.type !== "broadcast" && env.type !== "system") return;
     const inner = env.message as Record<string, unknown> | undefined;
     if (!inner || typeof inner !== "object") return;
+    // Plugin-initiated push: the user picked a description language in the UI.
+    if (inner.command === "set_description_language") {
+      const params = inner.params as Record<string, unknown> | undefined;
+      const lang = params && typeof params.language === "string"
+        ? params.language
+        : undefined;
+      if (lang && this.onLanguage) this.onLanguage(lang);
+      return;
+    }
     const id = typeof inner.id === "string" ? inner.id : null;
     if (!id) return;
     const pending = this.pending.get(id);

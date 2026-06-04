@@ -223,6 +223,25 @@ describe("SPEC-FIGMA-017 vendor MCP surface absorption", () => {
     expect(resp.isError).toBe(true);
   });
 
+  it("get_description_language tool lists and returns the wired language", async () => {
+    const langServer = createMcpStdioServer({
+      mcp: new McpResources(),
+      registry: new CapabilityProfileRegistry(),
+      auditWriter: new DaemonAuditWriter({ auditDir: workDir, provider: "test" }),
+      figmaPluginClient: pluginStub as unknown as FigmaPluginClient,
+      descriptionLanguage: () => "ja",
+    });
+    const list = (await invokeHandler(langServer, "tools/list", {})) as {
+      tools: Array<{ name: string }>;
+    };
+    expect(list.tools.map((t) => t.name)).toContain("get_description_language");
+    const resp = (await invokeHandler(langServer, "tools/call", {
+      name: "get_description_language",
+      arguments: {},
+    })) as { content: Array<{ text: string }> };
+    expect(JSON.parse(resp.content[0].text).language).toBe("ja");
+  });
+
   it("unknown vendor tool name returns isError without crashing", async () => {
     const resp = (await invokeHandler(server, "tools/call", {
       name: "create_xyzzy",

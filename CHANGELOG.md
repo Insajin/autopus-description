@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.9] — 2026-06-04
+
+### Added — plugin-driven description language
+- **Plugin UI**: a "Description language" dropdown (한국어 / English / 日本語 /
+  中文), persisted locally and pushed to the daemon on connect and on change.
+- **Daemon**: captures the plugin's `set_description_language` push
+  (`FigmaPluginClient.onLanguage`), stores it — reused across restarts via the
+  gitignored `.autopus/description-language.txt` — exposes a
+  `get_description_language` MCP tool, and surfaces the choice in the server
+  instructions so the agent generates in the chosen language.
+- **Generation prompt** now honors the language (ko/en/ja/zh). `SYSTEM_BASE` was
+  hard-coded to Korean and `PromptOpts.language` was unused; `routing` now passes
+  `language` through to the node-only and vision prompt builders.
+
 ## [0.3.8] — 2026-06-04
 
 ### Improved — description-generation skill (accessibility + exact copy)

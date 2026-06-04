@@ -30,6 +30,7 @@ tests/integration/figma-007/.tmp/
 .autopus/telemetry/
 .autopus/daemon.pid
 .autopus/figma-channel.txt
+.autopus/description-language.txt
 .autopus/runs/
 .mcp.json
 node_modules/

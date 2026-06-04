@@ -106,12 +106,23 @@ export interface HandlerWiring {
   // `get_figma_channel` read tool so the agent can fetch + relay the secret to
   // the user mid-session (instructions only surface at session init).
   readonly figmaChannel?: string;
+  // Description-generation language chosen in the plugin UI. Getter returns the
+  // live value (the plugin can change it mid-session). When set, exposes a
+  // `get_description_language` read tool.
+  readonly descriptionLanguage?: () => string;
 }
 
 const GET_FIGMA_CHANNEL_TOOL: ToolDescriptor = Object.freeze({
   name: "get_figma_channel",
   description:
     "Returns the per-session Figma plugin channel secret. Tell the user this value to paste into the Autopus Figma plugin's Connect field.",
+  inputSchema: EMPTY_INPUT_SCHEMA,
+});
+
+const GET_DESCRIPTION_LANGUAGE_TOOL: ToolDescriptor = Object.freeze({
+  name: "get_description_language",
+  description:
+    "Returns the description-generation language the user selected in the plugin (ko/en/ja/zh). Generate frame descriptions in this language.",
   inputSchema: EMPTY_INPUT_SCHEMA,
 });
 
@@ -187,6 +198,7 @@ export function registerToolHandlers(
     | "vendorReadContext"
     | "vendorWriteContext"
     | "figmaChannel"
+    | "descriptionLanguage"
   >,
 ): void {
   const writeCtx = wiring?.writeToolContext;
@@ -199,6 +211,7 @@ export function registerToolHandlers(
   const vendorReadCtx = wiring?.vendorReadContext;
   const vendorWriteCtx = wiring?.vendorWriteContext;
   const figmaChannel = wiring?.figmaChannel;
+  const descriptionLanguage = wiring?.descriptionLanguage;
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     /* SPEC-FIGMA-014 REQ-04 + SPEC-FIGMA-015 REQ-06 — fixed order: baseline
      * reads, extra reads, brief reads, SPEC-FIGMA-011 writes, extra writes,
@@ -226,6 +239,9 @@ export function registerToolHandlers(
     // Appended only when a channel secret is wired, so the baseline/extra wire
     // surface stays byte-equal in callers that do not set figmaChannel (INV-W4).
     const channelTool = figmaChannel ? [toToolWire(GET_FIGMA_CHANNEL_TOOL)] : [];
+    const langTool = descriptionLanguage
+      ? [toToolWire(GET_DESCRIPTION_LANGUAGE_TOOL)]
+      : [];
     return {
       tools: [
         ...reads,
@@ -239,6 +255,7 @@ export function registerToolHandlers(
         ...p2Writes,
         ...vendorWrites,
         ...channelTool,
+        ...langTool,
       ],
     };
   });
@@ -251,6 +268,13 @@ export function registerToolHandlers(
       // token shape, so redact() is a no-op here — return it verbatim.
       return {
         content: [{ type: "text", text: JSON.stringify({ channel: figmaChannel }) }],
+      };
+    }
+    if (name === GET_DESCRIPTION_LANGUAGE_TOOL.name && descriptionLanguage) {
+      return {
+        content: [
+          { type: "text", text: JSON.stringify({ language: descriptionLanguage() }) },
+        ],
       };
     }
     if (READ_ONLY_NAMES.has(name)) {

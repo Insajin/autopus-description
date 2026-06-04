@@ -151,6 +151,9 @@ export interface CreateMcpStdioServerInput {
   // C-1 — the per-session relay channel secret. When provided, it is surfaced
   // in the server instructions so the connected agent can relay it to the user.
   readonly figmaChannel?: string;
+  // Live getter for the plugin-selected description language (ko/en/ja/zh).
+  // When provided, exposes the get_description_language tool + instruction.
+  readonly descriptionLanguage?: () => string;
 }
 
 /* @AX:ANCHOR: [AUTO] fan-in=4 — wires the SDK Server, registers resource/tool
@@ -164,9 +167,15 @@ export interface CreateMcpStdioServerInput {
 export function createMcpStdioServer(
   input: CreateMcpStdioServerInput,
 ): Server {
-  const instructions = input.figmaChannel
+  let instructions = input.figmaChannel
     ? `${DEFAULT_INSTRUCTIONS}\n\n${figmaChannelInstruction(input.figmaChannel)}`
     : DEFAULT_INSTRUCTIONS;
+  if (input.descriptionLanguage) {
+    instructions +=
+      `\n\nDescription-generation language (plugin setting): ${input.descriptionLanguage()}. ` +
+      `Write generated frame descriptions in this language. Call get_description_language ` +
+      `for the live value (the user may change it mid-session).`;
+  }
   const server = new Server(
     { name: SERVER_NAME, version: SERVER_VERSION },
     {
@@ -243,6 +252,7 @@ export function createMcpStdioServer(
     vendorReadContext,
     vendorWriteContext,
     figmaChannel: input.figmaChannel,
+    descriptionLanguage: input.descriptionLanguage,
   });
 
   server.oninitialized = () => {
@@ -322,6 +332,19 @@ export async function runMcpStdio(
         `(also at ${channelFile})\n`,
     );
   }
+  // Description-generation language chosen in the plugin UI (ko/en/ja/zh).
+  // Reused across daemon restarts from a gitignored file; updated live when the
+  // plugin pushes a set_description_language message.
+  const VALID_LANGS = new Set(["ko", "en", "ja", "zh"]);
+  const langFile = join(auditDir, "description-language.txt");
+  let descriptionLanguage = "ko";
+  try {
+    const v = readFileSync(langFile, "utf8").trim();
+    if (VALID_LANGS.has(v)) descriptionLanguage = v;
+  } catch {
+    /* default ko */
+  }
+
   const relay = new FigmaRelay({ port: 3055, allowedChannel: figmaChannel });
   let figmaPluginClient: FigmaPluginClient | undefined;
   try {
@@ -330,6 +353,18 @@ export async function runMcpStdio(
       url: "ws://127.0.0.1:3055",
       channel: figmaChannel,
       timeoutMs: 30_000,
+      onLanguage: (lang) => {
+        if (!VALID_LANGS.has(lang)) return;
+        descriptionLanguage = lang;
+        try {
+          writeFileSync(langFile, lang + "\n", "utf8");
+        } catch {
+          /* non-fatal */
+        }
+        process.stderr.write(
+          `autopus-mcp-stdio: description language set to ${lang}\n`,
+        );
+      },
     });
     // Non-blocking connect — the plugin may not be open yet. Vendor tool
     // calls will return PLUGIN_NOT_CONNECTED until both sides are joined.
@@ -356,6 +391,7 @@ export async function runMcpStdio(
     auditLogPath,
     figmaPluginClient,
     figmaChannel,
+    descriptionLanguage: () => descriptionLanguage,
   });
   const transport = new StdioServerTransport();
 

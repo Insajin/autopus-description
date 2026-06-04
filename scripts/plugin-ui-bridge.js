@@ -28,6 +28,39 @@
     }
   }
 
+  var LANG_KEY = "autopus.description.language";
+  function readStoredLang() {
+    try {
+      return window.localStorage.getItem(LANG_KEY) || "ko";
+    } catch (_) {
+      return "ko";
+    }
+  }
+  function writeStoredLang(v) {
+    try {
+      window.localStorage.setItem(LANG_KEY, v);
+    } catch (_) {
+      /* non-fatal */
+    }
+  }
+  // Tell the daemon which language to generate descriptions in.
+  function sendLanguage(lang) {
+    if (!ws || ws.readyState !== 1) return;
+    var id = "lang-" + Date.now();
+    ws.send(
+      JSON.stringify({
+        id: id,
+        type: "message",
+        channel: channel,
+        message: {
+          id: id,
+          command: "set_description_language",
+          params: { language: lang },
+        },
+      }),
+    );
+  }
+
   function setStatus(isConnected, detail) {
     connected = isConnected;
     const dot = document.getElementById("conn-dot");
@@ -65,6 +98,35 @@
     wrap.appendChild(input);
     wrap.appendChild(btn);
     (document.body || document.documentElement).appendChild(wrap);
+
+    // Description language selector — pushed to the daemon (used by generation).
+    if (!document.getElementById("autopus-lang-row")) {
+      const langRow = document.createElement("div");
+      langRow.id = "autopus-lang-row";
+      langRow.style.cssText =
+        "display:flex;gap:6px;align-items:center;margin:0 0 6px;font-family:sans-serif;font-size:12px;color:#444;";
+      const langLabel = document.createElement("span");
+      langLabel.textContent = "Description language";
+      const langSel = document.createElement("select");
+      langSel.id = "autopus-lang-select";
+      langSel.style.cssText = "padding:3px 6px;font-size:12px;";
+      [["ko", "한국어"], ["en", "English"], ["ja", "日本語"], ["zh", "中文"]].forEach(
+        function (o) {
+          const opt = document.createElement("option");
+          opt.value = o[0];
+          opt.textContent = o[1];
+          langSel.appendChild(opt);
+        },
+      );
+      langSel.value = readStoredLang();
+      langSel.addEventListener("change", function () {
+        writeStoredLang(langSel.value);
+        sendLanguage(langSel.value);
+      });
+      langRow.appendChild(langLabel);
+      langRow.appendChild(langSel);
+      (document.body || document.documentElement).appendChild(langRow);
+    }
 
     // Onboarding hint: this plugin is a thin client to a local daemon, so a
     // fresh install does nothing until the daemon is running. Make that explicit
@@ -128,6 +190,8 @@
         const m = data.message;
         if (typeof m === "string" && m.indexOf("Joined channel") === 0) {
           setStatus(true, "Connected · channel ok");
+          // Sync the selected description language to the daemon on connect.
+          sendLanguage(readStoredLang());
         }
         return;
       }

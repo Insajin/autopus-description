@@ -221,6 +221,49 @@ describe("FigmaRelay protocol", () => {
     await r2.stop();
   });
 
+  it("captures set_description_language pushed by the plugin", async () => {
+    const port = TEST_PORT + 3;
+    const url = `ws://127.0.0.1:${port}`;
+    const r = new FigmaRelay({ port });
+    await r.start();
+    try {
+      let captured = "";
+      const client = new FigmaPluginClient({
+        url,
+        channel: "lang-ch",
+        timeoutMs: 3000,
+        onLanguage: (l) => {
+          captured = l;
+        },
+      });
+      await client.connect();
+
+      const fake = new WebSocket(url);
+      await new Promise<void>((res) => fake.once("open", () => res()));
+      fake.send(JSON.stringify({ type: "join", channel: "lang-ch" }));
+      await new Promise((res) => setTimeout(res, 80));
+      fake.send(
+        JSON.stringify({
+          id: "x",
+          type: "message",
+          channel: "lang-ch",
+          message: {
+            id: "x",
+            command: "set_description_language",
+            params: { language: "en" },
+          },
+        }),
+      );
+      await new Promise((res) => setTimeout(res, 150));
+      expect(captured).toBe("en");
+
+      await client.close();
+      fake.close();
+    } finally {
+      await r.stop();
+    }
+  });
+
   it("rejects peers beyond the per-channel cap (M-2)", async () => {
     const open = (): Promise<WebSocket> =>
       new Promise((res) => {

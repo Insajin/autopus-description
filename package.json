@@ -1,6 +1,6 @@
 {
   "name": "@autopus/figma-mcp",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "description": "MCP server for the Autopus Figma description workflow — read frames, generate descriptions, manage briefs, write back via plugin bridge.",
   "type": "module",
   "license": "MIT",
