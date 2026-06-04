@@ -1,6 +1,6 @@
 {
   "name": "@autopus/figma-mcp",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "description": "MCP server for the Autopus Figma description workflow — read frames, generate descriptions, manage briefs, write back via plugin bridge.",
   "type": "module",
   "license": "MIT",
@@ -58,6 +58,7 @@
   },
   "scripts": {
     "build": "npm run build --workspace @autopus/validate-manifest && tsc -p tsconfig.json && node scripts/prepend-shebang.mjs && node scripts/build-figma-plugin.mjs",
+    "build:mcpb": "node scripts/build-mcpb.mjs",
     "test": "vitest run --reporter=default",
     "test:watch": "vitest",
     "lint": "tsc -p tsconfig.json --noEmit",

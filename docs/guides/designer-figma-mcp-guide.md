@@ -25,12 +25,21 @@ Claude Desktop에 채팅으로 시키면 Claude가 **Figma 파일에 직접 작�
 
 ### 1.1 설치
 
+**경로 A — 원클릭 확장(.mcpb) · 비개발자 권장**
+터미널·Node 설치·JSON 편집이 전혀 필요 없습니다.
+
+1. Claude Desktop 설치: https://claude.ai/download
+2. GitHub Releases에서 **`autopus-description.mcpb`** 다운로드: https://github.com/Insajin/autopus-description/releases/latest
+3. Claude Desktop → **Settings → Extensions → (Advanced) Install Extension…** → 받은 `.mcpb` 선택(또는 더블클릭).
+   - Node.js는 Claude Desktop에 내장돼 있어 따로 설치할 필요가 없습니다.
+4. Figma 데스크탑 앱 설치: https://www.figma.com/downloads
+
+**경로 B — 개발자용(npm)**
+
 | 항목 | 방법 |
 |------|------|
-| Claude Desktop (Windows) | https://claude.ai/download |
-| Figma 데스크탑 앱 | https://www.figma.com/downloads (Windows) |
-| Node.js 22+ | https://nodejs.org — Claude Desktop이 autopus-mcp를 실행할 수 있어야 함 |
-| autopus-mcp | `npm install -g @autopus/figma-mcp` (PowerShell) |
+| Node.js 22+ | https://nodejs.org |
+| autopus-mcp | `npm install -g @autopus/figma-mcp` 후 MCP 클라이언트에 등록 (또는 `.mcp.json`에 `npx -y @autopus/figma-mcp`) |
 
 ### 1.2 Figma 토큰
 

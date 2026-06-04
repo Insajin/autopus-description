@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.10] — 2026-06-04
+
+### Added — one-click Claude Desktop extension (.mcpb)
+For non-developers who can't run npm: package the MCP server as an MCP Bundle.
+- `scripts/build-mcpb.mjs` + `npm run build:mcpb`: stages the compiled server +
+  production deps + a generated `manifest.json` and packs
+  `dist/autopus-description.mcpb`. Installs in Claude Desktop via
+  Settings → Extensions → Install Extension (double-click) — no Node/npm/JSON
+  editing (Node ships with Claude Desktop).
+- Release workflow builds the `.mcpb` and attaches it to each GitHub release.
+- Designer guide: `.mcpb` one-click path (path A, non-developer default); npm/npx
+  kept as path B for developers.
+
 ## [0.3.9] — 2026-06-04
 
 ### Added — plugin-driven description language
