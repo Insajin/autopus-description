@@ -49,6 +49,8 @@ Figma 右上角头像 → 设置 → 安全 → 个人访问 Token → "创建�
 
 ### 1.3 安装 Autopus Figma 插件
 
+> ℹ️ **名称确认：** 在 Figma 中，此插件的显示名称为 **Autopus Figma**（开发模式 zip）或 **Autopus Description**（Figma 社区版）— 不会显示为 `@autopus/figma-mcp`（那是 npm / MCP 服务器的名称）。如果你看到的是 **Cursor MCP Plugin**，或者 manifest 的 `allowedDomains` 中出现了 `google-analytics.com`，说明你误导入了上游的 `vendor/cursor-talk-to-figma-mcp/.../manifest.json` — 请改为导入解压后的 **autopus-figma-designer** 文件夹中的 `manifest.json`（即 `dist/plugin/manifest.json`）。
+
 #### 方式 A — Figma 组织市场（官方发布后）
 
 1. Figma 桌面 → 左上角汉堡菜单 → 资源 → 插件

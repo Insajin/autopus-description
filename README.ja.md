@@ -110,6 +110,8 @@ Success: ユーザーが商品を保持したままカートページへ遷移�
 2. **ローカルヘルパー（ワンクリック）** — [最新リリース](https://github.com/Insajin/autopus-description/releases/latest) から `autopus-description.mcpb` をダウンロードし、**Claude Desktop → 設定 → 拡張機能 → 拡張機能をインストール** してください。Node / npm / JSON の知識は不要です — NodeはClaude Desktopに同梱されています。
 3. **接続** — Figmaでプラグインを起動し、ヘルパーが表示するチャンネルシークレットを貼り付けて（Claudeに *「figmaのチャンネルシークレットは何？」* と聞いてください）、**接続** をクリックします。
 
+> ℹ️ **どのプラグインを探せばよいですか？** Figmaのプラグイン一覧では **Autopus Description** として表示されます — `@autopus/figma-mcp`（これはnpm / MCPサーバーであり、Figmaプラグインではありません）ではありません。**Cursor MCP Plugin** が表示される場合、またはマニフェストの `allowedDomains` に `google-analytics.com` が含まれている場合は、バンドルされたアップストリームの `vendor/` マニフェストを誤ってインポートしています — それを削除し、`dist/plugin/manifest.json` をインポートし直してください。
+
 📖 **完全ガイド:** [docs/guides/designer-figma-mcp-guide.ja.md](docs/guides/designer-figma-mcp-guide.ja.md)
 
 ## 📦 インストール（開発者向け）

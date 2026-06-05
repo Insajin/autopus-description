@@ -110,6 +110,8 @@ Success: 用户跳转至购物车且商品保持完整。
 2. **本地助手（一键安装）** — 从[最新版本](https://github.com/Insajin/autopus-description/releases/latest)下载 `autopus-description.mcpb`，然后 **Claude Desktop → 设置 → 扩展 → 安装扩展**。无需 Node / npm / JSON — Node 已随 Claude Desktop 一起提供。
 3. **连接** — 在 Figma 中运行插件，粘贴助手显示的频道密钥（问 Claude *"what's the figma channel secret?"*），然后点击**连接**。
 
+> ℹ️ **我要找的是哪个插件？** 在 Figma 插件列表中，它显示为 **Autopus Description** — *不是* `@autopus/figma-mcp`（那是 npm / MCP 服务器，不是 Figma 插件）。如果您看到的是 **Cursor MCP Plugin**，或者 manifest 的 `allowedDomains` 中出现了 `google-analytics.com`，说明您误导入了打包的上游 `vendor/` manifest — 请将其删除，然后导入 `dist/plugin/manifest.json`。
+
 📖 **完整操作指南：** [docs/guides/designer-figma-mcp-guide.zh-CN.md](docs/guides/designer-figma-mcp-guide.zh-CN.md)
 
 ## 📦 安装（开发者）

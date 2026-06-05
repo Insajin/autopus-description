@@ -49,6 +49,8 @@ Figma 右上のプロフィール → Settings → Security → Personal access 
 
 ### 1.3 Autopus Figma プラグインのインストール
 
+> ℹ️ **名前の確認:** Figma 上では、このプラグインは **Autopus Figma**（開発モード zip）または **Autopus Description**（Figma Community）として表示されます — `@autopus/figma-mcp`（これは npm / MCP サーバーの名前です）としては表示されません。**Cursor MCP Plugin** と表示される場合や、マニフェストの `allowedDomains` に `google-analytics.com` が含まれている場合は、誤って上流の `vendor/cursor-talk-to-figma-mcp/.../manifest.json` をインポートしています — 代わりに、解凍した **autopus-figma-designer** フォルダ内の `manifest.json`（または `dist/plugin/manifest.json`）をインポートしてください。
+
 #### Path A — Figma Organization マーケットプレイス（正式公開後）
 
 1. Figma デスクトップ → 左上ハンバーガーメニュー → Resources → Plugins

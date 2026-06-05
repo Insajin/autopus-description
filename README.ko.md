@@ -110,6 +110,8 @@ Success: 사용자가 담긴 항목이 유지된 장바구니로 이동한다.
 2. **로컬 헬퍼(원클릭)** — [최신 릴리스](https://github.com/Insajin/autopus-description/releases/latest)에서 `autopus-description.mcpb`를 받은 뒤 **Claude Desktop → Settings → Extensions → Install Extension**으로 설치합니다. Node / npm / JSON 편집이 전혀 필요 없습니다 — Node는 Claude Desktop에 내장돼 있습니다.
 3. **연결** — Figma에서 플러그인을 실행하고, 헬퍼가 출력하는 채널 시크릿(Claude에게 *"figma 채널 시크릿 알려줘"*라고 물어보세요)을 붙여넣은 뒤 **Connect**를 누릅니다.
 
+> ℹ️ **어떤 플러그인을 찾아야 하나요?** Figma 플러그인 목록에는 **Autopus Description**으로 표시됩니다 — `@autopus/figma-mcp`가 *아닙니다*(그건 npm / MCP 서버이지 Figma 플러그인이 아닙니다). 만약 **Cursor MCP Plugin**이 보이거나 manifest의 `allowedDomains`에 `google-analytics.com`이 있다면, 번들된 업스트림 `vendor/` manifest를 잘못 import한 것입니다 — 제거하고 `dist/plugin/manifest.json`을 import하세요.
+
 📖 **전체 가이드:** [docs/guides/designer-figma-mcp-guide.ko.md](docs/guides/designer-figma-mcp-guide.ko.md)
 
 ## 📦 설치 (개발자)

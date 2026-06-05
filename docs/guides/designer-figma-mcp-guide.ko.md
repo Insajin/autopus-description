@@ -49,6 +49,8 @@ Figma 우상단 프로필 → Settings → Security → Personal access tokens �
 
 ### 1.3 Autopus Figma 플러그인 설치
 
+> ℹ️ **이름 확인:** Figma에서 이 플러그인은 **Autopus Figma**(dev-mode zip) 또는 **Autopus Description**(Figma Community)으로 표시됩니다 — `@autopus/figma-mcp`로는 **표시되지 않습니다**(그건 npm / MCP 서버). 만약 **Cursor MCP Plugin**이 보이거나 manifest의 `allowedDomains`에 `google-analytics.com`이 있다면, 업스트림 `vendor/cursor-talk-to-figma-mcp/.../manifest.json`을 잘못 import한 것입니다 — 압축 푼 **autopus-figma-designer** 폴더의 `manifest.json`(또는 `dist/plugin/manifest.json`)을 import하세요.
+
 #### 경로 A — Figma Organization marketplace (정식 publish 후)
 
 1. Figma 데스크탑 → 좌상단 햄버거 → Resources → Plugins

@@ -49,6 +49,8 @@ Figma top-right profile → Settings → Security → Personal access tokens →
 
 ### 1.3 Install the Autopus Figma plugin
 
+> ℹ️ **Name check:** in Figma this plugin appears as **Autopus Figma** (dev-mode zip) or **Autopus Description** (Figma Community) — it will **not** appear as `@autopus/figma-mcp` (that's the npm / MCP server). If you see **Cursor MCP Plugin**, or `google-analytics.com` under the manifest's `allowedDomains`, you imported the upstream `vendor/cursor-talk-to-figma-mcp/.../manifest.json` by mistake — import the `manifest.json` from the unzipped **autopus-figma-designer** folder (or `dist/plugin/manifest.json`) instead.
+
 #### Path A — Figma Organization marketplace (after official publish)
 
 1. Figma desktop → top-left hamburger → Resources → Plugins
