@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/assets/hero-banner.png" alt="Autopus Description — AI 에이전트가 디자인을 읽고 설명을 작성합니다" width="100%" />
+
 # 🐙 @autopus/figma-mcp
 
 **Figma 프레임을 읽고, 감사 가능한 설명을 다시 써넣는다 — AI 클라이언트에서 바로.**

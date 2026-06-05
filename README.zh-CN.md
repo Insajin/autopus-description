@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/assets/hero-banner.png" alt="Autopus Description — 让你的 AI 智能体读懂设计并撰写说明" width="100%" />
+
 # 🐙 @autopus/figma-mcp
 
 **直接在 AI 客户端中读取 Figma 框架，生成可审计的设计说明。**

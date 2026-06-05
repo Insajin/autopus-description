@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/assets/hero-banner.png" alt="Autopus Description — let your AI agent read your design and write the descriptions" width="100%" />
+
 # 🐙 @autopus/figma-mcp
 
 **Read Figma frames, write auditable descriptions — straight from your AI client.**
@@ -107,6 +109,8 @@ Two pieces — a Figma plugin + a local helper (this package):
 1. **Figma plugin** — install **Autopus Description** from the Figma Community (Figma → Plugins → search), or import `dist/plugin/manifest.json` in dev-mode before it is approved.
 2. **Local helper (one-click)** — download `autopus-description.mcpb` from the [latest release](https://github.com/Insajin/autopus-description/releases/latest), then **Claude Desktop → Settings → Extensions → Install Extension**. No Node / npm / JSON — Node ships with Claude Desktop.
 3. **Connect** — run the plugin in Figma, paste the channel secret the helper prints (ask Claude *"what's the figma channel secret?"*), and click **Connect**.
+
+> ℹ️ **Which plugin am I looking for?** In Figma's plugin list it shows as **Autopus Description** — *not* `@autopus/figma-mcp` (that's the npm / MCP server, not a Figma plugin). If you instead see **Cursor MCP Plugin**, or `google-analytics.com` appears under the manifest's `allowedDomains`, you imported the bundled upstream `vendor/` manifest by mistake — remove it and import `dist/plugin/manifest.json`.
 
 📖 **Full walkthrough:** [docs/guides/designer-figma-mcp-guide.md](docs/guides/designer-figma-mcp-guide.md)
 
