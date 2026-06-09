@@ -11,6 +11,7 @@ import { randomBytes } from "node:crypto";
 export interface PluginCommand {
   op:
     | "set_annotation"
+    | "set_native_annotation"
     | "upsert_descriptions_page_node"
     | "post_comment"
     | "set_plugin_data"

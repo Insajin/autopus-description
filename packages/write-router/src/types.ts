@@ -7,7 +7,18 @@ export type WriteTarget =
   | "comment"
   | "plugin_data"
   | "frame_name"
-  | "none";
+  | "none"
+  | "native_annotation";
+
+// SPEC-FIGMA-018 OQ-2 — minimized snapshot of a Figma native annotation,
+// mirroring the fields the vendor `setAnnotation` runtime accepts/returns.
+// `prior: []` (see UndoDescriptor) means the node had no annotations.
+// @AX:NOTE [AUTO]: restore contract — an empty `prior: []` (UndoDescriptor.restore-annotation) means the node had NO annotations and undo is a structural no-op (S6); a non-empty array is written back verbatim (S7). Snapshot is minimized to restore-relevant fields only.
+export interface AnnotationSnapshot {
+  labelMarkdown: string;
+  categoryId?: string;
+  properties?: unknown[];
+}
 
 export type Persona = "pm" | "designer" | "dev" | "qa";
 
@@ -73,6 +84,7 @@ export type UndoDescriptor =
   | { type: "delete-comment"; comment_id: string }
   | { type: "clear-plugin-data"; node_id: string; key: string }
   | { type: "restore-frame-name"; node_id: string; original_name: string }
+  | { type: "restore-annotation"; node_id: string; prior: AnnotationSnapshot[] }
   | { type: "noop" };
 
 export type WriteStatus = "applied" | "skipped" | "rejected";
@@ -96,6 +108,9 @@ export interface AdapterApplyResult {
   undo_descriptor: UndoDescriptor;
   node_id?: string;
   fallback_used?: boolean;
+  // Observable idempotent-skip signal (SPEC-FIGMA-018 REQ-08): set to
+  // ERROR_CODES.IDEMPOTENT_SKIP when an apply produced no net change.
+  status_code?: ErrorCode;
 }
 
 export interface AdapterContext {

@@ -8,6 +8,7 @@ import type {
 } from "./types.js";
 import { ERROR_CODES, WriteRouterError } from "./types.js";
 import * as annotationCard from "./adapters/annotation-card.js";
+import * as nativeAnnotation from "./adapters/native-annotation.js";
 import * as comment from "./adapters/comment.js";
 import * as descriptionsPage from "./adapters/descriptions-page.js";
 import * as pluginData from "./adapters/plugin-data.js";
@@ -16,6 +17,7 @@ import * as noneAdapterMod from "./adapters/none.js";
 
 const TARGETS: WriteTarget[] = [
   "annotation_card",
+  "native_annotation",
   "descriptions_page",
   "comment",
   "plugin_data",
@@ -67,6 +69,11 @@ const defaultAdapters: Partial<Record<WriteTarget, Adapter>> = {
     annotationCard as { [k: string]: unknown },
     "applyAnnotationCard",
     "undoAnnotationCard",
+  ),
+  native_annotation: dynamicAdapter(
+    nativeAnnotation as { [k: string]: unknown },
+    "applyNativeAnnotation",
+    "undoNativeAnnotation",
   ),
   comment: dynamicAdapter(
     comment as { [k: string]: unknown },

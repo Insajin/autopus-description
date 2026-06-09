@@ -97,7 +97,19 @@ export default function FrameRow({
         </div>
         <div>
           <dt>write_target</dt>
-          <dd>{entry.write_target}</dd>
+          <dd>
+            {entry.write_target}
+            {entry.write_target === "native_annotation" ? (
+              // Native annotations are only visible in Figma Dev Mode (REQ-09, S11).
+              <span
+                className="native-annotation-hint"
+                data-native-hint=""
+                title="Native annotations are visible only in Figma Dev Mode"
+              >
+                Dev Mode only
+              </span>
+            ) : null}
+          </dd>
         </div>
       </dl>
 

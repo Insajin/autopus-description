@@ -26,6 +26,7 @@ The project reduces design-to-handoff documentation effort by converting Figma f
 - Generate descriptions with mock, Anthropic, or OpenAI providers.
 - Validate manifests against JSON Schema and deterministic fixtures.
 - Review, edit, apply, undo, and audit write operations in a PM dashboard.
+- Write descriptions as native Figma Dev-Mode annotations anchored to nodes, in addition to the free-floating annotation card.
 - Expose read/write MCP resources and tools over stdio and loopback HTTP/SSE.
 - Redact secrets and fence untrusted design text before prompts or wire output.
 

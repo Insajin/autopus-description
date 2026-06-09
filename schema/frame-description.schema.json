@@ -231,7 +231,7 @@
     },
     "write_target": {
       "type": "string",
-      "enum": ["annotation_card", "descriptions_page", "frame_name", "plugin_data", "none"],
+      "enum": ["annotation_card", "descriptions_page", "frame_name", "plugin_data", "native_annotation", "none"],
       "description": "Surface the description should be written back to. Operator metadata. [persona_tags: pm]"
     },
     "persona_tags": {

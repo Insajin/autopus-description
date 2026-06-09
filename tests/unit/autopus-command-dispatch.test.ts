@@ -199,3 +199,87 @@ describe("autopus plugin command dispatch — area handoff", () => {
     expect(doc.y).toBe(776);
   });
 });
+
+// SPEC-FIGMA-018 S10 — the new set_native_annotation dispatch case. These tests
+// target ONLY the new native dispatch branch (dispatchSetNativeAnnotation), not
+// the pre-existing card / inverse dispatch logic.
+describe("autopus plugin command dispatch — set_native_annotation (SPEC-018)", () => {
+  it("routes set_native_annotation to the native setAnnotation tool with redacted label", async () => {
+    const figma: FigmaPluginLike = {
+      setAnnotation: vi.fn(async () => ({ id: "anno-1" })),
+      createText: vi.fn(async () => ({ id: "text-1" })),
+    };
+
+    const result = await dispatchPluginCommand(figma, {
+      op: "set_native_annotation",
+      args: {
+        nodeId: "80:1",
+        labelMarkdown: "**검색**\n영역: 검색 바",
+        categoryId: "ready-for-dev",
+      },
+    });
+
+    expect(result).toEqual({ ok: true, node_ids: ["80:1"] });
+    expect(figma.setAnnotation).toHaveBeenCalledTimes(1);
+    expect(figma.setAnnotation).toHaveBeenCalledWith({
+      nodeId: "80:1",
+      labelMarkdown: "**검색**\n영역: 검색 바",
+      categoryId: "ready-for-dev",
+    });
+    // It must NOT draw a card.
+    expect(figma.createText).not.toHaveBeenCalled();
+  });
+
+  // Branch [196]: categoryId arg absent → categoryId forwarded as undefined,
+  // never reusing the card path.
+  it("forwards categoryId=undefined when the command omits a categoryId", async () => {
+    const figma: FigmaPluginLike = {
+      setAnnotation: vi.fn(async () => ({ id: "anno-2" })),
+    };
+
+    const result = await dispatchPluginCommand(figma, {
+      op: "set_native_annotation",
+      args: { nodeId: "81:1", labelMarkdown: "**결과**\n영역: 결과 리스트" },
+    });
+
+    expect(result).toEqual({ ok: true, node_ids: ["81:1"] });
+    const arg = (figma.setAnnotation as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(arg.nodeId).toBe("81:1");
+    expect(arg.categoryId).toBeUndefined();
+  });
+
+  // Branch [193]: the native tool is unavailable on the bridge → graceful no-op
+  // result, zero mutation.
+  it("returns a no-op result when the native setAnnotation tool is unavailable", async () => {
+    const figma: FigmaPluginLike = {
+      createText: vi.fn(async () => ({ id: "text-1" })),
+    };
+
+    const result = await dispatchPluginCommand(figma, {
+      op: "set_native_annotation",
+      args: { nodeId: "82:1", labelMarkdown: "**미연결**" },
+    });
+
+    expect(result).toEqual({ ok: true, node_ids: [] });
+    expect(figma.createText).not.toHaveBeenCalled();
+  });
+
+  // The labelMarkdown carried to the native tool passes through the dispatch
+  // redactor (autopusRedact) — a leaked secret must not reach the bridge.
+  it("redacts a leaked secret in labelMarkdown before forwarding to the native tool", async () => {
+    const figma: FigmaPluginLike = {
+      setAnnotation: vi.fn(async () => ({ id: "anno-3" })),
+    };
+
+    await dispatchPluginCommand(figma, {
+      op: "set_native_annotation",
+      args: {
+        nodeId: "83:1",
+        labelMarkdown: "token xoxb-LEAKEDSECRET trailing",
+      },
+    });
+
+    const arg = (figma.setAnnotation as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(arg.labelMarkdown).not.toContain("xoxb-LEAKEDSECRET");
+  });
+});

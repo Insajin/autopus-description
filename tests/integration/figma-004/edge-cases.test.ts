@@ -73,7 +73,7 @@ describe("edge: none adapter (REQ-04(f), broadcast-only path)", () => {
 });
 
 describe("edge: AdapterRegistry behavior", () => {
-  it("listAdapters returns all 6 known WriteTarget enum values", () => {
+  it("listAdapters returns all 7 known WriteTarget enum values", () => {
     const router = new WriteRouter({ auditLogPath: env.auditLogPath });
     const targets = router.listAdapters().sort();
     expect(targets).toEqual([
@@ -81,6 +81,7 @@ describe("edge: AdapterRegistry behavior", () => {
       "comment",
       "descriptions_page",
       "frame_name",
+      "native_annotation",
       "none",
       "plugin_data",
     ]);
@@ -94,7 +95,8 @@ describe("edge: AdapterRegistry behavior", () => {
     expect(reg.has("comment")).toBe(true);
     expect(reg.has("plugin_data")).toBe(true);
     expect(reg.has("frame_name")).toBe(true);
-    expect(reg.size()).toBe(6);
+    expect(reg.has("native_annotation")).toBe(true);
+    expect(reg.size()).toBe(7);
   });
 
   it("router throws WRITE_TARGET_ROUTING_ERROR on unknown write_target enum value", async () => {

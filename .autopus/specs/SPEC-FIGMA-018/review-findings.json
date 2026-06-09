@@ -1,0 +1,38 @@
+[
+  {
+    "Provider": "codex",
+    "Severity": "major",
+    "Description": "SPEC은 `restore-annotation` undo descriptor에 기존 `node.annotations` 전체 prior snapshot을 저장하도록 요구한다. 이 값은 Figma에서 읽어오는 외부/사용자 작성 콘텐츠이며 토큰이나 민감한 reviewer note를 포함할 수 있다. 현재 daemon은 completed write의 `undo_descriptor`를 `autopus://applied_writes` resource에 노출하므로, SPEC이 Q-SEC-03을 N/A로 처리한 것은 부정확하다.",
+    "ID": "F-001",
+    "Status": "resolved",
+    "Category": "security",
+    "ScopeRef": "F1 / REQ-06 / Q-SEC-01,Q-SEC-02,Q-SEC-03",
+    "FirstSeenRev": 0,
+    "LastSeenRev": 0,
+    "EscapeHatch": false
+  },
+  {
+    "Provider": "claude",
+    "Severity": "major",
+    "Description": "The `restore-annotation` undo descriptor captures full prior node.annotations (external Figma content, incl. S7 manual reviewer notes and possibly xoxb-/bearer/path secrets) and is recorded in AppliedWrite and served by the `autopus://applied_writes` resource. The resource-read serialization passes only through the frozen figd_-only redact() at mcp-stdio-handlers.ts:180, not redactExtended/redactWire, so non-figd secrets and arbitrary reviewer content in the captured `prior` leak. REQ-05 redaction covers only the outbound apply wire, not this retained/exposed artifact path.",
+    "ID": "F-002",
+    "Status": "resolved",
+    "Category": "security",
+    "ScopeRef": "REQ-06 / OQ-2 / Q-SEC-02,Q-SEC-03",
+    "FirstSeenRev": 1,
+    "LastSeenRev": 0,
+    "EscapeHatch": true
+  },
+  {
+    "Provider": "codex",
+    "Severity": "major",
+    "Description": "`restore-annotation` undo descriptor가 외부/사용자 작성 `node.annotations` prior snapshot을 그대로 보관하도록 요구하지만, 이 값이 completed write resource에 노출될 때의 redaction, minimization, retention, access boundary가 정의되지 않았다. 민감한 reviewer note나 토큰이 undo metadata로 유출될 수 있다.",
+    "ID": "F-003",
+    "Status": "resolved",
+    "Category": "security",
+    "ScopeRef": "F-001",
+    "FirstSeenRev": 1,
+    "LastSeenRev": 0,
+    "EscapeHatch": true
+  }
+]

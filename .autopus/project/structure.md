@@ -30,7 +30,7 @@
 
 `src/daemon/` contains daemon CLI state, bridge logic, MCP resources, stdio handlers, HTTP/SSE server, pending writes, undo/apply/dry-run tools, tunnel adapters, telemetry, and audit writers.
 
-`packages/write-router/src/` owns write targets: `annotation_card`, `descriptions_page`, `comment`, `plugin_data`, `frame_name`, and `none`.
+`packages/write-router/src/` owns write targets: `annotation_card`, `native_annotation`, `descriptions_page`, `comment`, `plugin_data`, `frame_name`, and `none`. The `native_annotation` target (SPEC-FIGMA-018) delivers descriptions through Figma's native Dev-Mode annotation primitive via `native-label.ts`, `area-node-resolver.ts`, `adapters/native-annotation.ts`, and `plan-emit/native-annotation-plan.ts`.
 
 `apps/review-ui/src/` uses Next.js App Router. Server routes load manifests and dispatch apply/undo/feedback actions; client components render dashboard rows, editors, stale badges, personas, and token strips.
 

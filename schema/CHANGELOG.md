@@ -5,6 +5,17 @@ Changes to `schema/frame-description.schema.json` and
 SPEC-FIGMA-001 REQ-08 / REQ-NFR-02. Minor versions are additive only —
 no field removal, rename, or type narrowing.
 
+## v0.3.0 — 2026-06-09
+
+### Added (additive minor per REQ-NFR-02)
+
+- `frame-description.write_target` enum gains `native_annotation` — routes the description to Figma native Dev-Mode annotations attached to resolved area/frame nodes, distinct from the existing `annotation_card` surface. Per SPEC-FIGMA-018 REQ-01. Existing enum members are unchanged and unreordered.
+
+### Compatibility
+
+- All v0.1.0 and v0.2.0 manifests remain valid against v0.3.0 (the enum is widened, never narrowed; no existing value is removed).
+- Producers SHOULD set `schema_version: "0.3.0"` on every emitted manifest from this release forward.
+
 ## v0.2.0 — 2026-05-06
 
 ### Added (additive minor per REQ-NFR-02)

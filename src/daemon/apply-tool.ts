@@ -23,6 +23,11 @@ import {
   appendAuditSuccess,
 } from "./write-audit.js";
 import type { UndoDescriptor } from "../../packages/write-router/src/types.js";
+import { redactAndMinimizePrior } from "./redact-prior-annotation.js";
+
+// SPEC-FIGMA-018 REQ-14 — re-export so the daemon test (and any caller) can
+// import the capture-time redaction helper from `apply-tool.js`.
+export { redactAndMinimizePrior };
 
 export interface PluginBridgeLike {
   dispatchCommand(
@@ -100,6 +105,14 @@ function hydrateUndoDescriptor(
       return { ...template };
     case "restore-frame-name":
       return { ...template };
+    case "restore-annotation":
+      // SPEC-FIGMA-018 — node_id hydrated from the plugin result; the captured
+      // prior snapshot array is carried through unchanged.
+      return {
+        type: "restore-annotation",
+        node_id: nodeIds[0] ?? template.node_id,
+        prior: template.prior,
+      };
     case "noop":
       return { type: "noop" };
   }
@@ -204,7 +217,17 @@ export async function applyApprovedWrite(
   // 5. Success path. Record idempotency + undo + audit + applied_writes.
   const write_id = nextWriteId();
   deps.idempotency.record(pending.manifest_entry_hash);
-  const descriptor = hydrateUndoDescriptor(pending.undo_template, collectedNodeIds);
+  const hydrated = hydrateUndoDescriptor(pending.undo_template, collectedNodeIds);
+  // SPEC-FIGMA-018 REQ-14 (INV-011): the captured prior `node.annotations` is
+  // untrusted input. Redact + minimize it BEFORE it is persisted in AppliedWrite
+  // or served via autopus://applied_writes (the read-path redactor only catches
+  // figd_). Undo consequently restores the redacted minimized prior state.
+  // @AX:WARN [AUTO]: security wiring — this branch MUST run before recordApplied/register/applied_writes (REQ-14, INV-011).
+  // @AX:REASON: restore-annotation is the only descriptor carrying untrusted captured prior annotations. Moving redactAndMinimizePrior after deps.resources.recordApplied or deps.undoRegistry.register would persist/serve the raw secret. `descriptor` (not `hydrated`) is intentionally reused for both undo registration and the AppliedWrite payload.
+  const descriptor: UndoDescriptor =
+    hydrated.type === "restore-annotation"
+      ? redactAndMinimizePrior(hydrated)
+      : hydrated;
   deps.undoRegistry.register({
     write_id,
     frame_id: pending.frame_id,

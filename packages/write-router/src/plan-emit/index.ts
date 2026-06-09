@@ -15,6 +15,7 @@ import {
   type PluginCommand,
 } from "./types.js";
 import { planAnnotationCard } from "./annotation-card-plan.js";
+import { planNativeAnnotation } from "./native-annotation-plan.js";
 import { planDescriptionsPage } from "./descriptions-page-plan.js";
 import { planComment } from "./comment-plan.js";
 import { planPluginData } from "./plugin-data-plan.js";
@@ -24,6 +25,7 @@ import { planNone } from "./none-plan.js";
 // @AX:ANCHOR [AUTO] plan-emit dispatch table — every WriteTarget MUST have a UNDO_TEMPLATE entry; missing keys break AC-S1 7-key oracle and downstream daemon hydration in apply-tool.ts::hydrateUndoDescriptor. Reason: contract surface shared with WriteRouter.apply, dryRunWrite, applyApprovedWrite, undo-tool, and 6+ test sites.
 const UNDO_TEMPLATE: Readonly<Record<WriteTarget, UndoDescriptor>> = {
   annotation_card: { type: "delete-node", node_id: "" },
+  native_annotation: { type: "restore-annotation", node_id: "", prior: [] },
   descriptions_page: { type: "delete-node", node_id: "" },
   comment: { type: "delete-comment", comment_id: "" },
   plugin_data: { type: "clear-plugin-data", node_id: "", key: "" },
@@ -38,6 +40,8 @@ function dispatchPlan(
   switch (entry.write_target) {
     case "annotation_card":
       return planAnnotationCard(entry);
+    case "native_annotation":
+      return planNativeAnnotation(entry, ctx);
     case "descriptions_page":
       return planDescriptionsPage(entry);
     case "comment":

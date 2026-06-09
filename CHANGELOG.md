@@ -2,6 +2,38 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.11] — 2026-06-09
+
+### Added — native Figma Dev-Mode annotation write target (SPEC-FIGMA-018)
+A new additive `native_annotation` write target delivers frame and area
+descriptions as Figma native Dev-Mode annotations anchored to nodes, alongside
+the existing free-floating `annotation_card`. A developer reads the description
+on the node in Dev Mode instead of locating a floating card on the canvas.
+- `packages/write-router`: `native-label.ts` (concise per-area/frame label
+  composer), `area-node-resolver.ts` (`target_area`/`placement_hint` → node id
+  with confidence and frame fallback), `adapters/native-annotation.ts`
+  (`applyNativeAnnotation` + `undoNativeAnnotation`),
+  `plan-emit/native-annotation-plan.ts` (single-step `set_native_annotation` op).
+- Schema: `frame-description.write_target` enum gains `native_annotation`
+  (schema v0.3.0, additive — no value removed or reordered).
+- Review UI: `FrameRow` shows a Dev-Mode-only-visibility hint when the target is
+  `native_annotation`.
+- Idempotency: re-applying identical native annotation content to the same nodes
+  produces no net change to annotation state.
+
+### Security
+- The captured prior `node.annotations` snapshot stored in `restore-annotation`
+  undo descriptors is minimized and passed through the full daemon redactor
+  (`redactExtendedObject`, catching `figd_`/`xoxb-`/bearer/absolute-path) before
+  it is persisted in `AppliedWrite` or served via `autopus://applied_writes`
+  (REQ-14). Previously only the `figd_`-specific redactor guarded that retained
+  artifact. The existing `annotation_card` AC-S8 rollback path is unchanged.
+
+### Vendor
+- `autopus_command_dispatch.ts`: maps the new `set_native_annotation` op to the
+  vendor `set_annotation` tool and redacts `labelMarkdown` before forwarding.
+  The card-drawing autopus `set_annotation` op path is left intact.
+
 ## [0.3.10] — 2026-06-04
 
 ### Added — one-click Claude Desktop extension (.mcpb)

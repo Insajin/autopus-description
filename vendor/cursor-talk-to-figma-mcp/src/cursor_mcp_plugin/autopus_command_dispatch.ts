@@ -59,6 +59,11 @@ export interface FigmaPluginLike {
     documentPosition?: string;
     visualPolicy?: Record<string, unknown>;
   }): { id: string; node_ids?: string[] } | Promise<{ id: string; node_ids?: string[] }>;
+  setAnnotation?(args: {
+    nodeId: string;
+    labelMarkdown: string;
+    categoryId?: string;
+  }): { id?: string } | void | Promise<{ id?: string } | void>;
   setPluginData?(args: { nodeId: string; key: string; value: string }): void | Promise<void>;
   setFrameName?(args: { nodeId: string; name: string }): void | Promise<void>;
   postComment?(args: { fileKey: string; frameId: string; text: string }): { commentId: string } | Promise<{ commentId: string }>;
@@ -74,6 +79,10 @@ export interface FigmaPluginLike {
 // `## Tool Mapping Changes` table — see REQ-17 runbook.
 export const TOOL_NAME_MAP: Readonly<Record<string, string>> = {
   set_annotation: "set_annotation",
+  // SPEC-FIGMA-018 S10 — autopus op set_native_annotation routes to the vendor
+  // NATIVE tool set_annotation (the real Dev-Mode annotation API), never the
+  // card path. The op name stays lexically distinct from autopus set_annotation.
+  set_native_annotation: "set_annotation",
   upsert_descriptions_page_node: "upsert_descriptions_page_node",
   post_comment: "post_comment",
   set_plugin_data: "set_plugin_data",
@@ -174,6 +183,23 @@ async function dispatchSetAnnotation(
   return { ok: true, node_ids: [node.id] };
 }
 
+// SPEC-FIGMA-018 S10 — autopus op set_native_annotation. Redacts the composed
+// labelMarkdown (REQ-05 boundary) and forwards to the vendor NATIVE setAnnotation
+// tool. This is the Dev-Mode annotation primitive, NOT the card path.
+async function dispatchSetNativeAnnotation(
+  figma: FigmaPluginLike,
+  args: Record<string, unknown>,
+): Promise<CommandResult> {
+  if (!figma.setAnnotation) return { ok: true, node_ids: [] };
+  const labelMarkdown = autopusRedact(asString(args.labelMarkdown));
+  const nodeId = asString(args.nodeId);
+  const categoryId = asString(args.categoryId) || undefined;
+  await Promise.resolve(
+    figma.setAnnotation({ nodeId, labelMarkdown, categoryId }),
+  );
+  return { ok: true, node_ids: [nodeId] };
+}
+
 async function dispatchUpsertDescriptionsPage(
   figma: FigmaPluginLike,
   args: Record<string, unknown>,
@@ -262,6 +288,8 @@ export async function dispatchPluginCommand(
     switch (cmd.op) {
       case "set_annotation":
         return await dispatchSetAnnotation(figma, safeArgs);
+      case "set_native_annotation":
+        return await dispatchSetNativeAnnotation(figma, safeArgs);
       case "upsert_descriptions_page_node":
         return await dispatchUpsertDescriptionsPage(figma, safeArgs);
       case "post_comment":

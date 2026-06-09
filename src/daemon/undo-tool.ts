@@ -72,6 +72,11 @@ function bridgeInverseCommand(d: UndoDescriptor): {
         op: "restore_frame_name",
         args: { node_id: d.node_id, original_name: d.original_name },
       };
+    case "restore-annotation":
+      // SPEC-FIGMA-018 — native annotation restore is driven through the
+      // write-router adapter's undoNativeAnnotation (re-applies the prior
+      // snapshot), not the extended inverse-op bridge surface used here.
+      return { op: "noop", args: {} };
     case "noop":
       return { op: "noop", args: {} };
   }
