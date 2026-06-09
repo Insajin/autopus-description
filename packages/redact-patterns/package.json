@@ -1,0 +1,22 @@
+{
+  "name": "@autopus/redact-patterns",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "SPEC-FIGMA-019 single source of truth for redact pattern strings (figd_/xoxb-/Bearer/absolute-path) shared across the daemon, write-router, and plugin redact ports.",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./index": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3"
+  }
+}

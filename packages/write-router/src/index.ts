@@ -6,6 +6,7 @@ import {
   type Adapter,
   type AdapterApplyResult,
   type ManifestEntry,
+  type UndoDescriptor,
   type WriteResult,
   type WriteTarget,
 } from "./types.js";
@@ -22,7 +23,7 @@ import {
   appendAuditFallback,
   FALLBACK_LITERAL,
 } from "./audit-log.js";
-import { redactTokens } from "./redactor.js";
+import { redactErrorMessage } from "./redact-error.js";
 import {
   classifyMcpError,
   type McpErrorClass,
@@ -43,6 +44,10 @@ export interface WriteRouterOptions {
   slackToken?: string;
   valid?: boolean;
   pmIdentity?: string;
+  // SPEC-FIGMA-019 — optional capture-time scrub of the restore-annotation
+  // prior. When omitted the seam is identity (REQ-06): existing callers, and
+  // consumers like the daemon that redact at their own boundary, are unaffected.
+  redactRestoreDescriptor?: (d: UndoDescriptor) => UndoDescriptor;
 }
 
 let writeIdCounter = 0;
@@ -61,6 +66,7 @@ export class WriteRouter {
   private readonly figma: unknown;
   private readonly valid: boolean;
   private readonly pmIdentity: string;
+  private readonly redactRestoreDescriptor: (d: UndoDescriptor) => UndoDescriptor;
   private readonly idempotency = new IdempotencyTracker();
   private readonly undoRegistry = new UndoRegistry();
   private readonly entryStatus = new Map<string, "pending" | "applied">();
@@ -71,6 +77,8 @@ export class WriteRouter {
     this.figma = options.figma;
     this.valid = options.valid ?? true;
     this.pmIdentity = options.pmIdentity ?? "unknown";
+    // Identity by default (REQ-06) — only the injected redactor scrubs.
+    this.redactRestoreDescriptor = options.redactRestoreDescriptor ?? ((d) => d);
   }
 
   async apply(entry: ManifestEntry): Promise<WriteResult>;
@@ -131,11 +139,14 @@ export class WriteRouter {
 
     const write_id = nextWriteId();
     this.idempotency.record(hash);
+    // @AX:ANCHOR: [AUTO] capture-redaction seam (S1) — scrub the prior ONCE, reuse the single value for both registry.register and the return; consumed at 4 sites across this file (here + return + fallback register/return).
+    // @AX:REASON: S1 "registered equals returned" breaks if either path scrubs independently or uses the raw descriptor; this is the cross-cutting contract every undo consumer relies on.
+    const undoDescriptor = this.redactRestoreDescriptor(applied.undo_descriptor);
     this.undoRegistry.register({
       write_id,
       target: entry.write_target,
       entry,
-      descriptor: applied.undo_descriptor,
+      descriptor: undoDescriptor,
       timestamp_iso: nowIso(),
       fallback_used: applied.fallback_used ?? fallbackClass !== null,
     });
@@ -155,7 +166,7 @@ export class WriteRouter {
     return {
       status: "applied",
       write_id,
-      undo_descriptor: applied.undo_descriptor,
+      undo_descriptor: undoDescriptor,
       fallback_used: applied.fallback_used ?? false,
       node_id: applied.node_id,
     };
@@ -202,12 +213,16 @@ export class WriteRouter {
     });
     const write_id = nextWriteId();
     this.idempotency.record(hash);
-    if (result.undo_descriptor) {
+    // @AX:NOTE: [AUTO] fallback path mirrors the main-path scrub (S1) — the plugin-bridge undo_descriptor MUST pass through the same seam or it bypasses redaction.
+    const undoDescriptor = result.undo_descriptor
+      ? this.redactRestoreDescriptor(result.undo_descriptor)
+      : undefined;
+    if (undoDescriptor) {
       this.undoRegistry.register({
         write_id,
         target: entry.write_target,
         entry,
-        descriptor: result.undo_descriptor,
+        descriptor: undoDescriptor,
         timestamp_iso: nowIso(),
         fallback_used: true,
       });
@@ -228,7 +243,7 @@ export class WriteRouter {
     return {
       status: "applied",
       write_id,
-      undo_descriptor: result.undo_descriptor,
+      undo_descriptor: undoDescriptor,
       fallback_used: true,
       node_id: result.node_id,
     };
@@ -277,19 +292,6 @@ export class WriteRouter {
       (KNOWN_TARGETS as readonly string[]).includes(target)
     );
   }
-}
-
-function redactErrorMessage(err: unknown): unknown {
-  if (err instanceof WriteRouterError) {
-    // Mutate in place so instanceof + code are preserved.
-    err.message = redactTokens(err.message);
-    return err;
-  }
-  if (err instanceof Error) {
-    err.message = redactTokens(err.message);
-    return err;
-  }
-  return new Error(redactTokens(String(err)));
 }
 
 export { AdapterRegistry } from "./registry.js";

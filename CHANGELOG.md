@@ -2,6 +2,39 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.12] — 2026-06-09
+
+### Security — redact the captured prior annotation on the WriteRouter / Review-UI HTTP apply path (SPEC-FIGMA-019)
+SPEC-FIGMA-018 closed the captured-prior redaction gap only on the daemon
+`autopus://applied_writes` path. This release closes the second path: the
+`WriteRouter.apply` executor path used by the Review UI HTTP `/api/apply` route
+previously registered and returned the untrusted captured prior `node.annotations`
+through a redactor that caught only `figd_`/`xoxb-`, leaking `bearer`/absolute-path
+secrets if the path became reachable.
+- New `@autopus/redact-patterns` workspace package single-sources the four redact
+  pattern strings (`figd_`/`xoxb-`/bearer/absolute-path). `src/redact-patterns.ts`
+  is now a byte-equal re-export shim, so the 7 existing importers and the
+  SPEC-FIGMA-007 AC-S14 parity invariant are preserved (parity is now structural
+  single-sourcing, not inline-literal text matching).
+- `packages/write-router/src/redactor.ts` gains `redactExtendedTokens` /
+  `redactExtendedObject` (full four-class surface, `***` placeholder), reconstructed
+  from the shared sources. Legacy `redactTokens`/`redact` (`figd_`/`xoxb-` →
+  `<REDACTED>`) are preserved unchanged.
+- New `redact-restore-descriptor.ts` minimizes the captured prior to
+  `{labelMarkdown, categoryId?, properties?}` and scrubs each field; an optional
+  `redactRestoreDescriptor` seam on `WriteRouter.apply` applies it BEFORE undo-registry
+  registration and before the HTTP `undo_descriptor` return (and on the plugin-bridge
+  fallback path). The daemon keeps its own `redactAndMinimizePrior` and is unaffected.
+- The Review UI `/api/apply` route injects the full-surface redactor into its
+  process-scoped `WriteRouter`. Layering preserved: `write-router` imports only
+  `@autopus/redact-patterns`; `review-ui` imports only `@autopus/write-router`.
+
+### Tests
+- `redactor-extended.test.ts` (four-class redactor + legacy non-regression),
+  `router-prior-redaction.test.ts` (router/HTTP capture-time redaction oracle incl.
+  plugin-bridge fallback path). AC-S14 parity oracles upgraded to assert shared
+  single-sourcing. SPEC-FIGMA-018 daemon S13 and AC-S8 card path remain unchanged.
+
 ## [0.3.11] — 2026-06-09
 
 ### Added — native Figma Dev-Mode annotation write target (SPEC-FIGMA-018)

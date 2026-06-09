@@ -73,12 +73,24 @@ Tools:
 ```text
 @autopus/figma-read
   apps/review-ui        -> @autopus/write-router
-  packages/write-router -> no internal package dependency
+  packages/write-router -> @autopus/redact-patterns
   packages/escalation   -> no internal package dependency
+  packages/redact-patterns -> no internal package dependency (leaf: shared redact pattern sources)
   tools/validate-manifest -> validator workspace used by build and tests
 ```
 
 The root TypeScript project excludes `apps/**`, `packages/**`, `tools/**`, and `vendor/**`; those surfaces have their own TypeScript configs or build commands. The root build runs the validator workspace build before compiling root sources.
+
+`packages/redact-patterns` is the single source of truth for the four redact
+pattern classes (`figd_`/`xoxb-`/bearer/absolute-path). Both the daemon redactor
+(`src/daemon/redact-extended.ts`, via the `src/redact-patterns.ts` re-export shim)
+and the write-router redactor (`packages/write-router/src/redactor.ts`) reconstruct
+their regexes from it, preserving the SPEC-FIGMA-007 AC-S14 byte-equal parity
+invariant by single-sourcing rather than duplicating literals. The captured prior
+`node.annotations` snapshot is redacted on two independent retained-artifact paths:
+the daemon `autopus://applied_writes` path (SPEC-FIGMA-018, `redactAndMinimizePrior`)
+and the WriteRouter / Review-UI HTTP `/api/apply` path (SPEC-FIGMA-019,
+`redactRestoreDescriptor` injection seam).
 
 ## Entry Points
 

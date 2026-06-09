@@ -69,6 +69,37 @@ describe("AC-S14: redact regex parity across daemon / write-router / plugin reda
     expect(body).not.toMatch(/\[Bb\]earer/);
   });
 
+  it("write-router redactor.ts single-sources the four pattern classes from @autopus/redact-patterns (SPEC-FIGMA-019, no inline literal)", () => {
+    const writeRouterRedactPath = resolve(
+      process.cwd(),
+      "packages/write-router/src/redactor.ts",
+    );
+    if (!existsSync(writeRouterRedactPath)) {
+      throw new Error("packages/write-router/src/redactor.ts not present");
+    }
+    const text = readFileSync(writeRouterRedactPath, "utf8");
+
+    // It MUST import the four shared pattern sources (structural single source).
+    expect(text).toMatch(/from\s+["']@autopus\/redact-patterns["']/);
+    expect(text).toMatch(/FIGD_PATTERN_SOURCE/);
+    expect(text).toMatch(/XOXB_PATTERN_SOURCE/);
+    expect(text).toMatch(/BEARER_PATTERN_SOURCE/);
+    expect(text).toMatch(/ABSOLUTE_PATH_PATTERNS_SOURCE/);
+
+    // Body (non-import) MUST NOT carry inline figd_/xoxb-/bearer regex sources.
+    const body = text
+      .split("\n")
+      .filter(
+        (l) =>
+          !/^\s*import\b/.test(l) &&
+          !/from\s+["']@autopus\/redact-patterns["']/.test(l),
+      )
+      .join("\n");
+    expect(body).not.toMatch(/figd_\[/);
+    expect(body).not.toMatch(/xoxb-\[/);
+    expect(body).not.toMatch(/\[Bb\]earer/);
+  });
+
   it("ABSOLUTE_PATH_PATTERNS_SOURCE is element-wise byte-equal across daemon and plugin ports", async () => {
     const dmod = await import("../../../src/daemon/redact-extended.js").catch(
       () => null,

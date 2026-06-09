@@ -6,6 +6,7 @@
 // for the dashboard's "Apply" button to round-trip.
 
 import { WriteRouter, type ManifestEntry } from "@autopus/write-router";
+import { redactRestoreDescriptor } from "@autopus/write-router/redact-restore-descriptor";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,11 @@ function getRouter(): WriteRouter {
     router = new WriteRouter({
       auditLogPath: process.env.AUDIT_LOG_PATH,
       pmIdentity: process.env.PM_IDENTITY,
+      // @AX:NOTE: [AUTO] injecting this redactor is what activates the capture-time scrub on the HTTP path (REQ-05); without it the WriteRouter seam defaults to identity and the prior reaches the response unredacted.
+      // SPEC-FIGMA-019 — scrub any captured restore-annotation prior before it
+      // reaches the HTTP undo_descriptor response body (REQ-05). Imported via
+      // the package subpath so review-ui never touches the daemon `src/` tree.
+      redactRestoreDescriptor,
     });
   }
   return router;

@@ -10,6 +10,8 @@
     "./types": "./src/types.ts",
     "./redactor": "./src/redactor.ts",
     "./redactor.js": "./src/redactor.ts",
+    "./redact-restore-descriptor": "./src/redact-restore-descriptor.ts",
+    "./redact-restore-descriptor.js": "./src/redact-restore-descriptor.ts",
     "./idempotency": "./src/idempotency.ts",
     "./audit-log": "./src/audit-log.ts"
   },
@@ -18,6 +20,9 @@
   },
   "engines": {
     "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "@autopus/redact-patterns": "*"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

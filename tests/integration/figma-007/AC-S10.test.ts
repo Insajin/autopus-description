@@ -136,10 +136,19 @@ describe("AC-S10: Web /api/apply /api/undo executor mode byte-equal regression",
     expect(existsSync(undoRoute)).toBe(true);
   });
 
-  it("git diff against origin/main on /api/apply and /api/undo route.ts is empty (when origin/main is reachable)", () => {
+  it("git diff against origin/main on /api/undo route.ts is empty (when origin/main is reachable)", () => {
     // Best-effort: in CI / environments without origin/main remote,
     // skip rather than fail. The hard NFR-04 enforcement happens via
     // the project's git pre-merge gate (Gate 2 validation).
+    //
+    // SPEC-FIGMA-019 supersedes the byte-freeze on apply/route.ts: T6/REQ-05
+    // injects the full-surface `redactRestoreDescriptor` into the route's
+    // WriteRouter construction so the HTTP `undo_descriptor` response can never
+    // carry an unredacted captured-prior secret. That change is intentional and
+    // BEHAVIOR-PRESERVING — the executor-mode 5-key WriteResult shape, the
+    // delete-node undo_descriptor, and the IDEMPOTENT_SKIP audit shape are all
+    // still asserted byte-equal by the tests above. The file-level freeze now
+    // applies only to undo/route.ts, which SPEC-FIGMA-019 does not touch.
     const probe = spawnSync("git", ["rev-parse", "origin/main"], {
       encoding: "utf8",
     });
@@ -151,7 +160,6 @@ describe("AC-S10: Web /api/apply /api/undo executor mode byte-equal regression",
         "diff",
         "origin/main",
         "--",
-        "apps/review-ui/src/app/api/apply/route.ts",
         "apps/review-ui/src/app/api/undo/route.ts",
       ],
       { encoding: "utf8" },

@@ -1,9 +1,13 @@
-// SPEC-FIGMA-007 T21, REQ-21, AC-S14 — redact regex parity oracle.
-// Asserts the single source of truth `src/redact-patterns.ts` does not drift
-// from the frozen pattern literals embedded in:
-//   - src/token-redactor.ts        (frozen by NFR-04, figd_ only)
-//   - packages/write-router/src/redactor.ts (frozen by NFR-04, figd_ + xoxb-)
-// Drift in either frozen file fails this test with a clear file-named message.
+// SPEC-FIGMA-007 T21, REQ-21, AC-S14 + SPEC-FIGMA-019 REQ-09 — redact regex
+// parity oracle.
+//
+// `src/redact-patterns.ts` re-exports the shared `@autopus/redact-patterns`
+// single source of truth. This oracle asserts that source does not drift from:
+//   - src/token-redactor.ts (frozen by NFR-04, figd_ only — still inline literal)
+//   - packages/write-router/src/redactor.ts (SPEC-FIGMA-019: now STRUCTURALLY
+//     single-sources its four pattern strings from @autopus/redact-patterns
+//     instead of carrying an inline figd_/xoxb- regex literal that could drift).
+// Drift fails this test with a clear file-named message.
 
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
@@ -59,31 +63,43 @@ describe("Frozen file pattern parity (NFR-04 drift detection, AC-S14)", () => {
     expect(TOKEN_PATTERN.source).toBe(FIGD_PATTERN_SOURCE);
   });
 
-  it("packages/write-router/src/redactor.ts inline regex source byte-equals (FIGD|XOXB) shared sources", () => {
+  it("packages/write-router/src/redactor.ts single-sources its pattern strings from @autopus/redact-patterns (no inline figd_/xoxb- regex literal)", () => {
     const src = readSource("packages/write-router/src/redactor.ts");
-    // Match the first RegExp literal: `/(figd_...|xoxb-...)/g`
-    const m = src.match(/\/\(figd_\[[^]+?\]\{[^}]+?\}\|xoxb-\[[^]+?\]\{[^}]+?\}\)\/g/);
-    if (!m) {
+
+    // SPEC-FIGMA-019: parity is now STRUCTURAL — the redactor MUST import the
+    // four pattern source strings from the shared package rather than embed an
+    // inline literal that can silently drift. Capture the whole (possibly
+    // multi-line) import statement that pulls from @autopus/redact-patterns.
+    const importMatch = src.match(
+      /import\s*\{([^}]*)\}\s*from\s*["']@autopus\/redact-patterns["']/,
+    );
+    if (!importMatch) {
       throw new Error(
-        "redact pattern drift: packages/write-router/src/redactor.ts no longer contains the expected combined figd_/xoxb- regex literal — update the parity test or revert the frozen file",
+        "redact pattern drift: packages/write-router/src/redactor.ts no longer imports its pattern sources from @autopus/redact-patterns — it must single-source, not inline",
       );
     }
-    const literal = m[0];
-    // Inner alternation parts. Reconstruct the two source strings.
-    const inner = literal.slice(2, -3); // strip `/(` ... `)/g`
-    const [figdPart, xoxbPart] = inner.split("|");
-    if (figdPart !== FIGD_PATTERN_SOURCE) {
-      throw new Error(
-        `redact pattern drift: packages/write-router/src/redactor.ts FIGD pattern diverges from src/redact-patterns.ts — got ${figdPart} vs ${FIGD_PATTERN_SOURCE}`,
-      );
-    }
-    if (xoxbPart !== XOXB_PATTERN_SOURCE) {
-      throw new Error(
-        `redact pattern drift: packages/write-router/src/redactor.ts XOXB pattern diverges from src/redact-patterns.ts — got ${xoxbPart} vs ${XOXB_PATTERN_SOURCE}`,
-      );
-    }
-    expect(figdPart).toBe(FIGD_PATTERN_SOURCE);
-    expect(xoxbPart).toBe(XOXB_PATTERN_SOURCE);
+    const importedNames = importMatch[1];
+    expect(importedNames).toMatch(/FIGD_PATTERN_SOURCE/);
+    expect(importedNames).toMatch(/XOXB_PATTERN_SOURCE/);
+    expect(importedNames).toMatch(/BEARER_PATTERN_SOURCE/);
+    expect(importedNames).toMatch(/ABSOLUTE_PATH_PATTERNS_SOURCE/);
+
+    // Outside that import, the file MUST NOT carry an inline figd_/xoxb-/Bearer
+    // regex source — that drift surface is exactly what relocation removed.
+    const body = src.replace(importMatch[0], "");
+    expect(body).not.toMatch(/figd_\[/);
+    expect(body).not.toMatch(/xoxb-\[/);
+    expect(body).not.toMatch(/\[Bb\]earer/);
+  });
+
+  it("write-router redactor and the shared source single-source the same four pattern classes", () => {
+    // Functional confirmation that the redactor reconstructs RegExps from the
+    // shared constants (figd_/xoxb-/Bearer/absolute-path), proving single
+    // sourcing produces equivalent behavior rather than a divergent copy.
+    expect(new RegExp(FIGD_PATTERN_SOURCE).test("figd_TESTTOKEN1234567890ABCDEF")).toBe(true);
+    expect(new RegExp(XOXB_PATTERN_SOURCE).test("xoxb-1234567890123456")).toBe(true);
+    expect(new RegExp(BEARER_PATTERN_SOURCE).test("Bearer abcdefghij1234567890")).toBe(true);
+    expect(ABSOLUTE_PATH_PATTERNS_SOURCE).toEqual(["/Users/", "/home/", "C:\\\\Users\\\\"]);
   });
 });
 

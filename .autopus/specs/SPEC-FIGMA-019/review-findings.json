@@ -1,0 +1,14 @@
+[
+  {
+    "Provider": "claude",
+    "Severity": "minor",
+    "Description": "현재 품질 체크리스트 Q-COMP-06은 spec.md의 ## Traceability Matrix(존재함)와 research.md의 ## Reviewer Brief(intended scope/explicit non-goals/self-verified evidence/reviewer focus)를 함께 요구한다. SPEC은 Self-Verify Summary, Feature Coverage Map, 모듈 경계 증거로 실질 내용을 상당 부분 제공하나 ## Reviewer Brief 섹션 자체가 없어 reviewer focus가 명시되지 않는다.",
+    "ID": "F-001",
+    "Status": "resolved",
+    "Category": "completeness",
+    "ScopeRef": "research.md",
+    "FirstSeenRev": 0,
+    "LastSeenRev": 0,
+    "EscapeHatch": false
+  }
+]
