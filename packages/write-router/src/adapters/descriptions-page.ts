@@ -54,6 +54,12 @@ function renderEntryText(entry: ManifestEntry): string {
     `User value: ${entry.user_value}`,
     `Success criteria: ${entry.success_criteria}`,
   ];
+  if (entry.open_questions && entry.open_questions.length > 0) {
+    lines.push("Open questions:");
+    for (const q of entry.open_questions) {
+      lines.push(`- ${q}`);
+    }
+  }
   return lines.join("\n");
 }
 

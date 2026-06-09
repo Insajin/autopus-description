@@ -54,7 +54,7 @@ export function applyAntiHallucination(entry: ManifestEntry): ManifestEntry {
   // articulate the field (often paired with a sentinel). Always coerce to
   // array form on the way out so the manifest is schema-shaped: sentinel →
   // [], non-sentinel-string → [string], array → filtered array.
-  for (const field of ["edge_cases", "data_io"] as const) {
+  for (const field of ["edge_cases", "data_io", "open_questions"] as const) {
     const v = out[field] as unknown;
     if (Array.isArray(v)) {
       const { cleaned, tripped } = sanitizeArray(v);

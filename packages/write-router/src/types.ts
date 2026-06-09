@@ -55,6 +55,7 @@ export interface ManifestEntry {
   data_io: string[];
   area_annotations?: AreaAnnotation[];
   data_requirements?: DataRequirement[];
+  open_questions?: string[];
   design_tokens: string[];
   variants: string[];
   navigation: string[];

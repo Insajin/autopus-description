@@ -85,7 +85,7 @@ describe("annotation_card adapter (REQ-04(a) / REQ-08 / INV-002)", () => {
     expect(text).toContain("상단 검색 입력창");
     expect(text).toContain("[필요 데이터 리스트]");
     expect(text).toContain("DATA-1. 검색 조건");
-    expect(text).toContain("[구현 경계]");
+    expect(text).not.toContain("[구현 경계]");
     expect(client.createText.mock.calls[0][0].layout).toBe("area_handoff");
     expect(client.createText.mock.calls[0][0].documentPosition).toBe("right_of_frame");
     expect(client.createText.mock.calls[0][0].areaCallouts).toEqual([
@@ -95,6 +95,26 @@ describe("annotation_card adapter (REQ-04(a) / REQ-08 / INV-002)", () => {
         documentAnchor: "area-1",
       }),
     ]);
+  });
+
+  it("renders [열린 질문] section when open_questions is non-empty", async () => {
+    const client = makeMockClient("node-9001");
+    await applyAnnotationCard(
+      makeEntry({
+        open_questions: ["계정 잠금 임계값(현재 5회 가정)을 제품에서 확정해야 합니다."],
+      }),
+      { figma: client },
+    );
+    const text = client.createText.mock.calls[0][0].text;
+    expect(text).toContain("[열린 질문]");
+    expect(text).toContain("계정 잠금 임계값");
+  });
+
+  it("does not render [열린 질문] section when open_questions is absent", async () => {
+    const client = makeMockClient("node-9001");
+    await applyAnnotationCard(makeEntry(), { figma: client });
+    const text = client.createText.mock.calls[0][0].text;
+    expect(text).not.toContain("[열린 질문]");
   });
 
   it("apply returns delete-node undo descriptor with the returned nodeId", async () => {

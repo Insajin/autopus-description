@@ -272,6 +272,11 @@
       "type": "string",
       "enum": ["approved", "pending_review"],
       "description": "Post-hoc review state set by SPEC-FIGMA-003 prompt-injection detector. 'pending_review' marks an entry the detector flagged as suspect; the entry is retained for PM audit rather than dropped. Optional, additive in v0.2.0. [persona_tags: pm]"
+    },
+    "open_questions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Unresolved product/QA decisions the reader must confirm, surfaced separately from the body. Each item is a plain question or stated gap, not an inline tag. [persona_tags: pm, dev, qa]"
     }
   }
 }

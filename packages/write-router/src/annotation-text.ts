@@ -91,11 +91,10 @@ export function renderAnnotationText(entry: ManifestEntry): string {
     ...entry.states.map((item) => `- 상태: ${item}`),
     ...entry.edge_cases.map((item) => `- 예외: ${item}`),
   ]);
-  lines.push(
-    "",
-    "[구현 경계]",
-    "- 본 문서는 제품 동작, QA 기준, 데이터 협의 범위를 정리합니다.",
-    "- endpoint, DB, enum, 모듈명, 저장 방식은 확정 자료가 있을 때만 따릅니다.",
+  appendSection(
+    lines,
+    "열린 질문",
+    (entry.open_questions ?? []).map((item) => `- ${item}`),
   );
   return lines.join("\n");
 }

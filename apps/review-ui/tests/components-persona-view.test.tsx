@@ -91,12 +91,13 @@ describe("PersonaView component", () => {
 });
 
 describe("CANONICAL_PERSONA_MAP", () => {
-  it("contains exactly 7 entries matching AC-S12 fixture annotations", () => {
+  it("contains exactly 8 entries including open_questions", () => {
     expect(CANONICAL_PERSONA_MAP.map((e) => e.field).sort()).toEqual([
       "component_refs",
       "confidence",
       "design_tokens",
       "intent",
+      "open_questions",
       "states",
       "token_usage",
       "user_value",

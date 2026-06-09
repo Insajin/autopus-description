@@ -25,6 +25,7 @@ export const CANONICAL_PERSONA_MAP: ReadonlyArray<{
   { field: "design_tokens", personas: ["designer"] },
   { field: "confidence", personas: ["pm", "designer"] },
   { field: "token_usage", personas: ["pm"] },
+  { field: "open_questions", personas: ["pm", "dev", "qa"] },
 ];
 
 export interface RenderPersonaArgs {
