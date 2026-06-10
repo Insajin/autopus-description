@@ -57,6 +57,7 @@ function bridgeInverseCommand(d: UndoDescriptor): {
     | "delete_comment"
     | "clear_plugin_data"
     | "restore_frame_name"
+    | "restore_annotation"
     | "noop";
   args: Record<string, unknown>;
 } {
@@ -73,11 +74,15 @@ function bridgeInverseCommand(d: UndoDescriptor): {
         args: { node_id: d.node_id, original_name: d.original_name },
       };
     case "restore-annotation":
-      // SPEC-FIGMA-018 — native annotation restore is driven through the
-      // write-router adapter's undoNativeAnnotation (re-applies the prior
-      // snapshot), not the extended inverse-op bridge surface used here.
-      return { op: "noop", args: {} };
+      // @AX:NOTE: [AUTO] SPEC-FIGMA-021 REQ-06 live wire — restore_annotation op added here;
+      //           field name `node_id` (snake_case) must match the dispatchInverse arm in autopus_command_dispatch.ts.
+      // SPEC-FIGMA-021 REQ-06 — emit the real inverse carrying the prior
+      // snapshot so the bundled plugin dispatch can write node.annotations back
+      // (empty prior clears to []). Field name `node_id` matches dispatchInverse.
+      return { op: "restore_annotation", args: { node_id: d.node_id, prior: d.prior } };
     case "native-with-card":
+      // @AX:NOTE: [AUTO] leading-inverse stub — bridgeInverseCommand returns only the card delete-node here;
+      //           the full ordered pair (card first, native second) is assembled by compoundInverseCommands.
       // SPEC-FIGMA-020 REQ-08 — the compound inverse is dispatched as an ORDERED
       // pair (card delete-node first, then native restore-annotation) by
       // `compoundInverseCommands`; this single-command surface returns the CARD
@@ -89,6 +94,10 @@ function bridgeInverseCommand(d: UndoDescriptor): {
   }
 }
 
+// @AX:ANCHOR: [AUTO] ordered compound inverse — card delete-node MUST precede native restore-annotation
+// @AX:REASON: the Figma plugin applies ops sequentially; reversing the order (native first, card second)
+//             would attempt to restore annotations on a node that still has the card attached, producing
+//             an inconsistent canvas state that cannot be recovered without a second manual undo.
 // SPEC-FIGMA-020 REQ-08 — the compound `native-with-card` undo reverses BOTH
 // surfaces in one invocation, ordered to match the adapter's
 // `undoNativeAnnotationWithCard`: the CARD (delete-node) is reversed FIRST, then
@@ -101,6 +110,7 @@ function compoundInverseCommands(d: UndoDescriptor): Array<{
     | "delete_comment"
     | "clear_plugin_data"
     | "restore_frame_name"
+    | "restore_annotation"
     | "noop";
   args: Record<string, unknown>;
 }> {
@@ -141,6 +151,11 @@ export async function undoWrite(
     seen?: Set<string>;
   };
   if (tracker.has(record.manifest_entry_hash)) {
+    // @AX:WARN: [AUTO] per-hash clear workaround — IdempotencyTracker exposes only a whole-set clear();
+    // @AX:REASON: the clear-and-re-add approach relies on the `seen` internal Set being accessible; if
+    //             IdempotencyTracker is refactored to remove or rename `seen`, all hashes are silently
+    //             dropped on undo (every previously-applied write becomes re-applicable). Add a per-hash
+    //             remove API to IdempotencyTracker to eliminate this dependency.
     // Snapshot all currently-tracked hashes (best-effort), clear, and re-add
     // everything except the undone one.
     const remembered = new Set<string>();

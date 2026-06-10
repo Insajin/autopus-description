@@ -19,6 +19,7 @@ import {
   supportsAreaHandoffRuntime,
 } from "./autopus_area_handoff_renderer.js";
 import { createPolicyCardCanvas } from "./autopus_policy_card_renderer.js";
+import { createAutopusPluginAdapter } from "./autopus_plugin_adapter.js";
 
 export interface PluginCommand {
   op: string;
@@ -73,8 +74,21 @@ export interface FigmaPluginLike {
   deleteComment?(args: { comment_id: string }): void | Promise<void>;
   clearPluginData?(args: { node_id: string; key: string }): void | Promise<void>;
   restoreFrameName?(args: { node_id: string; original_name: string }): void | Promise<void>;
+  restoreAnnotation?(args: {
+    node_id: string;
+    prior: Array<{ labelMarkdown: string; categoryId?: string; properties?: unknown[] }>;
+  }): void | Promise<void>;
 }
 
+// Value re-export so the bundle's IIFE global exposes the adapter factory
+// (the build patch needs AutopusDispatch.createAutopusPluginAdapter). The
+// adapter imports only TYPES from this file, so there is no runtime cycle.
+export { createAutopusPluginAdapter };
+
+// @AX:ANCHOR: [AUTO] op-to-tool routing table — single source of truth for the dispatch switch
+// @AX:REASON: SPEC-FIGMA-007 REQ-17 mandates that TOOL_NAME_MAP and the AUTOPUS_PIN.md
+//             `## Tool Mapping Changes` table MUST advance together; a case arm added here
+//             without a matching PIN.md entry breaks the upstream rename runbook.
 // Tool name mapping table. SPEC-FIGMA-007 REQ-09. When sonnylazuardi renames
 // a tool upstream, update both this table AND the AUTOPUS_PIN.md
 // `## Tool Mapping Changes` table — see REQ-17 runbook.
@@ -323,7 +337,11 @@ async function dispatchInverse(
 ): Promise<CommandResult> {
   switch (op) {
     case "delete_node":
-      if (figma.deleteNode) await Promise.resolve(figma.deleteNode({ node_id: asString(args.node_id) }));
+      // SPEC-FIGMA-021 — accept both the inverse-op snake_case `node_id` (undo
+      // path / compound card delete) AND the vendor forward-tool camelCase
+      // `nodeId` (general delete_node MCP tool), since this op is now routed
+      // through the dispatcher in the built plugin for BOTH callers.
+      if (figma.deleteNode) await Promise.resolve(figma.deleteNode({ node_id: asString(args.node_id) || asString(args.nodeId) }));
       return { ok: true };
     case "delete_comment":
       if (figma.deleteComment) await Promise.resolve(figma.deleteComment({ comment_id: asString(args.comment_id) }));
@@ -334,11 +352,28 @@ async function dispatchInverse(
     case "restore_frame_name":
       if (figma.restoreFrameName) await Promise.resolve(figma.restoreFrameName({ node_id: asString(args.node_id), original_name: asString(args.original_name) }));
       return { ok: true };
+    case "restore_annotation":
+      // @AX:WARN: [AUTO] unvalidated prior array cast — args.prior is cast to the annotation snapshot type without
+      // @AX:REASON: if the daemon serializes the prior array with an unexpected shape (e.g. missing labelMarkdown),
+      //             the plugin adapter receives malformed entries and writeAnnotations silently writes invalid
+      //             annotation objects to node.annotations. Add element-level validation (typeof check on
+      //             labelMarkdown) before forwarding to restoreAnnotation.
+      if (figma.restoreAnnotation)
+        await Promise.resolve(figma.restoreAnnotation({
+          node_id: asString(args.node_id),
+          prior: Array.isArray(args.prior) ? (args.prior as Array<{ labelMarkdown: string; categoryId?: string; properties?: unknown[] }>) : [],
+        }));
+      return { ok: true };
     default:
       return { ok: false, error: `unknown_inverse_op:${op}` };
   }
 }
 
+// @AX:ANCHOR: [AUTO] public dispatch API — daemon-to-plugin command entry point
+// @AX:REASON: dispatchPluginCommand is the only function called by the daemon WebSocket bridge; its
+//             signature (FigmaPluginLike, PluginCommand) → CommandResult is a stable contract shared
+//             with the test harness. Changing the parameter types or return shape requires coordinating
+//             updates in apply-tool.ts, the mock bridge, and all integration tests.
 export async function dispatchPluginCommand(
   figma: FigmaPluginLike,
   cmd: PluginCommand,

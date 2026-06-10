@@ -17,6 +17,7 @@ import {
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import * as esbuild from "esbuild";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..");
@@ -89,6 +90,46 @@ if (strippedCodeJs === vendorCodeJs) {
   vendorCodeJs = strippedCodeJs;
   console.log("build-figma-plugin: analytics IIFE stripped (H-3)");
 }
+
+// SPEC-FIGMA-021 — bundle the canonical dispatcher (autopus_command_dispatch.ts
+// + its import graph: the two renderers, autopus_redact.ts, src/redact-patterns.ts,
+// and the bare specifier @autopus/redact-patterns) into ONE IIFE with global name
+// AutopusDispatch. This integrates the unit-tested dispatcher into the shipped
+// plugin as the single source of truth (REQ-03) rather than duplicating render
+// logic in the patch switch.
+//
+// esbuild does NOT auto-rewrite the `.js` extensions in relative imports back to
+// the real `.ts` source files, so a resolve plugin maps `./foo.js` → `./foo.ts`
+// when that .ts exists. Bare specifiers (@autopus/redact-patterns) fall through to
+// default node resolution (its package.json main points at ./src/index.ts).
+const tsJsResolve = {
+  name: "ts-js-resolve",
+  setup(build) {
+    build.onResolve({ filter: /\.js$/ }, (args) => {
+      if (args.kind === "entry-point" || !args.importer) return;
+      if (!args.path.startsWith(".")) return; // bare specifiers → default resolution
+      const candidate = resolve(dirname(args.importer), args.path.replace(/\.js$/, ".ts"));
+      if (existsSync(candidate)) return { path: candidate };
+      return; // fall through to default (real .js)
+    });
+  },
+};
+const bundle = await esbuild.build({
+  entryPoints: [join(vendorPluginDir, "autopus_command_dispatch.ts")],
+  bundle: true,
+  format: "iife",
+  globalName: "AutopusDispatch",
+  platform: "browser",
+  target: "es2017",
+  write: false,
+  legalComments: "none",
+  plugins: [tsJsResolve],
+});
+const DISPATCH_BUNDLE =
+  "// === AUTOPUS DISPATCH BUNDLE (SPEC-FIGMA-021) ===\n" +
+  bundle.outputFiles[0].text +
+  "\n";
+console.log("build-figma-plugin: dispatcher bundled (AutopusDispatch IIFE)");
 
 // Patch: prepend a marker comment and append a small autopus dispatcher that
 // wraps `handleCommand` to handle description-workflow command names that
@@ -357,6 +398,24 @@ const AUTOPUS_PATCH = `
         }
         return { ok: true, nodeId: params.nodeId, appliedRanges, skipped };
       }
+      case 'set_native_annotation':
+      case 'set_policy_card':
+      case 'set_annotation':
+      // SPEC-FIGMA-021 REQ-06 — the compound-undo inverse ops MUST also route to
+      // the bundled dispatcher: restore_annotation is unknown to vendor (would
+      // throw "Unknown command"), and the undo path sends delete_node with a
+      // snake_case { node_id } that vendor's deleteNode (reads params.nodeId)
+      // rejects with "Missing nodeId parameter". dispatchInverse handles both
+      // (delete_node tolerates node_id/nodeId; restore_annotation writes the
+      // prior snapshot back via the adapter), so one undo reverses both surfaces.
+      case 'delete_node':
+      case 'restore_annotation': {
+        // SPEC-FIGMA-021 — delegate to the bundled canonical dispatcher built
+        // from the LIVE figma global. The dispatcher redacts, renders, and
+        // returns { ok, node_ids } directly; the bridge normalizes from there.
+        const adapter = AutopusDispatch.createAutopusPluginAdapter(figma);
+        return await AutopusDispatch.dispatchPluginCommand(adapter, { op: command, args: params });
+      }
       case 'noop':
         return { ok: true };
       default:
@@ -367,7 +426,10 @@ const AUTOPUS_PATCH = `
 })();
 `;
 
-const patchedCode = HEADER + vendorCodeJs + "\n" + AUTOPUS_PATCH;
+// Inject the dispatcher IIFE BETWEEN the HEADER and the (analytics-stripped)
+// vendorCodeJs so the vendor body stays contiguous and byte-identical (S6).
+const patchedCode =
+  HEADER + DISPATCH_BUNDLE + vendorCodeJs + "\n" + AUTOPUS_PATCH;
 writeFileSync(join(outDir, "code.js"), patchedCode, "utf8");
 console.log(
   `build-figma-plugin: code.js (vendor ${vendorCodeJs.split("\n").length} lines + autopus patch)`,

@@ -48,11 +48,25 @@ async function addCell(
 ): Promise<CanvasNode> {
   const cell = figma.createText();
   cell.name = "Autopus policy cell";
+  // SPEC-FIGMA-021 (live fix) — Figma rejects ANY text-property write (fontSize,
+  // characters) while the node's CURRENT font is unloaded. A fresh createText()
+  // node defaults to Inter Regular (unloaded), so load the target font and set
+  // fontName BEFORE fontSize/characters. (Unit-test stubs don't enforce font
+  // loading, which is why this only surfaced in the live plugin oracle.)
+  const cellFont = bold ? HEADER_FONT : CARD_FONT;
+  if (figma.loadFontAsync) await figma.loadFontAsync(cellFont);
+  cell.fontName = cellFont;
   cell.fontSize = CELL_FONT_SIZE;
-  cell.fontName = bold ? HEADER_FONT : CARD_FONT;
-  if (figma.loadFontAsync) await figma.loadFontAsync(cell.fontName);
   cell.characters = value;
-  cell.width = CELL_WIDTH;
+  // SPEC-FIGMA-021 (live fix) — TextNode.width is READ-ONLY in the Figma plugin
+  // API; a direct `cell.width = …` throws "no setter for property". Use resize()
+  // after switching off auto-width so the column width is honored; inside the
+  // HORIZONTAL auto-layout row the cell still lays out correctly. (Unit-test
+  // stubs expose `width` as a plain writable prop, which is why this only
+  // surfaced in the live plugin oracle.)
+  const textCell = cell as CanvasNode & { textAutoResize?: string };
+  textCell.textAutoResize = "HEIGHT";
+  cell.resize?.(CELL_WIDTH, cell.fontSize ?? CELL_FONT_SIZE);
   row.appendChild?.(cell);
   return cell;
 }

@@ -1,0 +1,14 @@
+[
+  {
+    "Provider": "codex",
+    "Severity": "major",
+    "Description": "F-001: REQ-04/AC-002 requires one undo to restore the prior native annotation, but the current daemon undo bridge maps `restore-annotation` to `noop` and this SPEC does not add any plugin command or adapter method to write the prior annotation snapshot back. Routing only set_native_annotation/set_policy_card/set_annotation cannot satisfy the native restore half of the live oracle.",
+    "ID": "F-001",
+    "Status": "resolved",
+    "Category": "feasibility",
+    "ScopeRef": "REQ-04 / AC-002 / S2",
+    "FirstSeenRev": 1,
+    "LastSeenRev": 0,
+    "EscapeHatch": false
+  }
+]

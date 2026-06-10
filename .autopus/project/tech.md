@@ -10,6 +10,7 @@
 | Local observed runtime | Node `v24.14.1`, npm `11.14.0` |
 | Language | TypeScript `^6.0.3`, strict mode |
 | Tests | Vitest `^4.1.5`, jsdom, React Testing Library |
+| Plugin bundler | esbuild `^0.28.0` (build-time devDependency; bundles the plugin dispatcher into `dist/plugin/code.js`) |
 | Review UI | Next.js `^16.2.5`, React `^19.2.0` |
 | MCP | `@modelcontextprotocol/sdk ^1.13.1` |
 | LLM SDKs | `@anthropic-ai/sdk ^0.95.0`, `openai ^6.36.0` |
@@ -42,7 +43,7 @@ node dist/index.js ../../samples/dogfood-30frame.manifest.json
 
 ## Root Package Scripts
 
-- `npm run build`: build the validator workspace, compile root TypeScript, and prepend shebangs.
+- `npm run build`: build the validator workspace, compile root TypeScript, prepend shebangs, and build the Figma plugin (`scripts/build-figma-plugin.mjs`) — which esbuild-bundles the canonical dispatcher (`autopus_command_dispatch.ts` + renderers + redact port) into a single `AutopusDispatch` IIFE injected into `dist/plugin/code.js`, keeping vendor `code.js` byte-identical (SPEC-FIGMA-021).
 - `npm run test`: run Vitest once.
 - `npm run test:watch`: run Vitest watch mode.
 - `npm run lint`: TypeScript no-emit check.

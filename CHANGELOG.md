@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## [Unreleased]
+
+### Fixed — Plugin runtime dispatch integration for annotation / policy-card write targets (SPEC-FIGMA-021)
+The canonical plugin dispatcher (`autopus_command_dispatch.ts`) and its renderers were unit-tested but never integrated into the built plugin, so every annotation/card write failed in the live plugin with `Unknown command: set_native_annotation` (MCP -32603). This release wires them into the shipped runtime and closes the compound-undo inverse path.
+- `scripts/build-figma-plugin.mjs` now esbuild-bundles the dispatcher (+ renderers + redact port + the new adapter) into a single `AutopusDispatch` IIFE injected between the header and the (analytics-stripped) vendor body, so the dispatcher the unit tests verify is the dispatcher that ships. Vendor `code.js` stays byte-identical (HC-1); `esbuild@^0.28.0` is a build-time devDependency only (runtime deps unchanged).
+- The `AUTOPUS_PATCH` switch routes `set_native_annotation`, `set_policy_card`, `set_annotation` (forward) and `delete_node`, `restore_annotation` (compound-undo inverse) to `AutopusDispatch.dispatchPluginCommand`. New `autopus_plugin_adapter.ts` bridges the live `figma` global to the dispatcher as one object satisfying both the RAW canvas runtime and the native `setAnnotation`/`deleteNode`/`restoreAnnotation` primitives.
+- `src/daemon/undo-tool.ts` `restore-annotation` now emits a real `{op:"restore_annotation", args:{node_id, prior}}` inverse (was `noop`); `dispatchInverse` writes the prior snapshot back (clearing to `[]` when empty) and tolerates both `node_id`/`nodeId` for `delete_node`. One undo reverses both surfaces (ordered: card delete → native restore).
+- Fixed two live-only policy-card renderer bugs surfaced by the live oracle: `cell.fontSize` set before font load, and direct assignment to the read-only `TextNode.width`. Hardened the unit-test stub to enforce Figma's font-load constraint (regression guard).
+- Verified live (S1/S2) on frame `1307:143792`: native annotation + 4-column policy-card table created in one apply, and a single undo deleted the card node and restored the prior annotation. Build + 1230 unit/integration tests green.
+
 ## [0.4.0] — 2026-06-10
 
 ### Added — Hybrid dual-write composite target `native_annotation_with_card` (SPEC-FIGMA-020)
