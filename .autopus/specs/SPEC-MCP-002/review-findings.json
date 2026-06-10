@@ -1,0 +1,38 @@
+[
+  {
+    "Provider": "claude",
+    "Severity": "minor",
+    "Description": "T1의 예시 mcpServers args가 `${CLAUDE_PLUGIN_ROOT}/../../../dist/src/daemon/mcp-stdio-entry.js` 상대경로를 제시한다. 로컬 marketplace 설치 시 Claude Code가 플러그인 디렉토리를 관리 위치로 복사/심링크하면 `../../../dist`가 더 이상 레포 dist를 가리키지 못해 stdio 진입점 기동이 깨질 수 있다. plan/research가 '글로벌 bin이 가장 견고한 기본값'이라고 인지하고 있으나 T1의 기본 예시는 여전히 상대경로다.",
+    "ID": "F-001",
+    "Status": "out_of_scope",
+    "Category": "feasibility",
+    "ScopeRef": "REQ-07",
+    "FirstSeenRev": 1,
+    "LastSeenRev": 1,
+    "EscapeHatch": false
+  },
+  {
+    "Provider": "claude",
+    "Severity": "minor",
+    "Description": "S5가 `${user_config.figma_token}`를 Claude Code의 '공식 변수 형식'으로 단정하고 acceptance 통과 조건으로 고정한다. 이 정확한 치환 토큰 문법(접두/네임스페이스 형태)은 환경/버전에 따라 어긋날 수 있으며, 어긋나면 mcpServers env 치환이 실패해 FIGMA_TOKEN이 주입되지 않는다(Q-CORR-03 위험).",
+    "ID": "F-002",
+    "Status": "out_of_scope",
+    "Category": "correctness",
+    "ScopeRef": "REQ-06",
+    "FirstSeenRev": 1,
+    "LastSeenRev": 1,
+    "EscapeHatch": false
+  },
+  {
+    "Provider": "claude",
+    "Severity": "suggestion",
+    "Description": "번들 SKILL.md는 정본의 복사본이며 정본 갱신 시 drift 위험이 있다. 동기화 메커니즘(빌드 시 복사 vs 수동)이 T2 구현 결정으로 미뤄져 있다.",
+    "ID": "F-003",
+    "Status": "out_of_scope",
+    "Category": "completeness",
+    "ScopeRef": "HC-2",
+    "FirstSeenRev": 1,
+    "LastSeenRev": 1,
+    "EscapeHatch": false
+  }
+]

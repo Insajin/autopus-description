@@ -1,0 +1,25 @@
+{
+  "name": "autopus-figma",
+  "version": "0.4.0",
+  "description": "Autopus Figma description workflow for Claude Code — bundles the autopus-figma MCP server (stdio) and the figma-description skill so one install wires both.",
+  "mcpServers": {
+    "autopus-figma": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/../../../dist/src/daemon/mcp-stdio-entry.js"],
+      "env": {
+        "FIGMA_TOKEN": "${user_config.figma_token}",
+        "AUTOPUS_AUDIT_DIR": "${CLAUDE_PLUGIN_DATA}"
+      }
+    }
+  },
+  "skills": "./skills",
+  "userConfig": {
+    "figma_token": {
+      "type": "string",
+      "title": "Figma personal access token",
+      "description": "Figma personal access token. Stored in secure storage, never written to settings.json or this manifest.",
+      "sensitive": true,
+      "required": false
+    }
+  }
+}
