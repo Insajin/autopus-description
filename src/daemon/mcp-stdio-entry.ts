@@ -33,6 +33,8 @@ import {
   createWriteResourceContext,
   createWriteToolContext,
 } from "./mcp-stdio-write-handlers.js";
+import { renderWorkflowInstructions } from "./figma-workflow-guidance.js";
+import { registerPromptHandlers } from "./mcp-stdio-prompt-handlers.js";
 import {
   createExtraReadToolContext,
   type ExtraReadToolContext,
@@ -75,8 +77,9 @@ const SERVER_NAME = "autopus-mcp-stdio";
 // @AX:NOTE: [AUTO] magic constant — wire-protocol-visible server version.
 // SPEC-FIGMA-014 bumps to 0.2.0 to signal the additive extra-tool surface.
 const SERVER_VERSION = "0.2.0";
-const DEFAULT_INSTRUCTIONS =
-  "Read+write MCP wire surface for the Autopus daemon (6 resources, 9 baseline tools, optional figma_/validate/generate extras).";
+// SPEC-MCP-001 REQ-02 — base workflow guidance is the shared source-of-truth
+// constant rendered from figma-workflow-guidance; the channel secret and the
+// description-language block are appended below (HC-5).
 
 /* C-1 UX: the relay binds to a per-session secret channel, and the Figma plugin
  * cannot connect until the user pastes that secret into its Connect field.
@@ -167,9 +170,10 @@ export interface CreateMcpStdioServerInput {
 export function createMcpStdioServer(
   input: CreateMcpStdioServerInput,
 ): Server {
+  const base = renderWorkflowInstructions();
   let instructions = input.figmaChannel
-    ? `${DEFAULT_INSTRUCTIONS}\n\n${figmaChannelInstruction(input.figmaChannel)}`
-    : DEFAULT_INSTRUCTIONS;
+    ? `${base}\n\n${figmaChannelInstruction(input.figmaChannel)}`
+    : base;
   if (input.descriptionLanguage) {
     instructions +=
       `\n\nDescription-generation language (plugin setting): ${input.descriptionLanguage()}. ` +
@@ -180,7 +184,7 @@ export function createMcpStdioServer(
     { name: SERVER_NAME, version: SERVER_VERSION },
     {
       instructions,
-      capabilities: { resources: {}, tools: {} },
+      capabilities: { resources: {}, tools: {}, prompts: {} },
     },
   );
 
@@ -252,6 +256,10 @@ export function createMcpStdioServer(
     vendorReadContext,
     vendorWriteContext,
     figmaChannel: input.figmaChannel,
+    descriptionLanguage: input.descriptionLanguage,
+  });
+  // SPEC-MCP-001 REQ-04 — additive prompts capability. No channel secret here.
+  registerPromptHandlers(server, {
     descriptionLanguage: input.descriptionLanguage,
   });
 

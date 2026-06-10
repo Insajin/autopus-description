@@ -17,11 +17,11 @@ import {
   type WriteToolDispatchContext,
 } from "./mcp-stdio-write-handlers.js";
 import type { WriteMcpResources } from "./write-mcp-resources.js";
+import { renderWorkflowInstructions } from "./figma-workflow-guidance.js";
+import { registerPromptHandlers } from "./mcp-stdio-prompt-handlers.js";
 
 const SERVER_NAME = "autopus-mcp-http";
 const SERVER_VERSION = "0.1.0";
-const DEFAULT_INSTRUCTIONS =
-  "Read+write HTTP MCP wire surface for the Autopus daemon (6 resources, 9 tools).";
 // @AX:NOTE: [AUTO] 16 KiB preserves the HTTP redaction stress path required by AC-HTTP-3.
 const MIN_LONG_ERROR_LENGTH = 16_384;
 const MAX_CLIENT_ID_LENGTH = 128;
@@ -154,8 +154,10 @@ export function createHttpSession(
   const server = new Server(
     { name: SERVER_NAME, version: SERVER_VERSION },
     {
-      instructions: DEFAULT_INSTRUCTIONS,
-      capabilities: { resources: {}, tools: {} },
+      // SPEC-MCP-001 REQ-03 — same shared workflow guidance as stdio. The http
+      // session has no live language getter, so no language line is appended.
+      instructions: renderWorkflowInstructions(),
+      capabilities: { resources: {}, tools: {}, prompts: {} },
     },
   );
 
@@ -169,6 +171,8 @@ export function createHttpSession(
       input.auditLogPath,
     ),
   });
+  // SPEC-MCP-001 REQ-04 — additive prompts capability. No language getter, no secret.
+  registerPromptHandlers(server, {});
 
   server.oninitialized = () => {
     const info = server.getClientVersion();

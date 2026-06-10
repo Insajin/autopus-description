@@ -68,6 +68,8 @@ Tools:
 
 `autopus-mcp-http` hosts the same logical surface over loopback HTTP/SSE at `/mcp`. It defaults to `127.0.0.1`, requires `--allow-remote` for non-loopback binding, and isolates pending write state by MCP session.
 
+Both transports advertise a `prompts` capability (SPEC-MCP-001) and serve the `generate_frame_descriptions` prompt plus connect-time instructions that name the ordered dryRun → approve → apply → undo workflow. The procedural text comes from one shared source-of-truth constant (`src/daemon/figma-workflow-guidance.ts`) consumed by the stdio entry, the http session, and the prompts handler (`src/daemon/mcp-stdio-prompt-handlers.ts`); the per-session channel secret is never emitted into prompt payloads (C-1 boundary preserved).
+
 ## Package Graph
 
 ```text
