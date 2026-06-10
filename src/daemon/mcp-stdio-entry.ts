@@ -374,6 +374,32 @@ export async function runMcpStdio(
         `autopus-mcp-stdio: figma plugin client connect deferred: ${message}\n`,
       );
     });
+    // SPEC-FIGMA-020 follow-up — wire the write-apply bridge to the live plugin
+    // client. Without this the stdio daemon's apply path has no bridge
+    // (ext.bridge === null → PLUGIN_NOT_CONNECTED), so dryRun→approve→apply could
+    // never dispatch plugin_commands. The adapter forwards each PluginCommand via
+    // the same channel the vendor read/write commands already use and maps the
+    // plugin's command_result { ok, node_ids?, error? } back to PluginBridgeLike.
+    const bridgeClient = figmaPluginClient;
+    writeExtension.attachPluginBridge({
+      async dispatchCommand(cmd) {
+        if (!bridgeClient.isReady()) {
+          return { ok: false, error: "PLUGIN_NOT_CONNECTED" };
+        }
+        try {
+          const data = (await bridgeClient.sendCommand(
+            cmd.op,
+            (cmd.args ?? {}) as Record<string, unknown>,
+          )) as { ok?: boolean; node_ids?: string[]; id?: string; error?: string } | null;
+          const r = data ?? {};
+          if (r.ok === false) return { ok: false, error: r.error };
+          const node_ids = r.node_ids ?? (r.id ? [r.id] : undefined);
+          return node_ids && node_ids.length > 0 ? { ok: true, node_ids } : { ok: true };
+        } catch (e) {
+          return { ok: false, error: e instanceof Error ? e.message : String(e) };
+        }
+      },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     process.stderr.write(

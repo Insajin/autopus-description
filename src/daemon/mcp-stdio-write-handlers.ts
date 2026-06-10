@@ -22,6 +22,8 @@ import type { ToolDescriptor } from "./mcp-stdio-handlers.js";
 
 const WRITE_TARGETS: ReadonlySet<string> = new Set([
   "annotation_card",
+  "native_annotation",
+  "native_annotation_with_card",
   "descriptions_page",
   "comment",
   "plugin_data",

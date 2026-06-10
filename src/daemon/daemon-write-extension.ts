@@ -3,10 +3,13 @@
 // Lives separate from server.ts to keep that file under the 300-line limit
 // (NFR-06) and to isolate write-path changes from SPEC-FIGMA-006 surface.
 
+import { existsSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { computeSourceHash, type CanonicalValue } from "../source-hash.js";
 import { IdempotencyTracker } from "../../packages/write-router/src/idempotency.js";
 import { WriteRouter } from "../../packages/write-router/src/index.js";
-import type { WriteTarget } from "../../packages/write-router/src/types.js";
+import type { ManifestEntry, WriteTarget } from "../../packages/write-router/src/types.js";
 
 import { PendingWriteStore } from "./pending-writes.js";
 import {
@@ -25,6 +28,35 @@ import type { PendingWrite, PluginCommand } from "./types-internal.js";
 
 const DEFAULT_NODE_TREE: CanonicalValue = { a: 1, b: 2 } as CanonicalValue;
 const DEFAULT_IMAGE = Buffer.from("abc", "ascii");
+
+// Dev affordance: load a real ManifestEntry from a local JSON file so the daemon
+// dryRun path can carry genuine content (not the stub). Returns undefined when
+// no file is present or it does not match the requested frame, so production
+// behaviour is unchanged unless an operator opts in by placing the file.
+function loadDryRunOverride(frame_id: string): Partial<ManifestEntry> | undefined {
+  // Candidate paths, in priority order: explicit env override, then a path
+  // resolved relative to this module (cwd-independent — dist/src/daemon → repo
+  // root), then a cwd-relative fallback.
+  const candidates: string[] = [];
+  if (process.env.AUTOPUS_DRYRUN_ENTRY) candidates.push(process.env.AUTOPUS_DRYRUN_ENTRY);
+  try {
+    candidates.push(fileURLToPath(new URL("../../../.autopus/dryrun-entry.json", import.meta.url)));
+  } catch {
+    // import.meta.url unavailable — skip the module-relative candidate.
+  }
+  candidates.push("./.autopus/dryrun-entry.json");
+  for (const path of candidates) {
+    try {
+      if (!existsSync(path)) continue;
+      const parsed = JSON.parse(readFileSync(path, "utf8")) as Partial<ManifestEntry>;
+      if (parsed.frame_id && parsed.frame_id !== frame_id) continue;
+      return { ...parsed, frame_id };
+    } catch {
+      continue;
+    }
+  }
+  return undefined;
+}
 
 export interface DaemonWriteExtensionOptions {
   pmIdentity?: string;
@@ -77,13 +109,19 @@ export class DaemonWriteExtension {
   }
 
   async dryRun(args: DryRunWriteArgs): Promise<Record<string, unknown>> {
+    // Dev affordance: when no caller-supplied entry override is present, allow a
+    // local JSON file to provide a real ManifestEntry so dryRun/apply can drive
+    // genuine content through the live plugin instead of the hardcoded stub.
+    // Off by default (no file → stub). Path via AUTOPUS_DRYRUN_ENTRY or the
+    // cwd-relative .autopus/dryrun-entry.json fallback.
+    const entry_override = args.entry_override ?? loadDryRunOverride(args.frame_id);
     const result = await dryRunWrite(
       {
         store: this.pendingStore,
         router: this.router,
         resolveSourceHash: (id) => this.recomputeSourceHash(id),
       },
-      args,
+      { ...args, entry_override },
     );
     return { ...result };
   }

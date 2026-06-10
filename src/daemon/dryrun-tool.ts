@@ -70,6 +70,10 @@ function buildStubEntry(
     write_target,
     persona_tags: override.persona_tags ?? ["pm"],
     token_usage: override.token_usage ?? { input_tokens: 0, output_tokens: 0 },
+    // Carry the structured policy sections so an overriding caller can drive the
+    // native_annotation_with_card card tables; absent on the default stub.
+    area_annotations: override.area_annotations,
+    data_requirements: override.data_requirements,
   };
   return base;
 }
