@@ -1,0 +1,14 @@
+[
+  {
+    "Provider": "claude",
+    "Severity": "major",
+    "Description": "research.md has no '## Semantic Invariant Inventory' section, yet acceptance.md states 'Scenario IDs are referenced by spec.md Traceability Matrix and research.md Semantic Invariant Inventory.' Q-COMP-05 requires each semantic invariant to be inventoried and traced to requirement+plan+Must oracle acceptance. The underlying oracles do exist (S1 cell arrays, S5 undo, S7 secret-absence), but the mandated inventory section and its mapping are absent.",
+    "ID": "F-001",
+    "Status": "resolved",
+    "Category": "completeness",
+    "ScopeRef": "research.md",
+    "FirstSeenRev": 0,
+    "LastSeenRev": 0,
+    "EscapeHatch": false
+  }
+]
