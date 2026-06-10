@@ -2,6 +2,40 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.4.0] — 2026-06-10
+
+### Added — Hybrid dual-write composite target `native_annotation_with_card` (SPEC-FIGMA-020)
+A frame's handoff content was previously delivered through exactly one surface per
+apply: `native_annotation` anchors a concise `labelMarkdown` to the node but cannot
+render tables, while `annotation_card` renders a rich card that is not anchored. A PM
+had to choose one surface or run two applies. This release adds a composite target
+that delivers both in a single apply.
+- New `WriteTarget` value `native_annotation_with_card` and a composite adapter
+  (`packages/write-router/src/adapters/native-annotation-with-card.ts`) that applies
+  the native annotation first as the authoritative surface, then the card. The native
+  annotation carries the concise description (`composeFrameLabel` / `composeAreaLabel`
+  reused unchanged); the card renders the policy definition as REAL Figma auto-layout
+  tables via the additively extended area-handoff renderer
+  (`autopus_policy_card_renderer.ts`, new dispatch op `set_policy_card`).
+- `states`, `edge_cases`, `data_requirements`, and `area_annotations` each map to a
+  table with a fixed header row and one row per item, with each structured field
+  mapped to a dedicated column (`card-table-payload.ts` + `structured-policy.ts`).
+- Schema widened to v0.4.0 (additive minor): `write_target` enum gains the composite
+  value; `states[]`/`edge_cases[]` items become a union of the existing string form
+  and a new structured object. Every existing string-form manifest still validates.
+  See `schema/CHANGELOG.md` for the schema-level entry.
+- One compound undo descriptor reverses both surfaces; on card-step failure the
+  committed native annotation is KEPT (not rolled back) and the card is surfaced as
+  retryable (`src/daemon/apply-undo-descriptor.ts`).
+- Trust boundaries preserved: native `labelMarkdown` and card text route through the
+  daemon `redactWire`; the captured prior `node.annotations` snapshot is minimized and
+  redacted on both the daemon path (`redactAndMinimizePrior`) and the review-ui HTTP
+  path (write-router `redactRestoreDescriptor` recursion into the compound variant),
+  closing the SPEC-FIGMA-019 leak class for the new target. `native_annotation_with_card`
+  is added to the review-ui `KNOWN_WRITE_TARGETS` allow-list.
+- The existing `annotation_card` 3-step `set_annotation` decomposition and its AC-S8
+  rollback invariant are held byte-unchanged (non-regression guard in plan-emit tests).
+
 ## [0.3.12] — 2026-06-09
 
 ### Security — redact the captured prior annotation on the WriteRouter / Review-UI HTTP apply path (SPEC-FIGMA-019)

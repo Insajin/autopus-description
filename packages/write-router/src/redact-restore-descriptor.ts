@@ -54,12 +54,30 @@ function redactAndMinimizeSnapshot(
 export function redactRestoreDescriptor(
   descriptor: UndoDescriptor,
 ): UndoDescriptor {
-  if (descriptor.type !== "restore-annotation") {
-    return descriptor;
+  if (descriptor.type === "restore-annotation") {
+    return {
+      type: "restore-annotation",
+      node_id: descriptor.node_id,
+      prior: descriptor.prior.map(redactAndMinimizeSnapshot),
+    };
   }
-  return {
-    type: "restore-annotation",
-    node_id: descriptor.node_id,
-    prior: descriptor.prior.map(redactAndMinimizeSnapshot),
-  };
+  // SPEC-FIGMA-020 REQ-11 / D8 — the compound `native-with-card` descriptor
+  // embeds a `restore-annotation` whose `prior` carries the SAME untrusted
+  // captured `node.annotations`. Recurse into the embedded native and scrub it
+  // with the identical snapshot logic; the `card` (`delete-node`) carries only a
+  // node_id, no secret, so it is preserved verbatim. Without this recursion the
+  // compound variant would early-return UNREDACTED and re-open the SPEC-FIGMA-019
+  // HTTP leak class. Flat variants and all others stay byte-behavior-unchanged.
+  if (descriptor.type === "native-with-card") {
+    return {
+      type: "native-with-card",
+      native: {
+        type: "restore-annotation",
+        node_id: descriptor.native.node_id,
+        prior: descriptor.native.prior.map(redactAndMinimizeSnapshot),
+      },
+      card: descriptor.card,
+    };
+  }
+  return descriptor;
 }

@@ -109,6 +109,16 @@ export default function FrameRow({
                 Dev Mode only
               </span>
             ) : null}
+            {entry.write_target === "native_annotation_with_card" ? (
+              // Composite target writes both surfaces in one apply (SPEC-FIGMA-020 REQ-17).
+              <span
+                className="native-annotation-hint"
+                data-dual-surface-hint=""
+                title="Dev Mode 네이티브 주석과 별도 정책 카드를 한 번에 작성합니다"
+              >
+                Dev Mode 주석 + 정책 카드
+              </span>
+            ) : null}
           </dd>
         </div>
       </dl>

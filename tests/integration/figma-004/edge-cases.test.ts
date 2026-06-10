@@ -73,7 +73,7 @@ describe("edge: none adapter (REQ-04(f), broadcast-only path)", () => {
 });
 
 describe("edge: AdapterRegistry behavior", () => {
-  it("listAdapters returns all 7 known WriteTarget enum values", () => {
+  it("listAdapters returns all 8 known WriteTarget enum values", () => {
     const router = new WriteRouter({ auditLogPath: env.auditLogPath });
     const targets = router.listAdapters().sort();
     expect(targets).toEqual([
@@ -82,6 +82,8 @@ describe("edge: AdapterRegistry behavior", () => {
       "descriptions_page",
       "frame_name",
       "native_annotation",
+      // SPEC-FIGMA-020 T1 — composite dual-write target widened WriteTarget.
+      "native_annotation_with_card",
       "none",
       "plugin_data",
     ]);
@@ -96,7 +98,9 @@ describe("edge: AdapterRegistry behavior", () => {
     expect(reg.has("plugin_data")).toBe(true);
     expect(reg.has("frame_name")).toBe(true);
     expect(reg.has("native_annotation")).toBe(true);
-    expect(reg.size()).toBe(7);
+    // SPEC-FIGMA-020 T1 — the composite target is registered alongside the rest.
+    expect(reg.has("native_annotation_with_card")).toBe(true);
+    expect(reg.size()).toBe(8);
   });
 
   it("router throws WRITE_TARGET_ROUTING_ERROR on unknown write_target enum value", async () => {

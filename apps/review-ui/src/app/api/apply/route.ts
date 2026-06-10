@@ -33,6 +33,9 @@ const KNOWN_WRITE_TARGETS = new Set([
   "comment",
   "plugin_data",
   "frame_name",
+  // SPEC-FIGMA-020 REQ-11 — composite dual-write target; allow-list membership
+  // lets it reach the router instead of being rejected as INVALID_ENTRY_SHAPE.
+  "native_annotation_with_card",
   "none",
 ]);
 

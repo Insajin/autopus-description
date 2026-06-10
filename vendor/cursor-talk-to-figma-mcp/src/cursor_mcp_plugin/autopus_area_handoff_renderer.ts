@@ -1,13 +1,13 @@
 import type { AreaHandoffCallout } from "./autopus_command_dispatch.js";
 
-interface Box {
+export interface Box {
   x: number;
   y: number;
   width: number;
   height: number;
 }
 
-interface CanvasNode {
+export interface CanvasNode {
   id: string;
   name: string;
   x: number;
@@ -27,6 +27,15 @@ interface CanvasNode {
   absoluteBoundingBox?: Box;
   width?: number;
   height?: number;
+  // Auto-layout props (optional; used additively by the policy-card table builder).
+  layoutMode?: "NONE" | "HORIZONTAL" | "VERTICAL";
+  primaryAxisSizingMode?: "FIXED" | "AUTO";
+  counterAxisSizingMode?: "FIXED" | "AUTO";
+  itemSpacing?: number;
+  paddingTop?: number;
+  paddingRight?: number;
+  paddingBottom?: number;
+  paddingLeft?: number;
 }
 
 export interface AreaHandoffRuntime {
@@ -64,7 +73,7 @@ function badgeWidthForLabel(label: string): number {
   return Math.max(BADGE_HEIGHT, label.length * 7 + BADGE_PADDING_X * 2);
 }
 
-function boxOf(node: CanvasNode): Box {
+export function boxOf(node: CanvasNode): Box {
   return node.absoluteBoundingBox ?? {
     x: node.x,
     y: node.y,
@@ -118,7 +127,7 @@ function candidateBoxes(sourceBox: Box, width: number, height: number): Box[] {
   ];
 }
 
-function chooseDocumentBox(
+export function chooseDocumentBox(
   figma: AreaHandoffRuntime,
   source: CanvasNode,
   sourceBox: Box,

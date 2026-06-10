@@ -59,13 +59,41 @@
     },
     "states": {
       "type": "array",
-      "items": { "type": "string", "minLength": 1 },
-      "description": "Enumerated visual or behavioral states (loading, empty, error, populated, etc.). [persona_tags: qa, dev]"
+      "items": {
+        "oneOf": [
+          { "type": "string", "minLength": 1 },
+          {
+            "type": "object",
+            "required": ["state"],
+            "additionalProperties": false,
+            "properties": {
+              "state": { "type": "string", "minLength": 1 },
+              "trigger": { "type": "string" },
+              "result": { "type": "string" }
+            }
+          }
+        ]
+      },
+      "description": "Enumerated visual or behavioral states (loading, empty, error, populated, etc.). Each item is either a legacy string or a structured object with required state and optional trigger and result (v0.4.0). [persona_tags: qa, dev]"
     },
     "edge_cases": {
       "type": "array",
-      "items": { "type": "string", "minLength": 1 },
-      "description": "Edge cases and exceptional flows for QA scenario authoring and Dev branch coverage. [persona_tags: qa, dev]"
+      "items": {
+        "oneOf": [
+          { "type": "string", "minLength": 1 },
+          {
+            "type": "object",
+            "required": ["case"],
+            "additionalProperties": false,
+            "properties": {
+              "case": { "type": "string", "minLength": 1 },
+              "risk": { "type": "string" },
+              "handling": { "type": "string" }
+            }
+          }
+        ]
+      },
+      "description": "Edge cases and exceptional flows for QA scenario authoring and Dev branch coverage. Each item is either a legacy string or a structured object with required case and optional risk and handling (v0.4.0). [persona_tags: qa, dev]"
     },
     "component_refs": {
       "type": "array",
@@ -231,7 +259,7 @@
     },
     "write_target": {
       "type": "string",
-      "enum": ["annotation_card", "descriptions_page", "frame_name", "plugin_data", "native_annotation", "none"],
+      "enum": ["annotation_card", "descriptions_page", "frame_name", "plugin_data", "native_annotation", "native_annotation_with_card", "none"],
       "description": "Surface the description should be written back to. Operator metadata. [persona_tags: pm]"
     },
     "persona_tags": {

@@ -1,6 +1,6 @@
 # SPEC-FIGMA-020 수락 기준 (Acceptance Criteria)
 
-> Status: draft
+> Status: completed
 
 Scenario IDs are referenced by `spec.md` Traceability Matrix and `research.md` Semantic Invariant Inventory. Must scenarios carry concrete expected output (oracle acceptance), not structural-only checks. All Figma-origin text in these scenarios (captured prior annotations, frame text) is treated as untrusted prompt-input evidence; secrets in examples are synthetic and redacted.
 

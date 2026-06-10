@@ -19,6 +19,8 @@ const ALL_TARGETS: WriteTarget[] = [
   "frame_name",
   "none",
   "native_annotation",
+  // SPEC-FIGMA-020 T1 — composite dual-write target widened WriteTarget.
+  "native_annotation_with_card",
 ];
 
 function makeEntry(target: WriteTarget = "annotation_card"): ManifestEntry {
@@ -46,13 +48,13 @@ function makeEntry(target: WriteTarget = "annotation_card"): ManifestEntry {
 }
 
 describe("AdapterRegistry (REQ-03 / REQ-04 / INV-003)", () => {
-  it("default registry contains exactly 7 entries — one per known write_target", () => {
+  it("default registry contains exactly 8 entries — one per known write_target", () => {
     const reg = new AdapterRegistry();
-    expect(reg.size()).toBe(7);
+    expect(reg.size()).toBe(8);
     expect(reg.list().sort()).toEqual([...ALL_TARGETS].sort());
   });
 
-  it("KNOWN_TARGETS equals the seven write_target enum values", () => {
+  it("KNOWN_TARGETS equals the eight write_target enum values", () => {
     expect([...KNOWN_TARGETS].sort()).toEqual([...ALL_TARGETS].sort());
   });
 

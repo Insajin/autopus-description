@@ -21,6 +21,15 @@ type RestoreAnnotationDescriptor = Extract<
   { type: "restore-annotation" }
 >;
 
+// SPEC-FIGMA-020 REQ-10 / D8 — the compound `native-with-card` descriptor embeds
+// a `restore-annotation` whose `prior` carries the SAME untrusted captured
+// `node.annotations`. The daemon must scrub + minimize that embedded native
+// before persistence, exactly like the flat path.
+type NativeWithCardDescriptor = Extract<
+  UndoDescriptor,
+  { type: "native-with-card" }
+>;
+
 // Minimize a single captured snapshot to the restore-relevant fields only,
 // dropping anything else (e.g. author metadata) the untrusted source carried,
 // and run every retained text field through the full daemon redactor so
@@ -52,7 +61,30 @@ function redactAndMinimizeSnapshot(
 // @AX:REASON: This is the sole capture-time redaction seam before the snapshot is persisted in AppliedWrite / served via autopus://applied_writes. The read-path redactor only catches figd_; xoxb-/bearer/absolute-path secrets escape unless they are scrubbed here. Weakening or bypassing this function leaks secrets into a retained artifact.
 export function redactAndMinimizePrior(
   descriptor: RestoreAnnotationDescriptor,
-): RestoreAnnotationDescriptor {
+): RestoreAnnotationDescriptor;
+export function redactAndMinimizePrior(
+  descriptor: NativeWithCardDescriptor,
+): NativeWithCardDescriptor;
+export function redactAndMinimizePrior(
+  descriptor: RestoreAnnotationDescriptor | NativeWithCardDescriptor,
+): RestoreAnnotationDescriptor | NativeWithCardDescriptor {
+  // SPEC-FIGMA-020 REQ-10 / D8 — recurse into the compound variant so its
+  // embedded native captured prior is minimized AND redacted before persistence,
+  // exactly like the flat path. The `card` (`delete-node`) carries only a
+  // node_id, no secret, so it is preserved verbatim. Without this branch the
+  // compound variant would re-open the SPEC-FIGMA-018 daemon leak class. Flat
+  // behavior is byte-unchanged.
+  if (descriptor.type === "native-with-card") {
+    return {
+      type: "native-with-card",
+      native: {
+        type: "restore-annotation",
+        node_id: descriptor.native.node_id,
+        prior: descriptor.native.prior.map(redactAndMinimizeSnapshot),
+      },
+      card: descriptor.card,
+    };
+  }
   return {
     type: "restore-annotation",
     node_id: descriptor.node_id,

@@ -31,34 +31,15 @@ import {
 import { applyViaPluginBridge } from "./fallback/plugin-bridge.js";
 import { planEmit } from "./plan-emit/index.js";
 import type { PlanEmitContext, PlanEmitResult } from "./plan-emit/types.js";
+import {
+  nextWriteId,
+  nowIso,
+  type WriteRouterApplyOptions,
+  type WriteRouterOptions,
+} from "./router-internals.js";
 
-export interface WriteRouterApplyOptions {
-  mode?: "executor" | "plan-emit"; planContext?: PlanEmitContext;
-}
-export interface WriteRouterOptions {
-  registry?: AdapterRegistry;
-  adapters?: Partial<Record<WriteTarget, Adapter>>;
-  auditLogPath?: string;
-  figma?: unknown;
-  figmaToken?: string;
-  slackToken?: string;
-  valid?: boolean;
-  pmIdentity?: string;
-  // SPEC-FIGMA-019 — optional capture-time scrub of the restore-annotation
-  // prior. When omitted the seam is identity (REQ-06): existing callers, and
-  // consumers like the daemon that redact at their own boundary, are unaffected.
-  redactRestoreDescriptor?: (d: UndoDescriptor) => UndoDescriptor;
-}
-
-let writeIdCounter = 0;
-function nextWriteId(): string {
-  writeIdCounter += 1;
-  return `wr-${Date.now().toString(36)}-${writeIdCounter}`;
-}
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
+// Re-export the option contracts so the public barrel surface is unchanged.
+export type { WriteRouterApplyOptions, WriteRouterOptions };
 
 export class WriteRouter {
   private readonly registry: AdapterRegistry;
@@ -141,6 +122,14 @@ export class WriteRouter {
     this.idempotency.record(hash);
     // @AX:ANCHOR: [AUTO] capture-redaction seam (S1) — scrub the prior ONCE, reuse the single value for both registry.register and the return; consumed at 4 sites across this file (here + return + fallback register/return).
     // @AX:REASON: S1 "registered equals returned" breaks if either path scrubs independently or uses the raw descriptor; this is the cross-cutting contract every undo consumer relies on.
+    // SPEC-FIGMA-020 REQ-11/REQ-18 — this seam applies the injected
+    // redactRestoreDescriptor GENERICALLY to EVERY undo_descriptor, with no
+    // type special-casing. The compound `native-with-card` variant therefore
+    // reaches the recursion added in redact-restore-descriptor.ts, so the
+    // executor/HTTP `WriteResult.undo_descriptor` (and the registered descriptor)
+    // never carries the unredacted embedded captured prior. No seam change is
+    // needed here; the redactor recursion is sufficient. The seam stays
+    // injectable / identity-by-default (line 81), preserving REQ-18.
     const undoDescriptor = this.redactRestoreDescriptor(applied.undo_descriptor);
     this.undoRegistry.register({
       write_id,

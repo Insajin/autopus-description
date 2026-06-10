@@ -24,6 +24,10 @@ import {
 } from "./write-audit.js";
 import type { UndoDescriptor } from "../../packages/write-router/src/types.js";
 import { redactAndMinimizePrior } from "./redact-prior-annotation.js";
+import {
+  hydrateUndoDescriptor,
+  computePersistedDescriptor,
+} from "./apply-undo-descriptor.js";
 
 // SPEC-FIGMA-018 REQ-14 — re-export so the daemon test (and any caller) can
 // import the capture-time redaction helper from `apply-tool.js`.
@@ -64,6 +68,12 @@ export type ApplyResult =
       undo_descriptor: UndoDescriptor;
       frame_id: string;
       write_target: string;
+      // SPEC-FIGMA-020 REQ-07 (S4) — present ONLY when a
+      // `native_annotation_with_card` apply committed the native annotation but
+      // the subsequent card op failed: the native surface is KEPT, the card op
+      // is surfaced as retryable. Absent for every other target and for full
+      // compound success.
+      card_retryable?: { op: string; error: string };
     }
   | {
       status: "skipped";
@@ -89,33 +99,6 @@ function nowIso(): string {
 
 function pmId(deps: ApplyDeps): string {
   return deps.pmIdentity ?? "unknown";
-}
-
-function hydrateUndoDescriptor(
-  template: UndoDescriptor | undefined,
-  nodeIds: string[],
-): UndoDescriptor {
-  if (!template) return { type: "noop" };
-  switch (template.type) {
-    case "delete-node":
-      return { type: "delete-node", node_id: nodeIds[0] ?? template.node_id };
-    case "delete-comment":
-      return { type: "delete-comment", comment_id: nodeIds[0] ?? template.comment_id };
-    case "clear-plugin-data":
-      return { ...template };
-    case "restore-frame-name":
-      return { ...template };
-    case "restore-annotation":
-      // SPEC-FIGMA-018 — node_id hydrated from the plugin result; the captured
-      // prior snapshot array is carried through unchanged.
-      return {
-        type: "restore-annotation",
-        node_id: nodeIds[0] ?? template.node_id,
-        prior: template.prior,
-      };
-    case "noop":
-      return { type: "noop" };
-  }
 }
 
 export async function applyApprovedWrite(
@@ -195,10 +178,29 @@ export async function applyApprovedWrite(
   }
   const completed: PluginCommand[] = [];
   const collectedNodeIds: string[] = [];
+  // SPEC-FIGMA-020 REQ-07 (D4 / AC-S4) — the native annotation op is the
+  // authoritative committed prefix of a `native_annotation_with_card` apply.
+  // This flag is set strictly when the compound undo template is present, so
+  // the focused partial-failure branch below does NOT change the generic
+  // stash-all rollback for any other target (incl. the AC-S8 3-step path).
+  const isCompound = pending.undo_template?.type === "native-with-card";
+  let cardOpRetryable: { op: string; error: string } | null = null;
   try {
     for (const cmd of pending.plugin_commands) {
       const res = await deps.bridge.dispatchCommand(cmd, pending.pending_id);
-      if (!res.ok) throw new Error(res.error ?? "plugin_command_failed");
+      if (!res.ok) {
+        // FOCUSED branch: only the compound target, and only when the FAILED op
+        // is the card op (`set_policy_card`) — the native op has already
+        // committed and precedes the card op in `plugin_commands` (T6 ordering).
+        // Keep the native annotation applied: do NOT stash the completed native
+        // op for partial-disconnect rollback, surface the card op as retryable,
+        // and fall through to persist the native-only portion of the descriptor.
+        if (isCompound && cmd.op === "set_policy_card") {
+          cardOpRetryable = { op: cmd.op, error: res.error ?? "plugin_command_failed" };
+          break;
+        }
+        throw new Error(res.error ?? "plugin_command_failed");
+      }
       completed.push(cmd);
       for (const id of res.node_ids ?? []) collectedNodeIds.push(id);
     }
@@ -224,10 +226,14 @@ export async function applyApprovedWrite(
   // figd_). Undo consequently restores the redacted minimized prior state.
   // @AX:WARN [AUTO]: security wiring — this branch MUST run before recordApplied/register/applied_writes (REQ-14, INV-011).
   // @AX:REASON: restore-annotation is the only descriptor carrying untrusted captured prior annotations. Moving redactAndMinimizePrior after deps.resources.recordApplied or deps.undoRegistry.register would persist/serve the raw secret. `descriptor` (not `hydrated`) is intentionally reused for both undo registration and the AppliedWrite payload.
-  const descriptor: UndoDescriptor =
-    hydrated.type === "restore-annotation"
-      ? redactAndMinimizePrior(hydrated)
-      : hydrated;
+  // SPEC-FIGMA-020 REQ-07/REQ-10 — for the compound variant the embedded native
+  // captured prior is the untrusted secret-carrying surface; it must pass through
+  // the same redactAndMinimizePrior seam as the flat path. When the card op
+  // failed (cardOpRetryable set) only the native surface committed, so the
+  // PERSISTED descriptor is downgraded to the native-only flat restore-annotation
+  // — there is no card node to delete on undo. On full compound success the whole
+  // native-with-card descriptor is persisted with its native member redacted.
+  const descriptor: UndoDescriptor = computePersistedDescriptor(hydrated, cardOpRetryable !== null);
   deps.undoRegistry.register({
     write_id,
     frame_id: pending.frame_id,
@@ -269,5 +275,9 @@ export async function applyApprovedWrite(
     undo_descriptor: descriptor,
     frame_id: pending.frame_id,
     write_target: pending.write_target,
+    // SPEC-FIGMA-020 REQ-07 (S4) — surface the card op as retryable WHEN the
+    // native annotation committed but the card op failed; the native annotation
+    // is kept and was never rolled back. Undefined for all other outcomes.
+    ...(cardOpRetryable ? { card_retryable: cardOpRetryable } : {}),
   };
 }

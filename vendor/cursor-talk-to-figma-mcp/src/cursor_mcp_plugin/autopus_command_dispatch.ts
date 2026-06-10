@@ -18,6 +18,7 @@ import {
   createAreaHandoffCanvas,
   supportsAreaHandoffRuntime,
 } from "./autopus_area_handoff_renderer.js";
+import { createPolicyCardCanvas } from "./autopus_policy_card_renderer.js";
 
 export interface PluginCommand {
   op: string;
@@ -83,6 +84,12 @@ export const TOOL_NAME_MAP: Readonly<Record<string, string>> = {
   // NATIVE tool set_annotation (the real Dev-Mode annotation API), never the
   // card path. The op name stays lexically distinct from autopus set_annotation.
   set_native_annotation: "set_annotation",
+  // SPEC-FIGMA-020 REQ-13 — autopus op set_policy_card routes to the vendor
+  // set_policy_card tool (the structured-table policy card renderer), distinct
+  // from BOTH set_annotation (the card 3-step path) and set_native_annotation
+  // (the Dev-Mode native path). Keeps @AX:ANCHOR set-equality parity with the
+  // write-router PLUGIN_COMMAND_OPS table.
+  set_policy_card: "set_policy_card",
   upsert_descriptions_page_node: "upsert_descriptions_page_node",
   post_comment: "post_comment",
   set_plugin_data: "set_plugin_data",
@@ -200,6 +207,59 @@ async function dispatchSetNativeAnnotation(
   return { ok: true, node_ids: [nodeId] };
 }
 
+interface PolicyCardTablePayload {
+  section: string;
+  header: string[];
+  rows: string[][];
+}
+
+// Coerces the raw args.tables payload into typed tables, redacting EVERY string
+// (section label, every header cell, every row cell) via autopusRedact BEFORE
+// any node is created (SPEC-FIGMA-020 REQ-09 wire-redaction parity). No cell
+// text reaches createPolicyCardCanvas un-redacted.
+function redactPolicyTables(value: unknown): PolicyCardTablePayload[] {
+  if (!Array.isArray(value)) return [];
+  const out: PolicyCardTablePayload[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const raw = item as Record<string, unknown>;
+    const header = Array.isArray(raw.header)
+      ? raw.header.map((cell) => autopusRedact(asString(cell)))
+      : [];
+    const rows = Array.isArray(raw.rows)
+      ? raw.rows.map((row) =>
+          Array.isArray(row) ? row.map((cell) => autopusRedact(asString(cell))) : [],
+        )
+      : [];
+    out.push({
+      section: autopusRedact(asString(raw.section)),
+      header,
+      rows,
+    });
+  }
+  return out;
+}
+
+// SPEC-FIGMA-020 REQ-13, REQ-09 — autopus op set_policy_card. Redacts all table
+// text (header + every row cell) up front, then routes to the structured-table
+// renderer createPolicyCardCanvas when the runtime supports it. Mirrors
+// dispatchSetAnnotation's { ok, node_ids } return contract; degrades gracefully
+// to an empty node_ids list when the runtime is unsupported.
+async function dispatchSetPolicyCard(
+  figma: FigmaPluginLike,
+  args: Record<string, unknown>,
+): Promise<CommandResult> {
+  const tables = redactPolicyTables(args.tables);
+  if (!supportsAreaHandoffRuntime(figma)) return { ok: true, node_ids: [] };
+  const node = await createPolicyCardCanvas(figma, {
+    frameId: asString(args.frameId),
+    tables,
+    documentWidth:
+      typeof args.documentWidth === "number" ? args.documentWidth : undefined,
+  });
+  return { ok: true, node_ids: node.node_ids };
+}
+
 async function dispatchUpsertDescriptionsPage(
   figma: FigmaPluginLike,
   args: Record<string, unknown>,
@@ -290,6 +350,8 @@ export async function dispatchPluginCommand(
         return await dispatchSetAnnotation(figma, safeArgs);
       case "set_native_annotation":
         return await dispatchSetNativeAnnotation(figma, safeArgs);
+      case "set_policy_card":
+        return await dispatchSetPolicyCard(figma, safeArgs);
       case "upsert_descriptions_page_node":
         return await dispatchUpsertDescriptionsPage(figma, safeArgs);
       case "post_comment":

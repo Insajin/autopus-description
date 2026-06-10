@@ -8,7 +8,8 @@ export type WriteTarget =
   | "plugin_data"
   | "frame_name"
   | "none"
-  | "native_annotation";
+  | "native_annotation"
+  | "native_annotation_with_card";
 
 // SPEC-FIGMA-018 OQ-2 — minimized snapshot of a Figma native annotation,
 // mirroring the fields the vendor `setAnnotation` runtime accepts/returns.
@@ -85,6 +86,17 @@ export type UndoDescriptor =
   | { type: "clear-plugin-data"; node_id: string; key: string }
   | { type: "restore-frame-name"; node_id: string; original_name: string }
   | { type: "restore-annotation"; node_id: string; prior: AnnotationSnapshot[] }
+  // SPEC-FIGMA-020 REQ-08 — compound descriptor for the `native_annotation_with_card`
+  // composite target. One descriptor reverses BOTH surfaces: `native` restores the
+  // prior native annotation (reusing the `restore-annotation` shape) and `card`
+  // removes the policy card node (reusing the `delete-node` shape). The two member
+  // shapes are referenced from this same union, not redefined, so the redactors and
+  // hydrators that recurse into it stay in sync with the flat variants.
+  | {
+      type: "native-with-card";
+      native: Extract<UndoDescriptor, { type: "restore-annotation" }>;
+      card: Extract<UndoDescriptor, { type: "delete-node" }>;
+    }
   | { type: "noop" };
 
 export type WriteStatus = "applied" | "skipped" | "rejected";

@@ -30,7 +30,7 @@
 
 `src/daemon/` contains daemon CLI state, bridge logic, MCP resources, stdio handlers, HTTP/SSE server, pending writes, undo/apply/dry-run tools, tunnel adapters, telemetry, and audit writers.
 
-`packages/write-router/src/` owns write targets: `annotation_card`, `native_annotation`, `descriptions_page`, `comment`, `plugin_data`, `frame_name`, and `none`. The `native_annotation` target (SPEC-FIGMA-018) delivers descriptions through Figma's native Dev-Mode annotation primitive via `native-label.ts`, `area-node-resolver.ts`, `adapters/native-annotation.ts`, and `plan-emit/native-annotation-plan.ts`.
+`packages/write-router/src/` owns write targets: `annotation_card`, `native_annotation`, `native_annotation_with_card`, `descriptions_page`, `comment`, `plugin_data`, `frame_name`, and `none`. The `native_annotation` target (SPEC-FIGMA-018) delivers descriptions through Figma's native Dev-Mode annotation primitive via `native-label.ts`, `area-node-resolver.ts`, `adapters/native-annotation.ts`, and `plan-emit/native-annotation-plan.ts`. The composite `native_annotation_with_card` target (SPEC-FIGMA-020) writes both the native annotation and a real-table policy card in one apply via `adapters/native-annotation-with-card.ts`, `card-table-payload.ts`, `structured-policy.ts`, and `plan-emit/native-annotation-with-card-plan.ts`; the daemon hydrates the compound undo descriptor through `src/daemon/apply-undo-descriptor.ts`.
 
 `apps/review-ui/src/` uses Next.js App Router. Server routes load manifests and dispatch apply/undo/feedback actions; client components render dashboard rows, editors, stale badges, personas, and token strips.
 

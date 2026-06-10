@@ -5,6 +5,20 @@ Changes to `schema/frame-description.schema.json` and
 SPEC-FIGMA-001 REQ-08 / REQ-NFR-02. Minor versions are additive only —
 no field removal, rename, or type narrowing.
 
+## v0.4.0 — 2026-06-10
+
+### Added (additive minor per REQ-NFR-02)
+
+- `frame-description.write_target` enum gains `native_annotation_with_card` — routes the description to a composite surface that writes BOTH a concise native Dev-Mode annotation anchored to the resolved node(s) AND a separate policy card rendering the policy definition as real Figma auto-layout tables, in a single apply. Per SPEC-FIGMA-020 REQ-01 / REQ-14. Existing enum members are unchanged and unreordered.
+- `frame-description.states[]` items become a union (`oneOf`) of the existing `{ type: string, minLength: 1 }` string form and a new structured object with required `state` (string, minLength 1) and optional `trigger` and `result` (strings), `additionalProperties: false`. Per SPEC-FIGMA-020 REQ-05.
+- `frame-description.edge_cases[]` items become a union (`oneOf`) of the existing `{ type: string, minLength: 1 }` string form and a new structured object with required `case` (string, minLength 1) and optional `risk` and `handling` (strings), `additionalProperties: false`. Per SPEC-FIGMA-020 REQ-05.
+
+### Compatibility
+
+- All v0.1.0, v0.2.0, and v0.3.0 manifests remain valid against v0.4.0. The `write_target` enum is widened, never narrowed (no existing value removed). The `states[]`/`edge_cases[]` item schemas are widened from `string` to `string OR structured object` — the string branch is preserved byte-for-byte, so every existing string-form manifest validates unchanged; the object branch is purely additive.
+- `tools/validate-manifest` accepts both the legacy string forms and the new structured object forms, and continues to reject genuinely malformed entries.
+- Producers SHOULD set `schema_version: "0.4.0"` on every emitted manifest from this release forward.
+
 ## v0.3.0 — 2026-06-09
 
 ### Added (additive minor per REQ-NFR-02)

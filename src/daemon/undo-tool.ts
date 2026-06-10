@@ -77,9 +77,37 @@ function bridgeInverseCommand(d: UndoDescriptor): {
       // write-router adapter's undoNativeAnnotation (re-applies the prior
       // snapshot), not the extended inverse-op bridge surface used here.
       return { op: "noop", args: {} };
+    case "native-with-card":
+      // SPEC-FIGMA-020 REQ-08 — the compound inverse is dispatched as an ORDERED
+      // pair (card delete-node first, then native restore-annotation) by
+      // `compoundInverseCommands`; this single-command surface returns the CARD
+      // delete-node as the leading inverse so the noop fall-through never fires
+      // for the compound variant.
+      return { op: "delete_node", args: { node_id: d.card.node_id } };
     case "noop":
       return { op: "noop", args: {} };
   }
+}
+
+// SPEC-FIGMA-020 REQ-08 — the compound `native-with-card` undo reverses BOTH
+// surfaces in one invocation, ordered to match the adapter's
+// `undoNativeAnnotationWithCard`: the CARD (delete-node) is reversed FIRST, then
+// the NATIVE (restore-annotation write-back). Each member reuses the existing
+// per-variant inverse logic rather than reimplementing it. Flat descriptors
+// produce exactly one inverse command (unchanged behavior).
+function compoundInverseCommands(d: UndoDescriptor): Array<{
+  op:
+    | "delete_node"
+    | "delete_comment"
+    | "clear_plugin_data"
+    | "restore_frame_name"
+    | "noop";
+  args: Record<string, unknown>;
+}> {
+  if (d.type === "native-with-card") {
+    return [bridgeInverseCommand(d.card), bridgeInverseCommand(d.native)];
+  }
+  return [bridgeInverseCommand(d)];
 }
 
 export async function undoWrite(
@@ -94,8 +122,13 @@ export async function undoWrite(
     };
   }
   if (deps.bridge) {
-    const inv = bridgeInverseCommand(record.descriptor);
-    await deps.bridge.dispatchCommand(inv as unknown as PluginCommand, args.write_id);
+    // SPEC-FIGMA-020 REQ-08 — flat descriptors yield one inverse command;
+    // the compound `native-with-card` yields the ordered pair (card delete-node
+    // first, then native restore-annotation) so one undo reverses both surfaces.
+    const inverses = compoundInverseCommands(record.descriptor);
+    for (const inv of inverses) {
+      await deps.bridge.dispatchCommand(inv as unknown as PluginCommand, args.write_id);
+    }
   }
   // Clear idempotency for THIS hash only. SPEC-FIGMA-004 IdempotencyTracker
   // exposes a `clear()` (whole-set clear); we mimic per-hash clearing by

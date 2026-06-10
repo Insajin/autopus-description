@@ -27,6 +27,7 @@ The project reduces design-to-handoff documentation effort by converting Figma f
 - Validate manifests against JSON Schema and deterministic fixtures.
 - Review, edit, apply, undo, and audit write operations in a PM dashboard.
 - Write descriptions as native Figma Dev-Mode annotations anchored to nodes, in addition to the free-floating annotation card.
+- Deliver both surfaces in a single apply via the `native_annotation_with_card` composite target: a concise native Dev-Mode annotation anchored to the node plus a separate policy card that renders states, edge cases, data requirements, and area policies as real Figma auto-layout tables, with one compound undo and native-authoritative partial-failure handling.
 - Expose read/write MCP resources and tools over stdio and loopback HTTP/SSE.
 - Redact secrets and fence untrusted design text before prompts or wire output.
 

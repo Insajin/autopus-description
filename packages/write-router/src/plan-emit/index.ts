@@ -16,6 +16,7 @@ import {
 } from "./types.js";
 import { planAnnotationCard } from "./annotation-card-plan.js";
 import { planNativeAnnotation } from "./native-annotation-plan.js";
+import { planNativeAnnotationWithCard } from "./native-annotation-with-card-plan.js";
 import { planDescriptionsPage } from "./descriptions-page-plan.js";
 import { planComment } from "./comment-plan.js";
 import { planPluginData } from "./plugin-data-plan.js";
@@ -26,6 +27,16 @@ import { planNone } from "./none-plan.js";
 const UNDO_TEMPLATE: Readonly<Record<WriteTarget, UndoDescriptor>> = {
   annotation_card: { type: "delete-node", node_id: "" },
   native_annotation: { type: "restore-annotation", node_id: "", prior: [] },
+  // SPEC-FIGMA-020 REQ-08 — compound template reversing BOTH surfaces. `native`
+  // is the empty-prior `restore-annotation` placeholder (same skeleton as the
+  // flat native template above); `card` is the `delete-node` placeholder. The
+  // daemon hydrates both members post-apply (native node_id + prior snapshot,
+  // card node_id).
+  native_annotation_with_card: {
+    type: "native-with-card",
+    native: { type: "restore-annotation", node_id: "", prior: [] },
+    card: { type: "delete-node", node_id: "" },
+  },
   descriptions_page: { type: "delete-node", node_id: "" },
   comment: { type: "delete-comment", comment_id: "" },
   plugin_data: { type: "clear-plugin-data", node_id: "", key: "" },
@@ -42,6 +53,8 @@ function dispatchPlan(
       return planAnnotationCard(entry);
     case "native_annotation":
       return planNativeAnnotation(entry, ctx);
+    case "native_annotation_with_card":
+      return planNativeAnnotationWithCard(entry, ctx);
     case "descriptions_page":
       return planDescriptionsPage(entry);
     case "comment":
@@ -69,6 +82,16 @@ function templateFor(entry: ManifestEntry): UndoDescriptor {
       type: "restore-frame-name",
       node_id: entry.frame_id,
       original_name: "",
+    };
+  }
+  // SPEC-FIGMA-020 REQ-08 — deep-copy the compound template so its embedded
+  // `native`/`card` members are not shared references into the frozen
+  // UNDO_TEMPLATE skeleton; the daemon hydrates each member in place post-apply.
+  if (tpl.type === "native-with-card") {
+    return {
+      type: "native-with-card",
+      native: { ...tpl.native, prior: [...tpl.native.prior] },
+      card: { ...tpl.card },
     };
   }
   return { ...tpl };

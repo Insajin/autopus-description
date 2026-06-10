@@ -47,6 +47,25 @@ export interface SetFrameNameArgs extends Record<string, unknown> {
 }
 export type NoopArgs = Record<string, unknown>;
 
+// @AX:NOTE [AUTO]: naming-collision constraint (SPEC-FIGMA-020 REQ-12 / D5) — the
+// structured-table card op literal `set_policy_card` MUST be lexically distinct
+// from BOTH `set_annotation` (the card 3-step decomposition) and
+// `set_native_annotation` (the native Dev-Mode op). The composite target
+// `native_annotation_with_card` emits native ops first then exactly one
+// `set_policy_card` op; reusing either existing literal would collide TARGET_TO_OP
+// and the AC-S8 card rollback surface.
+// SPEC-FIGMA-020 REQ-02, REQ-13 — structured-table policy card op args. Carries
+// the frame anchor and the column-mapped table payload that the plugin renderer
+// (createPolicyCardCanvas, T7) turns into real Figma auto-layout cells.
+export interface SetPolicyCardArgs extends Record<string, unknown> {
+  frameId: string;
+  tables: {
+    section: string;
+    header: string[];
+    rows: string[][];
+  }[];
+}
+
 // @AX:NOTE [AUTO]: naming-collision constraint — the op name MUST be `set_native_annotation`, never `set_annotation` (AC-S1 / S10). The card path (`set_annotation`, 3-step) and the native path (`set_native_annotation`, 1-step) are distinct surfaces; reusing the card op name would collide TARGET_TO_OP and break the AC-S8 card rollback invariant.
 // SPEC-FIGMA-018 REQ-01, REQ-02 — native Dev-Mode annotation op args. Single
 // node target with a composed `labelMarkdown` and an optional `categoryId`.
@@ -59,6 +78,7 @@ export interface SetNativeAnnotationArgs extends Record<string, unknown> {
 export type PluginCommand =
   | { op: "set_annotation"; args: SetAnnotationArgs }
   | { op: "set_native_annotation"; args: SetNativeAnnotationArgs }
+  | { op: "set_policy_card"; args: SetPolicyCardArgs }
   | { op: "upsert_descriptions_page_node"; args: UpsertDescriptionsPageArgs }
   | { op: "post_comment"; args: PostCommentArgs }
   | { op: "set_plugin_data"; args: SetPluginDataArgs }
@@ -70,6 +90,7 @@ export type PluginCommandOp = PluginCommand["op"];
 export const PLUGIN_COMMAND_OPS: readonly PluginCommandOp[] = [
   "set_annotation",
   "set_native_annotation",
+  "set_policy_card",
   "upsert_descriptions_page_node",
   "post_comment",
   "set_plugin_data",
@@ -79,9 +100,17 @@ export const PLUGIN_COMMAND_OPS: readonly PluginCommandOp[] = [
 
 // @AX:ANCHOR [AUTO]: WriteTarget→PluginCommandOp routing table — sonnylazuardi tool surface mapping (REQ-09).
 // @AX:REASON: Every write_target dispatch flows through this single table; drift against `vendor/.../autopus_command_dispatch.ts::TOOL_NAME_MAP` breaks AC-S1 set equality. Both tables must advance together per the REQ-17 runbook.
+// @AX:NOTE [AUTO] SPEC-FIGMA-020 REQ-13 — the composite `native_annotation_with_card`
+// emits TWO plugin ops in one apply: the primary `set_native_annotation` (committed
+// first, authoritative) followed by exactly one secondary `set_policy_card`. This
+// table records the PRIMARY op only (the routing discriminator); the secondary
+// `set_policy_card` is appended by the plan helper and registered in
+// PLUGIN_COMMAND_OPS. T7 adds the matching `TOOL_NAME_MAP` entry so the two tables
+// advance together (set-equality parity at line above).
 export const TARGET_TO_OP: Readonly<Record<WriteTarget, PluginCommandOp>> = {
   annotation_card: "set_annotation",
   native_annotation: "set_native_annotation",
+  native_annotation_with_card: "set_native_annotation",
   descriptions_page: "upsert_descriptions_page_node",
   comment: "post_comment",
   plugin_data: "set_plugin_data",

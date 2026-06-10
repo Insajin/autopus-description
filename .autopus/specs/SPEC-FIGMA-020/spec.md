@@ -1,8 +1,8 @@
 # SPEC-FIGMA-020: Hybrid Dual-Write — Native Annotation Summary + Real-Table Policy Card in One Apply
 
-> Status: approved
+> Status: completed
 
-**Status**: approved
+**Status**: completed
 **Created**: 2026-06-10
 **Domain**: FIGMA
 **Module**: `.` (root) — `@autopus/figma-mcp` monorepo (cross-package: `packages/write-router` + `apps/review-ui` + `vendor/cursor-talk-to-figma-mcp` integration layer + `schema/` + `src/prompts` + `src/daemon` + `tools/validate-manifest`)

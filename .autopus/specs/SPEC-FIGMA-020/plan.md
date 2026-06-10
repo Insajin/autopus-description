@@ -1,6 +1,6 @@
 # SPEC-FIGMA-020 구현 계획 (Implementation Plan)
 
-> Status: draft
+> Status: completed
 
 ## 태스크 목록 (Task List)
 
