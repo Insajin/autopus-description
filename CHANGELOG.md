@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-06-10
+
 ### Added — Claude Code plugin bundle for autopus-figma: one-install MCP server + auto-triggering description skill (SPEC-MCP-002)
 Using autopus-figma from Claude Code previously required hand-registering the MCP server and separately placing the description workflow skill, so install friction was high and the description skill never auto-triggered. This release ships an in-repo Claude Code plugin package so a single install wires both the MCP server and the description skill into Claude Code.
 - New plugin manifest `.autopus/plugins/autopus-figma/.claude-plugin/plugin.json` declares the `autopus-figma` MCP server (stdio entry `dist/src/daemon/mcp-stdio-entry.js`, resolved via `${CLAUDE_PLUGIN_ROOT}`) and the bundled skills directory, so enabling the plugin starts the server with no manual MCP config (REQ-01, REQ-02, REQ-07).
