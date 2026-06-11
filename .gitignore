@@ -56,3 +56,5 @@ node_modules/
 !.autopus/probes/transport-matrix.jsonl
 .autopus/audit.jsonl
 .autopus/write-audit.jsonl
+# v4 description dryRun override (local runtime artifact)
+.autopus/dryrun-entry.json
