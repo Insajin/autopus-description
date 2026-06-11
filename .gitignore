@@ -58,3 +58,11 @@ node_modules/
 .autopus/write-audit.jsonl
 # v4 description dryRun override (local runtime artifact)
 .autopus/dryrun-entry.json
+
+# Local scratch / build artifacts (screenshots, scratch scripts, logs, packaged plugin)
+.auto-continue.md
+.tmp/
+.tmp_writer.py
+test.txt
+autopus-figma-designer/
+autopus-figma-designer.zip
