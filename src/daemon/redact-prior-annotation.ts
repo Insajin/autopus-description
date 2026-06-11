@@ -77,11 +77,11 @@ export function redactAndMinimizePrior(
   if (descriptor.type === "native-with-card") {
     return {
       type: "native-with-card",
-      native: {
-        type: "restore-annotation",
-        node_id: descriptor.native.node_id,
-        prior: descriptor.native.prior.map(redactAndMinimizeSnapshot),
-      },
+      natives: descriptor.natives.map((n) => ({
+        type: "restore-annotation" as const,
+        node_id: n.node_id,
+        prior: n.prior.map(redactAndMinimizeSnapshot),
+      })),
       card: descriptor.card,
     };
   }

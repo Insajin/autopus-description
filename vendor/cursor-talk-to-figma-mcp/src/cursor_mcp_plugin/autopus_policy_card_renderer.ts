@@ -6,7 +6,7 @@
 // row frame per item, each cell a text node) — NOT markdown pipe pseudo-tables.
 
 import type { AreaHandoffRuntime, Box, CanvasNode } from "./autopus_area_handoff_renderer.js";
-import { boxOf, chooseDocumentBox, supportsAreaHandoffRuntime } from "./autopus_area_handoff_renderer.js";
+import { boxOf, supportsAreaHandoffRuntime } from "./autopus_area_handoff_renderer.js";
 
 // LOCAL mirror of the write-router CardTablePayload wire shape. The vendor tree
 // is self-contained, so this is duplicated here intentionally rather than
@@ -39,6 +39,8 @@ const ROW_SPACING = 1;
 const CELL_PADDING = 8;
 const CELL_WIDTH = 200;
 const CARD_WIDTH = CELL_WIDTH * 3 + CELL_PADDING * 2 + CARD_PADDING * 2;
+// Gap between the source frame's right edge and the policy card.
+const CARD_GAP = 80;
 
 async function addCell(
   figma: AreaHandoffRuntime,
@@ -50,11 +52,13 @@ async function addCell(
   cell.name = "Autopus policy cell";
   // SPEC-FIGMA-021 (live fix) — Figma rejects ANY text-property write (fontSize,
   // characters) while the node's CURRENT font is unloaded. A fresh createText()
-  // node defaults to Inter Regular (unloaded), so load the target font and set
-  // fontName BEFORE fontSize/characters. (Unit-test stubs don't enforce font
-  // loading, which is why this only surfaced in the live plugin oracle.)
+  // node defaults to Inter Regular (unloaded), so fontName MUST be set BEFORE
+  // fontSize/characters. SPEC-FIGMA-020 live fix (2026-06-10): both cell fonts are
+  // preloaded ONCE in createPolicyCardCanvas (not per cell). Awaiting
+  // loadFontAsync on every one of ~50+ cells serialized the render long enough to
+  // cross the 30s bridge timeout, leaving partial orphan cards the compound undo
+  // could not clean up.
   const cellFont = bold ? HEADER_FONT : CARD_FONT;
-  if (figma.loadFontAsync) await figma.loadFontAsync(cellFont);
   cell.fontName = cellFont;
   cell.fontSize = CELL_FONT_SIZE;
   cell.characters = value;
@@ -64,10 +68,20 @@ async function addCell(
   // HORIZONTAL auto-layout row the cell still lays out correctly. (Unit-test
   // stubs expose `width` as a plain writable prop, which is why this only
   // surfaced in the live plugin oracle.)
-  const textCell = cell as CanvasNode & { textAutoResize?: string };
-  textCell.textAutoResize = "HEIGHT";
-  cell.resize?.(CELL_WIDTH, cell.fontSize ?? CELL_FONT_SIZE);
+  const textCell = cell as CanvasNode & {
+    textAutoResize?: string;
+    layoutSizingHorizontal?: string;
+  };
+  // SPEC-FIGMA-020 live fix (2026-06-10) — make long cell text WRAP instead of
+  // overflowing and clipping at the card edge. ORDER MATTERS (Figma gotcha): once
+  // the cell is an auto-layout child, pin its column to a FIXED width, resize to
+  // CELL_WIDTH, and set textAutoResize="HEIGHT" LAST. Setting textAutoResize before
+  // the width is locked makes Figma keep WIDTH_AND_HEIGHT (single-line, auto-width),
+  // which is exactly the clipping bug. (Unit-test stubs ignore the layout prop.)
   row.appendChild?.(cell);
+  textCell.layoutSizingHorizontal = "FIXED";
+  cell.resize?.(CELL_WIDTH, cell.fontSize ?? CELL_FONT_SIZE);
+  textCell.textAutoResize = "HEIGHT";
   return cell;
 }
 
@@ -131,12 +145,31 @@ export async function createPolicyCardCanvas(
   if (!supportsAreaHandoffRuntime(figma)) {
     throw new Error("policy card runtime not supported");
   }
+  // SPEC-FIGMA-020 live fix (2026-06-10) — preload both cell fonts ONCE here so
+  // addCell never awaits per cell. loadFontAsync is idempotent/cached, so the two
+  // awaits cost one fetch each up front instead of serializing 50+ awaits during
+  // the row loop (which previously pushed the render past the 30s bridge timeout).
+  if (figma.loadFontAsync) {
+    await figma.loadFontAsync(CARD_FONT);
+    await figma.loadFontAsync(HEADER_FONT);
+  }
   const source = await figma.getNodeByIdAsync(args.frameId);
   if (!source) throw new Error(`source frame not found: ${args.frameId}`);
   const sourceBox: Box = boxOf(source);
   const width = Number(args.documentWidth ?? CARD_WIDTH);
   const height = Math.max(200, CARD_PADDING * 2 + args.tables.length * 120);
-  const cardBox = chooseDocumentBox(figma, source, sourceBox, width, height);
+  // SPEC-FIGMA-020 live fix (2026-06-11) — place the card immediately to the RIGHT
+  // of the source frame so it sits in the same viewport. The previous
+  // chooseDocumentBox collision-avoidance dumped the card far off-canvas
+  // (maxRight+gap) on dense boards, making it effectively invisible. Adjacent
+  // placement may briefly overlap legacy cards; that is acceptable (legacy is
+  // removed after migration) and keeps the card findable next to its frame.
+  const cardBox: Box = {
+    x: sourceBox.x + sourceBox.width + CARD_GAP,
+    y: sourceBox.y,
+    width,
+    height,
+  };
   const card = figma.createFrame();
   card.name = "Autopus Policy Card";
   card.x = cardBox.x;

@@ -27,14 +27,13 @@ import { planNone } from "./none-plan.js";
 const UNDO_TEMPLATE: Readonly<Record<WriteTarget, UndoDescriptor>> = {
   annotation_card: { type: "delete-node", node_id: "" },
   native_annotation: { type: "restore-annotation", node_id: "", prior: [] },
-  // SPEC-FIGMA-020 REQ-08 — compound template reversing BOTH surfaces. `native`
-  // is the empty-prior `restore-annotation` placeholder (same skeleton as the
-  // flat native template above); `card` is the `delete-node` placeholder. The
-  // daemon hydrates both members post-apply (native node_id + prior snapshot,
-  // card node_id).
+  // SPEC-FIGMA-020 REQ-08 — compound template reversing BOTH surfaces. `natives`
+  // is a 1-element skeleton array (expanded to N in templateFor when the entry has
+  // area_annotations); `card` is the `delete-node` placeholder. The daemon hydrates
+  // each native member's node_id + prior post-apply, and the card node_id.
   native_annotation_with_card: {
     type: "native-with-card",
-    native: { type: "restore-annotation", node_id: "", prior: [] },
+    natives: [{ type: "restore-annotation", node_id: "", prior: [] }],
     card: { type: "delete-node", node_id: "" },
   },
   descriptions_page: { type: "delete-node", node_id: "" },
@@ -84,13 +83,21 @@ function templateFor(entry: ManifestEntry): UndoDescriptor {
       original_name: "",
     };
   }
-  // SPEC-FIGMA-020 REQ-08 — deep-copy the compound template so its embedded
-  // `native`/`card` members are not shared references into the frozen
-  // UNDO_TEMPLATE skeleton; the daemon hydrates each member in place post-apply.
+  // SPEC-FIGMA-020 REQ-08 — deep-copy the compound template so its `natives`/`card`
+  // members are not shared references into the frozen UNDO_TEMPLATE skeleton. The
+  // `natives` array length is sized to match the number of `set_native_annotation`
+  // ops the plan emits: (area_annotations?.length || 1). Each element is an
+  // empty-prior `restore-annotation` placeholder; the daemon hydrates node_id + prior
+  // for each member post-apply.
   if (tpl.type === "native-with-card") {
+    const nativeCount = (entry.area_annotations?.length ?? 0) || 1;
     return {
       type: "native-with-card",
-      native: { ...tpl.native, prior: [...tpl.native.prior] },
+      natives: Array.from({ length: nativeCount }, () => ({
+        type: "restore-annotation" as const,
+        node_id: "",
+        prior: [] as import("../types.js").AnnotationSnapshot[],
+      })),
       card: { ...tpl.card },
     };
   }

@@ -82,13 +82,19 @@ function bridgeInverseCommand(d: UndoDescriptor): {
       return { op: "restore_annotation", args: { node_id: d.node_id, prior: d.prior } };
     case "native-with-card":
       // @AX:NOTE: [AUTO] leading-inverse stub — bridgeInverseCommand returns only the card delete-node here;
-      //           the full ordered pair (card first, native second) is assembled by compoundInverseCommands.
+      //           the full ordered sequence (card first, then each native) is assembled by compoundInverseCommands.
       // SPEC-FIGMA-020 REQ-08 — the compound inverse is dispatched as an ORDERED
-      // pair (card delete-node first, then native restore-annotation) by
+      // sequence (card delete-node first, then each native restore-annotation) by
       // `compoundInverseCommands`; this single-command surface returns the CARD
-      // delete-node as the leading inverse so the noop fall-through never fires
-      // for the compound variant.
-      return { op: "delete_node", args: { node_id: d.card.node_id } };
+      // delete-node as the leading inverse (skip when node_id is empty sentinel).
+      if (d.card.node_id !== "") {
+        return { op: "delete_node", args: { node_id: d.card.node_id } };
+      }
+      // Card node_id is the empty sentinel (voided on cardFailed multi-native path):
+      // fall back to the first native restore as the leading inverse.
+      return d.natives.length > 0
+        ? bridgeInverseCommand(d.natives[0])
+        : { op: "noop", args: {} };
     case "noop":
       return { op: "noop", args: {} };
   }
@@ -115,7 +121,16 @@ function compoundInverseCommands(d: UndoDescriptor): Array<{
   args: Record<string, unknown>;
 }> {
   if (d.type === "native-with-card") {
-    return [bridgeInverseCommand(d.card), bridgeInverseCommand(d.native)];
+    // SPEC-FIGMA-020 REQ-08 — card delete-node FIRST (skip when node_id is the
+    // empty sentinel), then each native restore-annotation in order.
+    const cmds: ReturnType<typeof bridgeInverseCommand>[] = [];
+    if (d.card.node_id !== "") {
+      cmds.push(bridgeInverseCommand(d.card));
+    }
+    for (const n of d.natives) {
+      cmds.push(bridgeInverseCommand(n));
+    }
+    return cmds;
   }
   return [bridgeInverseCommand(d)];
 }

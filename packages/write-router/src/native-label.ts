@@ -34,6 +34,20 @@ export function composeAreaLabel(area: AreaAnnotation): string {
   return lines.join("\n");
 }
 
+// SPEC-FIGMA-020 live model (2026-06-11) — SIMPLE per-element UI description for
+// the composite target's native annotations. The native annotation replaces the
+// old number badge: a short, plain UI explanation anchored to the element, in
+// PM/planner language. Detailed policy, states, and data move to the policy card,
+// so this label deliberately omits policy/states and keeps only what a reader
+// needs to understand the element on the canvas: title, what it is, and (when
+// present) how it behaves.
+export function composeAreaLabelSimple(area: AreaAnnotation): string {
+  const lines = [`**${area.title}**`];
+  pushLine(lines, "설명", area.description);
+  pushLine(lines, "동작", area.interaction);
+  return lines.join("\n");
+}
+
 // Frame-level summary used when an entry carries no area_annotations (REQ-03).
 export function composeFrameLabel(entry: ManifestEntry): string {
   const lines = [`**${entry.title}**`];

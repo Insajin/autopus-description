@@ -3,7 +3,7 @@ project_name: auto-discription
 platforms:
     - claude-code
     - codex
-    - gemini-cli
+    - antigravity-cli
     - opencode
 language:
     comments: en

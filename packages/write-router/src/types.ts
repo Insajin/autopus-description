@@ -40,6 +40,12 @@ export interface AreaAnnotation {
   data_refs?: string[];
   qa_notes?: string[];
   placement_hint?: string;
+  // SPEC-FIGMA-020 live model (2026-06-11): the actual UI-element node this area
+  // describes. When set, the composite native_annotation_with_card target anchors
+  // this area's native annotation directly to that node (badge-style, one short UI
+  // description per element) instead of name-resolving — distinct nodes coexist, so
+  // multiple area annotations no longer overwrite each other on the frame node.
+  target_node_id?: string;
 }
 
 export interface DataRequirement {
@@ -87,14 +93,17 @@ export type UndoDescriptor =
   | { type: "restore-frame-name"; node_id: string; original_name: string }
   | { type: "restore-annotation"; node_id: string; prior: AnnotationSnapshot[] }
   // SPEC-FIGMA-020 REQ-08 — compound descriptor for the `native_annotation_with_card`
-  // composite target. One descriptor reverses BOTH surfaces: `native` restores the
-  // prior native annotation (reusing the `restore-annotation` shape) and `card`
-  // removes the policy card node (reusing the `delete-node` shape). The two member
-  // shapes are referenced from this same union, not redefined, so the redactors and
-  // hydrators that recurse into it stay in sync with the flat variants.
+  // composite target. One descriptor reverses BOTH surfaces: `natives` restores N
+  // prior native annotations (one per UI element node, reusing the
+  // `restore-annotation` shape) and `card` removes the policy card node (reusing
+  // the `delete-node` shape). The member shapes are referenced from this same union,
+  // not redefined, so redactors and hydrators that recurse into them stay in sync
+  // with the flat variants. `natives` length equals the number of `set_native_annotation`
+  // ops the plan emits (area_annotations.length || 1). Card delete is skipped when
+  // `card.node_id === ""` (partial-failure / empty-id sentinel).
   | {
       type: "native-with-card";
-      native: Extract<UndoDescriptor, { type: "restore-annotation" }>;
+      natives: Extract<UndoDescriptor, { type: "restore-annotation" }>[];
       card: Extract<UndoDescriptor, { type: "delete-node" }>;
     }
   | { type: "noop" };

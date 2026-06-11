@@ -36,7 +36,13 @@ interface PendingRequest {
 }
 
 const DEFAULT_URL = "ws://127.0.0.1:3055";
-const DEFAULT_TIMEOUT = 30_000;
+// SPEC-FIGMA-020 live fix (2026-06-10) — raised 30s → 120s. This timer is a HARD
+// per-request cap (not reset by plugin progress, unlike the vendor inactivity
+// timer), and the set_policy_card renderer builds 50+ auto-layout table nodes in
+// one command. At 30s a slow render was cut off mid-build, leaving partial orphan
+// policy cards the compound undo could not clean (no node_ids returned). 120s
+// gives the structured-table card room to finish and respond.
+const DEFAULT_TIMEOUT = 120_000;
 
 export class FigmaPluginClient {
   private readonly url: string;

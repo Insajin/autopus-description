@@ -133,11 +133,11 @@ export async function applyNativeAnnotationWithCard(
   });
 
   // 3. Compose ONE compound descriptor reversing both surfaces (REQ-08). The
-  //    `native` member is the captured restore-annotation; the `card` member is
-  //    the card node's delete-node.
+  //    `natives` array wraps the single captured restore-annotation; the `card`
+  //    member is the card node's delete-node.
   const undo_descriptor: NativeWithCardDescriptor = {
     type: "native-with-card",
-    native: nativeUndo,
+    natives: [nativeUndo],
     card: { type: "delete-node", node_id: cardNodeId },
   };
 
@@ -167,9 +167,14 @@ export async function undoNativeAnnotationWithCard(
       `native_annotation_with_card undo expected native-with-card, got ${descriptor.type}`,
     );
   }
-  // 1. Card surface first: remove the policy card node.
+  // 1. Card surface first: remove the policy card node. Skip when node_id is
+  //    the empty sentinel (voided on cardFailed multi-native path, REQ-07).
   const cardClient = asCardClient(ctx.figma);
-  await cardClient.deleteNode({ node_id: descriptor.card.node_id });
-  // 2. Native surface second: restore the prior annotation state.
-  await undoNativeAnnotation(descriptor.native, ctx);
+  if (descriptor.card.node_id !== "") {
+    await cardClient.deleteNode({ node_id: descriptor.card.node_id });
+  }
+  // 2. Native surface(s) second: restore each prior annotation state in order.
+  for (const n of descriptor.natives) {
+    await undoNativeAnnotation(n, ctx);
+  }
 }

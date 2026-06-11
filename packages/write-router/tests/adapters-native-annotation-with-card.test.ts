@@ -125,7 +125,8 @@ describe("composite adapter — apply both surfaces (S5)", () => {
       { type: "native-with-card" }
     >;
     expect(undo.type).toBe("native-with-card");
-    expect(undo.native.type).toBe("restore-annotation");
+    expect(undo.natives).toHaveLength(1);
+    expect(undo.natives[0].type).toBe("restore-annotation");
     expect(undo.card).toEqual({ type: "delete-node", node_id: "card-node-1" });
   });
 });
@@ -148,7 +149,7 @@ describe("composite adapter — one compound undo reverses both surfaces (S5)", 
       { type: "native-with-card" }
     >;
     // The captured native prior is the empty prior the node held before apply.
-    expect(undo.native.prior).toEqual([]);
+    expect(undo.natives[0].prior).toEqual([]);
     // After apply the node carries the generated annotation (one setAnnotation).
     expect(client.setAnnotation).toHaveBeenCalledTimes(1);
 
@@ -296,7 +297,7 @@ describe("composite adapter — card client validation (asCardClient guards)", (
       undoNativeAnnotationWithCard(
         {
           type: "native-with-card",
-          native: { type: "restore-annotation", node_id: "10:1", prior: [] },
+          natives: [{ type: "restore-annotation", node_id: "10:1", prior: [] }],
           card: { type: "delete-node", node_id: "card-x" },
         },
         { figma: client },
@@ -309,7 +310,7 @@ describe("composite adapter — card client validation (asCardClient guards)", (
       undoNativeAnnotationWithCard(
         {
           type: "native-with-card",
-          native: { type: "restore-annotation", node_id: "10:1", prior: [] },
+          natives: [{ type: "restore-annotation", node_id: "10:1", prior: [] }],
           card: { type: "delete-node", node_id: "card-x" },
         },
         { figma: null as unknown as object },

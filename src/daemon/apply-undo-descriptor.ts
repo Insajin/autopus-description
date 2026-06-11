@@ -33,22 +33,22 @@ export function hydrateUndoDescriptor(
         prior: template.prior,
       };
     case "native-with-card": {
-      // SPEC-FIGMA-020 REQ-08 — hydrate BOTH embedded descriptors from the
-      // command results, mirroring the flat restore-annotation and delete-node
-      // branches. The native op is dispatched first so its annotated node_id is
-      // the FIRST collected id; the card op is dispatched second so the created
-      // card node_id is the SECOND collected id. The captured prior snapshot on
-      // the native member is carried through unchanged (redacted later, REQ-10).
+      // SPEC-FIGMA-020 REQ-08 — hydrate ALL embedded native descriptors from the
+      // command results: nodeIds[0..natives.length-1] are each native op's node_id
+      // (one per UI element, dispatched first), nodeIds[natives.length] is the card
+      // node_id (dispatched last). The captured prior on each native member is
+      // carried through unchanged (redacted later, REQ-10).
+      const hydratedNatives = template.natives.map((n, i) => ({
+        type: "restore-annotation" as const,
+        node_id: nodeIds[i] ?? n.node_id,
+        prior: n.prior,
+      }));
       return {
         type: "native-with-card",
-        native: {
-          type: "restore-annotation",
-          node_id: nodeIds[0] ?? template.native.node_id,
-          prior: template.native.prior,
-        },
+        natives: hydratedNatives,
         card: {
           type: "delete-node",
-          node_id: nodeIds[1] ?? template.card.node_id,
+          node_id: nodeIds[template.natives.length] ?? template.card.node_id,
         },
       };
     }
@@ -80,9 +80,20 @@ export function computePersistedDescriptor(
     return redactAndMinimizePrior(hydrated);
   }
   if (hydrated.type === "native-with-card") {
-    const redactedNative = redactAndMinimizePrior(hydrated.native);
-    if (cardFailed) return redactedNative;
-    return { type: "native-with-card", native: redactedNative, card: hydrated.card };
+    const redactedNatives = hydrated.natives.map((n) => redactAndMinimizePrior(n));
+    if (cardFailed) {
+      // When the card step failed and there was exactly one native, downgrade to
+      // the flat restore-annotation (preserves existing behavior, AC-S4). With
+      // multiple natives the compound shape is kept but the card is voided with
+      // an empty node_id sentinel so undo skips the delete.
+      if (redactedNatives.length === 1) return redactedNatives[0];
+      return {
+        type: "native-with-card",
+        natives: redactedNatives,
+        card: { type: "delete-node", node_id: "" },
+      };
+    }
+    return { type: "native-with-card", natives: redactedNatives, card: hydrated.card };
   }
   return hydrated;
 }

@@ -134,23 +134,27 @@ describe("hydrateUndoDescriptor — restore-annotation", () => {
 describe("hydrateUndoDescriptor — native-with-card (compound, REQ-08)", () => {
   const template: Extract<UndoDescriptor, { type: "native-with-card" }> = {
     type: "native-with-card",
-    native: {
-      type: "restore-annotation",
-      node_id: "NATIVE_TEMPLATE",
-      prior: [{ labelMarkdown: "prior note" }],
-    },
+    natives: [
+      {
+        type: "restore-annotation",
+        node_id: "NATIVE_TEMPLATE",
+        prior: [{ labelMarkdown: "prior note" }],
+      },
+    ],
     card: { type: "delete-node", node_id: "CARD_TEMPLATE" },
   };
 
-  it("hydrates the native node_id from index 0 and the card node_id from index 1", () => {
+  it("hydrates natives[0].node_id from index 0 and the card node_id from index 1", () => {
     const out = hydrateUndoDescriptor(template, ["native-applied", "card-created"]);
     expect(out).toEqual({
       type: "native-with-card",
-      native: {
-        type: "restore-annotation",
-        node_id: "native-applied",
-        prior: [{ labelMarkdown: "prior note" }],
-      },
+      natives: [
+        {
+          type: "restore-annotation",
+          node_id: "native-applied",
+          prior: [{ labelMarkdown: "prior note" }],
+        },
+      ],
       card: { type: "delete-node", node_id: "card-created" },
     });
   });
@@ -159,11 +163,13 @@ describe("hydrateUndoDescriptor — native-with-card (compound, REQ-08)", () => 
     const out = hydrateUndoDescriptor(template, []);
     expect(out).toEqual({
       type: "native-with-card",
-      native: {
-        type: "restore-annotation",
-        node_id: "NATIVE_TEMPLATE",
-        prior: [{ labelMarkdown: "prior note" }],
-      },
+      natives: [
+        {
+          type: "restore-annotation",
+          node_id: "NATIVE_TEMPLATE",
+          prior: [{ labelMarkdown: "prior note" }],
+        },
+      ],
       card: { type: "delete-node", node_id: "CARD_TEMPLATE" },
     });
   });
@@ -171,9 +177,29 @@ describe("hydrateUndoDescriptor — native-with-card (compound, REQ-08)", () => 
   it("falls back to the card template id when only the native id was collected", () => {
     const out = hydrateUndoDescriptor(template, ["native-applied"]);
     const compound = out as Extract<UndoDescriptor, { type: "native-with-card" }>;
-    expect(compound.native.node_id).toBe("native-applied");
-    // index 1 is absent → card falls back to its template node_id.
+    expect(compound.natives[0].node_id).toBe("native-applied");
+    // index 1 (= natives.length) is absent → card falls back to its template node_id.
     expect(compound.card.node_id).toBe("CARD_TEMPLATE");
+  });
+
+  it("hydrates 2 natives from indices 0,1 and the card from index 2 (multi-element oracle)", () => {
+    // This is the new oracle: 2 area_annotations → 2 set_native_annotation ops
+    // → natives has 2 entries; nodeIds[0]/[1] hydrate the two natives,
+    // nodeIds[2] hydrates the card.
+    const template2: Extract<UndoDescriptor, { type: "native-with-card" }> = {
+      type: "native-with-card",
+      natives: [
+        { type: "restore-annotation", node_id: "", prior: [] },
+        { type: "restore-annotation", node_id: "", prior: [] },
+      ],
+      card: { type: "delete-node", node_id: "" },
+    };
+    const out = hydrateUndoDescriptor(template2, ["elem-10:1", "elem-10:2", "card-99"]);
+    const compound = out as Extract<UndoDescriptor, { type: "native-with-card" }>;
+    expect(compound.natives).toHaveLength(2);
+    expect(compound.natives[0].node_id).toBe("elem-10:1");
+    expect(compound.natives[1].node_id).toBe("elem-10:2");
+    expect(compound.card.node_id).toBe("card-99");
   });
 });
 
@@ -209,27 +235,29 @@ describe("computePersistedDescriptor — compound native-with-card (REQ-07/REQ-1
   function makeHydrated(): Extract<UndoDescriptor, { type: "native-with-card" }> {
     return {
       type: "native-with-card",
-      native: {
-        type: "restore-annotation",
-        node_id: "10:1",
-        prior: [{ labelMarkdown: "note xoxb-LEAKEDSECRET", categoryId: "review" }],
-      },
+      natives: [
+        {
+          type: "restore-annotation",
+          node_id: "10:1",
+          prior: [{ labelMarkdown: "note xoxb-LEAKEDSECRET", categoryId: "review" }],
+        },
+      ],
       card: { type: "delete-node", node_id: "card-9" },
     };
   }
 
-  it("full success keeps BOTH surfaces with the native member redacted", () => {
+  it("full success keeps BOTH surfaces with every native member redacted", () => {
     const out = computePersistedDescriptor(makeHydrated(), false);
     expect(out.type).toBe("native-with-card");
     const compound = out as Extract<UndoDescriptor, { type: "native-with-card" }>;
     // Card surface preserved verbatim.
     expect(compound.card).toEqual({ type: "delete-node", node_id: "card-9" });
-    // Native prior redacted in place.
-    expect(JSON.stringify(compound.native)).not.toContain("xoxb-LEAKEDSECRET");
-    expect(compound.native.node_id).toBe("10:1");
+    // natives[0] prior redacted in place.
+    expect(JSON.stringify(compound.natives[0])).not.toContain("xoxb-LEAKEDSECRET");
+    expect(compound.natives[0].node_id).toBe("10:1");
   });
 
-  it("card failure downgrades to the redacted native-only flat descriptor", () => {
+  it("card failure with one native downgrades to the redacted native-only flat descriptor", () => {
     const out = computePersistedDescriptor(makeHydrated(), true);
     // Downgraded to the flat restore-annotation (card surface dropped).
     expect(out.type).toBe("restore-annotation");
@@ -238,6 +266,26 @@ describe("computePersistedDescriptor — compound native-with-card (REQ-07/REQ-1
     expect(JSON.stringify(flat)).not.toContain("xoxb-LEAKEDSECRET");
     // No card surface remains on the downgraded descriptor.
     expect(JSON.stringify(out)).not.toContain("card-9");
+  });
+
+  it("card failure with multiple natives keeps compound shape with voided card (node_id empty)", () => {
+    const multiHydrated: Extract<UndoDescriptor, { type: "native-with-card" }> = {
+      type: "native-with-card",
+      natives: [
+        { type: "restore-annotation", node_id: "10:1", prior: [{ labelMarkdown: "xoxb-LEAKEDSECRET" }] },
+        { type: "restore-annotation", node_id: "10:2", prior: [] },
+      ],
+      card: { type: "delete-node", node_id: "card-multi" },
+    };
+    const out = computePersistedDescriptor(multiHydrated, true);
+    expect(out.type).toBe("native-with-card");
+    const compound = out as Extract<UndoDescriptor, { type: "native-with-card" }>;
+    // Card is voided (empty sentinel) — no phantom delete on undo.
+    expect(compound.card.node_id).toBe("");
+    // Both natives are redacted.
+    expect(JSON.stringify(compound.natives[0])).not.toContain("xoxb-LEAKEDSECRET");
+    expect(compound.natives).toHaveLength(2);
+    expect(compound.natives[1].node_id).toBe("10:2");
   });
 });
 

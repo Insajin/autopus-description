@@ -29,11 +29,13 @@ const COMPOSITE = "native_annotation_with_card" as const;
 function compoundDescriptorWithSecret(): UndoDescriptor {
   return {
     type: "native-with-card",
-    native: {
-      type: "restore-annotation",
-      node_id: "10:1",
-      prior: [{ labelMarkdown: SECRET_LABEL }],
-    },
+    natives: [
+      {
+        type: "restore-annotation",
+        node_id: "10:1",
+        prior: [{ labelMarkdown: SECRET_LABEL }],
+      },
+    ],
     card: { type: "delete-node", node_id: "card-node-1" },
   };
 }
@@ -80,7 +82,7 @@ describe("S7 daemon path: persisted AppliedWrite carries no captured secret", ()
     // an untrusted reviewer secret captured at apply time).
     const record = ext.pendingStore.get(pending.pending_id).record!;
     if (record.undo_template?.type === "native-with-card") {
-      record.undo_template.native.prior = [{ labelMarkdown: SECRET_LABEL }];
+      record.undo_template.natives[0].prior = [{ labelMarkdown: SECRET_LABEL }];
     } else {
       throw new Error("expected a native-with-card undo_template");
     }
@@ -148,8 +150,8 @@ describe("S7 router/HTTP path: WriteResult.undo_descriptor carries no captured s
     const out = redactRestoreDescriptor(
       compoundDescriptorWithSecret(),
     ) as Extract<UndoDescriptor, { type: "native-with-card" }>;
-    expect(out.native.prior[0].labelMarkdown).not.toContain(SECRET_TOKEN);
-    expect(out.native.prior[0].labelMarkdown).not.toContain(SECRET_PATH);
+    expect(out.natives[0].prior[0].labelMarkdown).not.toContain(SECRET_TOKEN);
+    expect(out.natives[0].prior[0].labelMarkdown).not.toContain(SECRET_PATH);
     expect(out.card).toEqual({ type: "delete-node", node_id: "card-node-1" });
   });
 });
