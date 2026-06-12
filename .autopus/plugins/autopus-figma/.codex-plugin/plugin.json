@@ -1,7 +1,7 @@
 {
   "name": "autopus-figma",
-  "version": "0.4.0",
-  "description": "Autopus Figma description workflow: bundles the figma-description skill for cross-provider parity.",
+  "version": "0.5.0",
+  "description": "Autopus Figma description workflow: bundles the v4 figma-annotation-handoff and figma-desc-review skills for cross-provider parity.",
   "skills": "./skills",
   "interface": {
     "displayName": "Autopus Figma",

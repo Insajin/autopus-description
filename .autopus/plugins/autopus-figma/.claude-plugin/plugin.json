@@ -1,7 +1,7 @@
 {
   "name": "autopus-figma",
-  "version": "0.4.0",
-  "description": "Autopus Figma description workflow for Claude Code — bundles the autopus-figma MCP server (stdio) and the figma-description skill so one install wires both.",
+  "version": "0.5.0",
+  "description": "Autopus Figma description workflow for Claude Code — bundles the autopus-figma MCP server (stdio), the v4 figma-annotation-handoff and figma-desc-review skills, and the figma-desc-reviewer agent so one install wires them.",
   "mcpServers": {
     "autopus-figma": {
       "command": "node",
@@ -13,6 +13,7 @@
     }
   },
   "skills": "./skills",
+  "agents": "./agents",
   "userConfig": {
     "figma_token": {
       "type": "string",

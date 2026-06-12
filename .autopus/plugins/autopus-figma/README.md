@@ -1,7 +1,7 @@
 # autopus-figma (Claude Code 플러그인)
 
 Autopus Figma 디스크립션 워크플로를 Claude Code에 한 번에 설치하는 로컬 플러그인입니다.
-이 플러그인 하나를 설치하면 **autopus-figma MCP 서버(stdio)**와 **figma-description 스킬**이 함께 연결됩니다.
+이 플러그인 하나를 설치하면 **autopus-figma MCP 서버(stdio)**와 **v4 figma 디스크립션 스킬(`figma-annotation-handoff`·`figma-desc-review`) 및 `figma-desc-reviewer` 에이전트**가 함께 연결됩니다.
 
 ## 설치 (Claude Code)
 
@@ -78,10 +78,15 @@ ${CLAUDE_PLUGIN_ROOT}/../../../dist/src/daemon/mcp-stdio-entry.js
 이 절대 경로를 `args`에 넣으면 플러그인이 어디로 복사되든 올바른 진입점을 가리킵니다.
 체크아웃 내부 실행이면 기본 `${CLAUDE_PLUGIN_ROOT}` 상대 경로를, 전역 설치면 절대 경로를 선택하세요.
 
-## 스킬 동기화 안내 (F-03)
+## 스킬/에이전트 동기화 안내 (F-03)
 
-번들된 `skills/figma-description/SKILL.md`는 정본 스킬
-`.claude/skills/autopus/figma-description.md`의 **복사본**입니다.
+번들된 v4 figma 스킬·에이전트는 작업 중 활성본인 `.claude/`(gitignored 설치본)의 **추적 복사본**입니다. 버전관리·팀 공유의 정본은 이 번들입니다.
 
-- 현재 동기화는 **수동**입니다.
-- 정본 스킬이 변경되면 이 번들로 **다시 복사**해 드리프트를 방지하세요(HC-2: fork가 아닌 canonical copy).
+| 번들(추적 정본) | 활성 설치본(.claude, gitignored) |
+|------------------|-----------------------------------|
+| `skills/figma-annotation-handoff/SKILL.md` | `.claude/skills/autopus/figma-annotation-handoff.md` |
+| `skills/figma-desc-review/SKILL.md` | `.claude/skills/autopus/figma-desc-review.md` |
+| `agents/figma-desc-reviewer.md` | `.claude/agents/autopus/figma-desc-reviewer.md` |
+
+- 동기화는 현재 **수동**입니다(HC-2: fork가 아닌 canonical copy).
+- 어느 쪽을 고치든 **양쪽을 일치**시켜 드리프트를 방지하세요. v3 `figma-description` 스킬은 v4가 대체하여 번들에서 제거(0.5.0)되었습니다.
