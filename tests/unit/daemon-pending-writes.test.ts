@@ -10,7 +10,8 @@ import {
 import type { PluginCommand } from "../../packages/write-router/src/plan-emit/types.js";
 
 const COMMAND_FIXTURE: PluginCommand = {
-  op: "set_annotation",
+  // SPEC-FIGMA-022 — legacy text-card op (renamed from set_annotation).
+  op: "set_annotation_card",
   args: { node_id: "1:1", text: "primary CTA" },
 };
 

@@ -117,7 +117,7 @@ describe("WriteTarget → PluginCommand op mapping (REQ-09, AC-S6)", () => {
     expect(PLUGIN_COMMAND_OPS).toContain(ops[0]);
   });
 
-  it("annotation_card emits set_annotation with frameId and rendered text", async () => {
+  it("annotation_card emits set_annotation_card with frameId and rendered text", async () => {
     const router = new WriteRouter();
     const entry = {
       ...makeEntry("annotation_card"),
@@ -131,8 +131,8 @@ describe("WriteTarget → PluginCommand op mapping (REQ-09, AC-S6)", () => {
       ],
     };
     const r = (await router.apply(entry, { mode: "plan-emit" })) as PlanEmitResult;
-    const cmd = r.plugin_commands[0] as Extract<PluginCommand, { op: "set_annotation" }>;
-    expect(cmd.op).toBe("set_annotation");
+    const cmd = r.plugin_commands[0] as Extract<PluginCommand, { op: "set_annotation_card" }>;
+    expect(cmd.op).toBe("set_annotation_card");
     expect(cmd.args.frameId).toBe(entry.frame_id);
     expect(cmd.args.text).toContain(entry.title);
     expect(cmd.args.text).toContain(entry.intent);

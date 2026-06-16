@@ -400,7 +400,13 @@ const AUTOPUS_PATCH = `
       }
       case 'set_native_annotation':
       case 'set_policy_card':
+      // SPEC-FIGMA-022 — set_annotation now routes to the dispatcher's NATIVE
+      // arm (node.annotations), matching the MCP tool description. The legacy
+      // text-card path moved to set_annotation_card, which MUST also be routed
+      // to the dispatcher: vendor handleCommand does not know set_annotation_card
+      // and would throw "Unknown command", so it cannot fall through to default.
       case 'set_annotation':
+      case 'set_annotation_card':
       // SPEC-FIGMA-021 REQ-06 — the compound-undo inverse ops MUST also route to
       // the bundled dispatcher: restore_annotation is unknown to vendor (would
       // throw "Unknown command"), and the undo path sends delete_node with a

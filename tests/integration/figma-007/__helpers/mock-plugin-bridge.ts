@@ -10,7 +10,8 @@ import { randomBytes } from "node:crypto";
 
 export interface PluginCommand {
   op:
-    | "set_annotation"
+    // SPEC-FIGMA-022 — legacy text-card op, renamed from "set_annotation".
+    | "set_annotation_card"
     | "set_native_annotation"
     | "set_policy_card"
     | "upsert_descriptions_page_node"
@@ -183,7 +184,7 @@ export function expectedInverseCommands(
   const inverse: PluginCommand[] = [];
   for (let i = forwards.length - 1; i >= 0; i -= 1) {
     const fwd = forwards[i].command;
-    if (fwd.op === "set_annotation" || fwd.op === "post_comment") {
+    if (fwd.op === "set_annotation_card" || fwd.op === "post_comment") {
       const node_id = (fwd.args.node_id as string) ?? "";
       inverse.push({ op: "delete_node", args: { node_id } });
     } else if (fwd.op === "set_plugin_data") {

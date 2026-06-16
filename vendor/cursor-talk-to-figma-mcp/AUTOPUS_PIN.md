@@ -184,7 +184,7 @@ last passed AC-S13 sync drift audit.
 
 | autopus WriteTarget | sonnylazuardi tool name | last verified | notes |
 |---------------------|-------------------------|---------------|-------|
-| annotation_card     | set_annotation          | 1c46823f      | three sub-commands (create-node / set-text / attach-link) per AC-S8 partial-disconnect oracle |
+| annotation_card     | set_annotation_card     | 1c46823f      | SPEC-FIGMA-022 — renamed from `set_annotation` to free that op for the NATIVE annotation primitive; three sub-commands (create-node / set-text / attach-link) per AC-S8 partial-disconnect oracle |
 | descriptions_page   | upsert_descriptions_page_node | 1c46823f | autopus-authored handler — sonnylazuardi has no native equivalent |
 | comment             | post_comment            | 1c46823f      | uses figma file REST commentPost; not available via Plugin Bridge |
 | plugin_data         | set_plugin_data         | 1c46823f      | key prefix `description_${screen_id}` — matches executor adapter |

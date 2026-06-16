@@ -65,7 +65,7 @@ describe("daemon drift guard — apply-tool REQ-05 / REQ-12", () => {
     const pending = deps.store.put({
       manifest_entry_hash: "h".repeat(64),
       source_hash_dryrun: HASH_A,
-      plugin_commands: [{ op: "set_annotation", args: { node_id: "1:1" } }],
+      plugin_commands: [{ op: "set_annotation_card", args: { node_id: "1:1" } }],
       frame_id: "1:1",
       write_target: "annotation_card",
     });
@@ -89,7 +89,7 @@ describe("daemon drift guard — apply-tool REQ-05 / REQ-12", () => {
     const pending = deps.store.put({
       manifest_entry_hash: "h".repeat(64),
       source_hash_dryrun: HASH_A,
-      plugin_commands: [{ op: "set_annotation", args: { node_id: "1:1" } }],
+      plugin_commands: [{ op: "set_annotation_card", args: { node_id: "1:1" } }],
       frame_id: "1:1",
       write_target: "annotation_card",
     });
@@ -128,7 +128,7 @@ describe("daemon drift guard — apply-tool REQ-05 / REQ-12", () => {
     const pending = deps.store.put({
       manifest_entry_hash: "h".repeat(64),
       source_hash_dryrun: HASH_A,
-      plugin_commands: [{ op: "set_annotation", args: { node_id: "1:1" } }],
+      plugin_commands: [{ op: "set_annotation_card", args: { node_id: "1:1" } }],
       frame_id: "1:1",
       write_target: "annotation_card",
       undo_template: { type: "delete-node", node_id: "7:42" },

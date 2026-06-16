@@ -57,7 +57,8 @@ describe("AC-S1: dryRun MCP tool produces PendingWrite with concrete shape", () 
     );
 
     const allowedOps = [
-      "set_annotation",
+      // SPEC-FIGMA-022 — annotation_card emits the renamed card op.
+      "set_annotation_card",
       "upsert_descriptions_page_node",
       "post_comment",
       "set_plugin_data",

@@ -129,6 +129,66 @@ describe("autopus plugin adapter — set_native_annotation (S4/S5)", () => {
   });
 });
 
+// SPEC-FIGMA-022 — regression for the op-name collision bug. The user-facing
+// MCP tool `set_annotation` (described "Set or update a single annotation on a
+// node", native args { nodeId, labelMarkdown }) MUST reach the NATIVE
+// node.annotations write — not the legacy text-card path, which created an empty
+// stray TEXT node at (0,0) and left node.annotations untouched.
+describe("autopus plugin adapter — set_annotation routes to NATIVE (SPEC-022 bug)", () => {
+  it("sets node.annotations and creates NO stray text node for native args", async () => {
+    const node = makeAnnotatableNode("90:1");
+    const createText = vi.fn(() => ({ id: "stray-text" }));
+    const figma = {
+      getNodeByIdAsync: vi.fn(async () => node),
+      // If the bug regresses (card path), the dispatcher calls createText.
+      createText,
+    };
+    const adapter = createAutopusPluginAdapter(figma);
+
+    const result = await dispatchPluginCommand(adapter, {
+      op: "set_annotation",
+      args: { nodeId: "90:1", labelMarkdown: "**검색 영역**\n조건 입력 후 목록 갱신" },
+    });
+
+    // Native write happened on the resolved node.
+    expect(result).toEqual({ ok: true, node_ids: ["90:1"] });
+    expect(node.annotations).toEqual([
+      { labelMarkdown: "**검색 영역**\n조건 입력 후 목록 갱신" },
+    ]);
+    // The bug signature: NO text node created (no junk node at (0,0)).
+    expect(createText).not.toHaveBeenCalled();
+  });
+
+  it("forwards an optional categoryId to node.annotations", async () => {
+    const node = makeAnnotatableNode("91:1");
+    const figma = { getNodeByIdAsync: vi.fn(async () => node) };
+    const adapter = createAutopusPluginAdapter(figma);
+
+    await dispatchPluginCommand(adapter, {
+      op: "set_annotation",
+      args: { nodeId: "91:1", labelMarkdown: "**결과**", categoryId: "ready-for-dev" },
+    });
+
+    expect(node.annotations).toEqual([
+      { labelMarkdown: "**결과**", categoryId: "ready-for-dev" },
+    ]);
+  });
+
+  it("redacts a leaked secret in labelMarkdown before the native write", async () => {
+    const node = makeAnnotatableNode("92:1");
+    const figma = { getNodeByIdAsync: vi.fn(async () => node) };
+    const adapter = createAutopusPluginAdapter(figma);
+
+    await dispatchPluginCommand(adapter, {
+      op: "set_annotation",
+      args: { nodeId: "92:1", labelMarkdown: "token xoxb-LEAKEDSECRET trailing" },
+    });
+
+    const written = (node.annotations as Array<{ labelMarkdown: string }>)[0];
+    expect(written.labelMarkdown).not.toContain("xoxb-LEAKEDSECRET");
+  });
+});
+
 describe("autopus plugin adapter — set_policy_card (S4)", () => {
   it("renders auto-layout tables and returns the card id plus child node ids", async () => {
     const figma = makeCanvasStub();

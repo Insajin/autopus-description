@@ -1,7 +1,8 @@
 // SPEC-FIGMA-018 T9 — plan-emit native annotation scaffold (RED).
-// Covers S10 (every emitted op is "set_native_annotation", none "set_annotation";
+// Covers S10 (every emitted op is "set_native_annotation", none "set_annotation_card";
 // TARGET_TO_OP maps native_annotation → set_native_annotation) and S12
-// non-regression (planAnnotationCard still emits 3 set_annotation commands).
+// non-regression (planAnnotationCard still emits 3 card commands).
+// SPEC-FIGMA-022 — the legacy card op was renamed set_annotation → set_annotation_card.
 //
 // RED expectation: ../src/plan-emit/native-annotation-plan.js does not exist
 // yet (T5) and TARGET_TO_OP has no native_annotation key yet (T6).
@@ -39,7 +40,7 @@ function makeEntry(overrides: Partial<ManifestEntry> = {}): ManifestEntry {
 }
 
 describe("planNativeAnnotation (S10 / REQ-01, REQ-02)", () => {
-  it("emits only set_native_annotation ops, never set_annotation", () => {
+  it("emits only set_native_annotation ops, never the card op set_annotation_card", () => {
     const entry = makeEntry({
       area_annotations: [
         {
@@ -55,7 +56,8 @@ describe("planNativeAnnotation (S10 / REQ-01, REQ-02)", () => {
     for (const cmd of cmds) {
       expect(cmd.op).toBe("set_native_annotation");
     }
-    expect(cmds.some((c) => c.op === "set_annotation")).toBe(false);
+    // SPEC-FIGMA-022 — the legacy text-card op was renamed to set_annotation_card.
+    expect(cmds.some((c) => c.op === "set_annotation_card")).toBe(false);
   });
 
   it("each command carries nodeId and labelMarkdown args", () => {
@@ -152,11 +154,12 @@ describe("planNativeAnnotation — frame-level + categoryId branches", () => {
 });
 
 describe("S12 non-regression: annotation_card decomposition unchanged", () => {
-  it("planAnnotationCard still emits exactly three set_annotation commands", () => {
+  it("planAnnotationCard still emits exactly three set_annotation_card commands", () => {
     const cmds = planAnnotationCard(makeEntry({ write_target: "annotation_card" }));
     expect(cmds).toHaveLength(3);
     for (const cmd of cmds) {
-      expect(cmd.op).toBe("set_annotation");
+      // SPEC-FIGMA-022 — card op renamed from set_annotation to set_annotation_card.
+      expect(cmd.op).toBe("set_annotation_card");
     }
   });
 });

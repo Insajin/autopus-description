@@ -225,7 +225,10 @@ function forwardToInverse(c: PluginCommand): {
   args: Record<string, unknown>;
 } {
   switch (c.op) {
-    case "set_annotation":
+    // SPEC-FIGMA-022 — the legacy text-card op (renamed from set_annotation)
+    // creates a node, so its inverse is delete_node. The native annotation op
+    // (set_native_annotation) is reversed via restore-annotation, not here.
+    case "set_annotation_card":
     case "upsert_descriptions_page_node":
       return { op: "delete_node", args: {} };
     case "post_comment":

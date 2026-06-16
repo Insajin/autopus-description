@@ -93,16 +93,28 @@ export { createAutopusPluginAdapter };
 // a tool upstream, update both this table AND the AUTOPUS_PIN.md
 // `## Tool Mapping Changes` table — see REQ-17 runbook.
 export const TOOL_NAME_MAP: Readonly<Record<string, string>> = {
+  // SPEC-FIGMA-022 — the user-facing op set_annotation now routes to the vendor
+  // NATIVE Dev-Mode annotation tool set_annotation (node.annotations), matching
+  // the MCP tool description "Set or update a single annotation on a node". The
+  // legacy text-card 3-step path moved to the distinct op set_annotation_card.
   set_annotation: "set_annotation",
+  // SPEC-FIGMA-022 — the legacy annotation-CARD path (figma.createText /
+  // createAreaHandoff, the 3-step create-node/set-text/attach-link
+  // decomposition). Renamed from set_annotation so the user-facing op can mean
+  // NATIVE without colliding with the card renderer. There is no dedicated
+  // vendor tool for the card path (it builds raw nodes), so the mapped vendor
+  // name is irrelevant to routing; it is kept lexically distinct here for the
+  // AC-S1 set-equality table parity with PLUGIN_COMMAND_OPS.
+  set_annotation_card: "set_annotation_card",
   // SPEC-FIGMA-018 S10 — autopus op set_native_annotation routes to the vendor
   // NATIVE tool set_annotation (the real Dev-Mode annotation API), never the
   // card path. The op name stays lexically distinct from autopus set_annotation.
   set_native_annotation: "set_annotation",
   // SPEC-FIGMA-020 REQ-13 — autopus op set_policy_card routes to the vendor
   // set_policy_card tool (the structured-table policy card renderer), distinct
-  // from BOTH set_annotation (the card 3-step path) and set_native_annotation
-  // (the Dev-Mode native path). Keeps @AX:ANCHOR set-equality parity with the
-  // write-router PLUGIN_COMMAND_OPS table.
+  // from BOTH set_annotation_card (the card 3-step path) and
+  // set_native_annotation (the Dev-Mode native path). Keeps @AX:ANCHOR
+  // set-equality parity with the write-router PLUGIN_COMMAND_OPS table.
   set_policy_card: "set_policy_card",
   upsert_descriptions_page_node: "upsert_descriptions_page_node",
   post_comment: "post_comment",
@@ -382,6 +394,18 @@ export async function dispatchPluginCommand(
   try {
     switch (cmd.op) {
       case "set_annotation":
+        // SPEC-FIGMA-022 — the user-facing set_annotation op writes a NATIVE
+        // Dev-Mode annotation (node.annotations), matching the MCP tool
+        // description. It NO LONGER draws the legacy text card (that op moved to
+        // set_annotation_card). dispatchSetNativeAnnotation redacts labelMarkdown
+        // (HC-4) and forwards to the native setAnnotation primitive; it creates
+        // NO stray text node.
+        return await dispatchSetNativeAnnotation(figma, safeArgs);
+      case "set_annotation_card":
+        // SPEC-FIGMA-022 — the legacy annotation-CARD path, renamed from
+        // set_annotation. Unchanged behavior: the fixed 3-step create-node /
+        // set-text / attach-link decomposition that builds a text card via
+        // figma.createText / createAreaHandoff (AC-S8 rollback surface intact).
         return await dispatchSetAnnotation(figma, safeArgs);
       case "set_native_annotation":
         return await dispatchSetNativeAnnotation(figma, safeArgs);

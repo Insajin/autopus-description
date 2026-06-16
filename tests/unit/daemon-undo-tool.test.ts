@@ -167,7 +167,8 @@ describe("undoWrite — REQ-08 contract", () => {
   it("replayPartialRollback dispatches inverse commands in reverse order", async () => {
     const bridge = makeBridge();
     const forwards: PluginCommand[] = [
-      { op: "set_annotation", args: { node_id: "1:1" } },
+      // SPEC-FIGMA-022 — legacy text-card op (renamed); its inverse is delete_node.
+      { op: "set_annotation_card", args: { node_id: "1:1" } },
       { op: "set_plugin_data", args: { nodeId: "1:1", key: "k" } },
     ];
     await replayPartialRollback(bridge, forwards);

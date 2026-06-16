@@ -5,7 +5,11 @@ import {
   type FigmaPluginLike,
 } from "../../vendor/cursor-talk-to-figma-mcp/src/cursor_mcp_plugin/autopus_command_dispatch.js";
 
-describe("autopus plugin command dispatch — area handoff", () => {
+// SPEC-FIGMA-022 — these cover the legacy text-card path, now reached via the
+// op `set_annotation_card` (renamed from `set_annotation`). The bare
+// `set_annotation` op now routes to the NATIVE annotation primitive (covered in
+// the set_annotation native describe block below).
+describe("autopus plugin command dispatch — area handoff (card op)", () => {
   it("routes area_handoff annotation payloads to createAreaHandoff when available", async () => {
     const figma: FigmaPluginLike = {
       createAreaHandoff: vi.fn(async () => ({
@@ -16,7 +20,7 @@ describe("autopus plugin command dispatch — area handoff", () => {
     };
 
     const result = await dispatchPluginCommand(figma, {
-      op: "set_annotation",
+      op: "set_annotation_card",
       args: {
         frameId: "1:1",
         text: "영역 설명",
@@ -60,7 +64,7 @@ describe("autopus plugin command dispatch — area handoff", () => {
     };
 
     const result = await dispatchPluginCommand(figma, {
-      op: "set_annotation",
+      op: "set_annotation_card",
       args: { frameId: "1:1", text: "본문", step: "set-text" },
     });
 
@@ -102,7 +106,7 @@ describe("autopus plugin command dispatch — area handoff", () => {
     } as unknown as FigmaPluginLike;
 
     const result = await dispatchPluginCommand(figma, {
-      op: "set_annotation",
+      op: "set_annotation_card",
       args: {
         frameId: "1:1",
         text: "문서 본문",
@@ -175,7 +179,7 @@ describe("autopus plugin command dispatch — area handoff", () => {
     } as unknown as FigmaPluginLike;
 
     const result = await dispatchPluginCommand(figma, {
-      op: "set_annotation",
+      op: "set_annotation_card",
       args: {
         frameId: "1:1",
         text: "문서 본문",
@@ -281,5 +285,70 @@ describe("autopus plugin command dispatch — set_native_annotation (SPEC-018)",
 
     const arg = (figma.setAnnotation as ReturnType<typeof vi.fn>).mock.calls[0][0];
     expect(arg.labelMarkdown).not.toContain("xoxb-LEAKEDSECRET");
+  });
+});
+
+// SPEC-FIGMA-022 — regression for the op-name collision. The user-facing op
+// `set_annotation` MUST route to the NATIVE primitive (setAnnotation), and the
+// renamed legacy op `set_annotation_card` MUST route to the CARD renderer. The
+// two surfaces must never cross: native never draws a card, card never writes
+// the native annotation.
+describe("autopus plugin command dispatch — set_annotation routing split (SPEC-022)", () => {
+  it("set_annotation (native args) calls setAnnotation and never createText", async () => {
+    const figma: FigmaPluginLike = {
+      setAnnotation: vi.fn(async () => ({ id: "anno-1" })),
+      createText: vi.fn(async () => ({ id: "text-1" })),
+      createAreaHandoff: vi.fn(async () => ({ id: "doc-1", node_ids: ["doc-1"] })),
+    };
+
+    const result = await dispatchPluginCommand(figma, {
+      op: "set_annotation",
+      args: { nodeId: "90:1", labelMarkdown: "**검색 영역**" },
+    });
+
+    expect(result).toEqual({ ok: true, node_ids: ["90:1"] });
+    expect(figma.setAnnotation).toHaveBeenCalledWith({
+      nodeId: "90:1",
+      labelMarkdown: "**검색 영역**",
+      categoryId: undefined,
+    });
+    // The bug signature: NO stray node created on the native path.
+    expect(figma.createText).not.toHaveBeenCalled();
+    expect(figma.createAreaHandoff).not.toHaveBeenCalled();
+  });
+
+  it("set_annotation_card (card args) drives the card renderer and never setAnnotation", async () => {
+    const figma: FigmaPluginLike = {
+      setAnnotation: vi.fn(async () => ({ id: "anno-1" })),
+      createAreaHandoff: vi.fn(async () => ({
+        id: "doc-1",
+        node_ids: ["doc-1", "badge-1"],
+      })),
+      createText: vi.fn(async () => ({ id: "text-1" })),
+    };
+
+    const result = await dispatchPluginCommand(figma, {
+      op: "set_annotation_card",
+      args: {
+        frameId: "1:1",
+        text: "영역 설명",
+        step: "create-node",
+        layout: "area_handoff",
+        areaCallouts: [
+          {
+            areaId: "1",
+            badgeLabel: "1",
+            title: "검색 영역",
+            targetArea: "상단 검색 입력",
+            description: "조건 입력 후 목록을 갱신한다",
+          },
+        ],
+      },
+    });
+
+    expect(result).toEqual({ ok: true, node_ids: ["doc-1", "badge-1"] });
+    expect(figma.createAreaHandoff).toHaveBeenCalledTimes(1);
+    // The card path must NOT write a native annotation.
+    expect(figma.setAnnotation).not.toHaveBeenCalled();
   });
 });

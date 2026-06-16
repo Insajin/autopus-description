@@ -87,17 +87,18 @@ describe("plan-emit composite — native first, exactly one card op (S6, INV-01)
 });
 
 describe("plan-emit composite — card op literal is distinct (S8, REQ-13)", () => {
-  it("the card op is never set_annotation and never set_native_annotation-as-card", () => {
+  it("the card op is never set_annotation_card and never set_native_annotation-as-card", () => {
     const commands = planNativeAnnotationWithCard(makeEntry(), {});
     const cardCmd = commands.find((c) => c.op === "set_policy_card")!;
     expect(cardCmd.op).toBe("set_policy_card");
-    expect(cardCmd.op).not.toBe("set_annotation");
+    // SPEC-FIGMA-022 — the legacy text-card op was renamed to set_annotation_card.
+    expect(cardCmd.op).not.toBe("set_annotation_card");
     expect(cardCmd.op).not.toBe("set_native_annotation");
   });
 
-  it("no command emitted by the composite target uses the op set_annotation", () => {
+  it("no command emitted by the composite target uses the legacy card op set_annotation_card", () => {
     const commands = planNativeAnnotationWithCard(makeEntry(), {});
-    expect(commands.some((c) => c.op === "set_annotation")).toBe(false);
+    expect(commands.some((c) => c.op === "set_annotation_card")).toBe(false);
   });
 
   it("TARGET_TO_OP maps the composite to its primary native op; set_policy_card is a registered op", () => {
@@ -105,13 +106,14 @@ describe("plan-emit composite — card op literal is distinct (S8, REQ-13)", () 
     expect(PLUGIN_COMMAND_OPS).toContain("set_policy_card");
   });
 
-  it("planAnnotationCard still returns exactly three set_annotation commands (create/set-text/attach-link)", () => {
+  it("planAnnotationCard still returns exactly three set_annotation_card commands (create/set-text/attach-link)", () => {
     // S8 byte-behavior guard: the composite must not alter the AC-S8 card path.
     const cardCommands = planAnnotationCard(
       makeEntry({ write_target: "annotation_card" }),
     );
     expect(cardCommands).toHaveLength(3);
-    expect(cardCommands.every((c) => c.op === "set_annotation")).toBe(true);
+    // SPEC-FIGMA-022 — card op renamed from set_annotation to set_annotation_card.
+    expect(cardCommands.every((c) => c.op === "set_annotation_card")).toBe(true);
     const steps = cardCommands.map((c) => (c.args as { step?: string }).step);
     expect(steps).toEqual(["create-node", "set-text", "attach-link"]);
   });

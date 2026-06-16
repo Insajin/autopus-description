@@ -2,7 +2,8 @@
 //
 // `PluginCommand` is a discriminated union mapping each WriteTarget to a
 // plugin-side operation (REQ-09 sonnylazuardi tool surface mapping):
-//   - annotation_card → set_annotation
+//   - annotation_card → set_annotation_card (SPEC-FIGMA-022 rename; the
+//     user-facing set_annotation op now means NATIVE, see types below)
 //   - descriptions_page → upsert_descriptions_page_node
 //   - comment → post_comment
 //   - plugin_data → set_plugin_data
@@ -49,8 +50,9 @@ export type NoopArgs = Record<string, unknown>;
 
 // @AX:NOTE [AUTO]: naming-collision constraint (SPEC-FIGMA-020 REQ-12 / D5) — the
 // structured-table card op literal `set_policy_card` MUST be lexically distinct
-// from BOTH `set_annotation` (the card 3-step decomposition) and
-// `set_native_annotation` (the native Dev-Mode op). The composite target
+// from BOTH `set_annotation_card` (the legacy text-card 3-step decomposition,
+// renamed from `set_annotation` in SPEC-FIGMA-022) and `set_native_annotation`
+// (the native Dev-Mode op). The composite target
 // `native_annotation_with_card` emits native ops first then exactly one
 // `set_policy_card` op; reusing either existing literal would collide TARGET_TO_OP
 // and the AC-S8 card rollback surface.
@@ -66,7 +68,7 @@ export interface SetPolicyCardArgs extends Record<string, unknown> {
   }[];
 }
 
-// @AX:NOTE [AUTO]: naming-collision constraint — the op name MUST be `set_native_annotation`, never `set_annotation` (AC-S1 / S10). The card path (`set_annotation`, 3-step) and the native path (`set_native_annotation`, 1-step) are distinct surfaces; reusing the card op name would collide TARGET_TO_OP and break the AC-S8 card rollback invariant.
+// @AX:NOTE [AUTO]: naming-collision constraint — the op name MUST be `set_native_annotation`, never `set_annotation_card` (AC-S1 / S10). The card path (`set_annotation_card`, 3-step) and the native path (`set_native_annotation`, 1-step) are distinct surfaces; reusing the card op name would collide TARGET_TO_OP and break the AC-S8 card rollback invariant. SPEC-FIGMA-022: the user-facing `set_annotation` op now ALSO routes to the native primitive in the plugin dispatcher (matching the MCP tool description), but plan-emit only ever emits `set_native_annotation` for the native targets.
 // SPEC-FIGMA-018 REQ-01, REQ-02 — native Dev-Mode annotation op args. Single
 // node target with a composed `labelMarkdown` and an optional `categoryId`.
 export interface SetNativeAnnotationArgs extends Record<string, unknown> {
@@ -76,7 +78,10 @@ export interface SetNativeAnnotationArgs extends Record<string, unknown> {
 }
 
 export type PluginCommand =
-  | { op: "set_annotation"; args: SetAnnotationArgs }
+  // SPEC-FIGMA-022 — legacy text-card op, renamed from `set_annotation`. The
+  // bare `set_annotation` op is now the user-facing NATIVE annotation tool in
+  // the plugin dispatcher and is NOT emitted by plan-emit.
+  | { op: "set_annotation_card"; args: SetAnnotationArgs }
   | { op: "set_native_annotation"; args: SetNativeAnnotationArgs }
   | { op: "set_policy_card"; args: SetPolicyCardArgs }
   | { op: "upsert_descriptions_page_node"; args: UpsertDescriptionsPageArgs }
@@ -88,7 +93,7 @@ export type PluginCommand =
 export type PluginCommandOp = PluginCommand["op"];
 
 export const PLUGIN_COMMAND_OPS: readonly PluginCommandOp[] = [
-  "set_annotation",
+  "set_annotation_card",
   "set_native_annotation",
   "set_policy_card",
   "upsert_descriptions_page_node",
@@ -108,7 +113,8 @@ export const PLUGIN_COMMAND_OPS: readonly PluginCommandOp[] = [
 // PLUGIN_COMMAND_OPS. T7 adds the matching `TOOL_NAME_MAP` entry so the two tables
 // advance together (set-equality parity at line above).
 export const TARGET_TO_OP: Readonly<Record<WriteTarget, PluginCommandOp>> = {
-  annotation_card: "set_annotation",
+  // SPEC-FIGMA-022 — annotation_card emits the renamed legacy card op.
+  annotation_card: "set_annotation_card",
   native_annotation: "set_native_annotation",
   native_annotation_with_card: "set_native_annotation",
   descriptions_page: "upsert_descriptions_page_node",
